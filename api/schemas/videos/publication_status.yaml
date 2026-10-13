@@ -1,0 +1,7 @@
+type: string
+enum:
+  - DRAFT
+  - PUBLISHED
+description: Whether the video is a draft or published. Only READY videos can be published.
+examples:
+  - DRAFT

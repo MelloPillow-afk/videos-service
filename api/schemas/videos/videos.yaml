@@ -1,0 +1,44 @@
+type: object
+required:
+  - data
+  - pagination
+properties:
+  data:
+    type: array
+    items:
+      $ref: ./video.yaml
+  pagination:
+    type: object
+    required:
+      - next_page_token
+      - has_more
+    properties:
+      next_page_token:
+        type:
+          - string
+          - 'null'
+        description: Token for the next page, or null when there are no more results.
+      has_more:
+        type: boolean
+        description: Whether another page of results is available.
+description: A page of videos and information for fetching the next page.
+examples:
+  - data:
+      - id: 550e8400-e29b-41d4-a716-446655440000
+        title: Introduction to Faith
+        description: An introductory lesson
+        status: READY
+        publication_status: PUBLISHED
+        size_bytes: 524288000
+        duration_seconds: 1475.5
+        thumbnail:
+          status: READY
+          source: CUSTOM
+          url: >-
+            https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
+        published_at: '2026-10-13T15:00:00Z'
+        created_at: '2026-10-13T14:00:00Z'
+        updated_at: '2026-10-13T15:00:00Z'
+    pagination:
+      next_page_token: example_next_page_token
+      has_more: true

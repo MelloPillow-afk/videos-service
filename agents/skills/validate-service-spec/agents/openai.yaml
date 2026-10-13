@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate Service Spec"
+  short_description: "Validate OpenAPI contracts and examples"
+  default_prompt: "Use $validate-service-spec to validate the service's OpenAPI contract and report the results."

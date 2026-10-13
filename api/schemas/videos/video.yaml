@@ -1,0 +1,86 @@
+type: object
+required:
+  - id
+  - title
+  - description
+  - status
+  - publication_status
+  - size_bytes
+  - duration_seconds
+  - thumbnail
+  - published_at
+  - created_at
+  - updated_at
+description: Video details. Unavailable values are null; processing_error is administrator-only.
+properties:
+  id:
+    type: string
+    format: uuid
+  title:
+    $ref: ./title.yaml
+  description:
+    $ref: ./description.yaml
+  status:
+    $ref: ./status.yaml
+  publication_status:
+    $ref: ./publication_status.yaml
+  size_bytes:
+    type:
+      - integer
+      - 'null'
+    format: int64
+    minimum: 1
+    description: Uploaded file size in bytes, or null before it is verified.
+  duration_seconds:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    description: Video length in seconds, or null until available.
+  thumbnail:
+    $ref: ../thumbnails/thumbnail_image.yaml
+  published_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+    description: Start of the current publication period in UTC, or null for drafts.
+  created_at:
+    $ref: ../shared/timestamp.yaml
+  updated_at:
+    $ref: ../shared/timestamp.yaml
+  processing_error:
+    type: object
+    required:
+      - code
+      - message
+    description: Details of a processing failure, visible only to administrators.
+    properties:
+      code:
+        type: string
+        description: Code identifying the processing failure.
+        examples:
+          - TRANSCODE_FAILED
+      message:
+        type: string
+        description: Readable explanation of the processing failure.
+        examples:
+          - Video processing failed.
+    examples:
+      - code: TRANSCODE_FAILED
+        message: Video processing failed.
+examples:
+  - id: 550e8400-e29b-41d4-a716-446655440000
+    title: Introduction to Faith
+    description: An introductory lesson
+    status: CREATED
+    publication_status: DRAFT
+    size_bytes: null
+    duration_seconds: null
+    thumbnail:
+      status: PENDING
+      source: NONE
+      url: null
+    published_at: null
+    created_at: '2026-10-13T14:00:00Z'
+    updated_at: '2026-10-13T14:00:00Z'

@@ -1,0 +1,8 @@
+name: search
+in: query
+description: Find titles containing this text, ignoring case and surrounding spaces.
+schema:
+  type: string
+  maxLength: 200
+  examples:
+    - faith

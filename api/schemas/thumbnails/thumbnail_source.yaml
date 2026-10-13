@@ -1,0 +1,8 @@
+type: string
+enum:
+  - GENERATED
+  - CUSTOM
+  - NONE
+description: The active image source. Custom images take priority over generated images.
+examples:
+  - GENERATED

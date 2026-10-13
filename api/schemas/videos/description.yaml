@@ -1,0 +1,7 @@
+type:
+  - string
+  - 'null'
+maxLength: 5000
+description: Optional video description. Defaults to null when creating a video.
+examples:
+  - An introductory lesson

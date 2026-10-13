@@ -1,0 +1,26 @@
+type: object
+required:
+  - status
+  - source
+  - url
+description: |
+  The active thumbnail. Custom images take priority over generated images.
+  Thumbnail generation may finish after the video is ready. The URL is null
+  when no image is available.
+properties:
+  status:
+    $ref: ./thumbnail_status.yaml
+  source:
+    $ref: ./thumbnail_source.yaml
+  url:
+    type:
+      - string
+      - 'null'
+    format: uri
+    pattern: ^https://
+    description: Thumbnail image URL, or null when unavailable.
+examples:
+  - status: READY
+    source: CUSTOM
+    url: >-
+      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg

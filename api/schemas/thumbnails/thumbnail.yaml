@@ -1,0 +1,18 @@
+type: object
+required:
+  - video_id
+  - thumbnail
+properties:
+  video_id:
+    type: string
+    format: uuid
+  thumbnail:
+    $ref: ./thumbnail_image.yaml
+description: Video ID and current thumbnail.
+examples:
+  - video_id: 550e8400-e29b-41d4-a716-446655440000
+    thumbnail:
+      status: READY
+      source: CUSTOM
+      url: >-
+        https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg

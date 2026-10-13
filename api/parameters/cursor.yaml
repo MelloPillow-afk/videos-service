@@ -1,0 +1,7 @@
+name: cursor
+in: query
+description: Use next_page_token from the previous page with the same filters.
+schema:
+  type: string
+  examples:
+    - example_next_page_token

@@ -1,0 +1,15 @@
+type: string
+enum:
+  - CREATED
+  - UPLOADING
+  - QUEUED
+  - PROCESSING
+  - READY
+  - FAILED
+  - DELETING
+description: |
+  Current video status: CREATED is a new draft; UPLOADING is awaiting an upload;
+  QUEUED is waiting to be processed; PROCESSING is preparing the video;
+  READY can be played; FAILED could not be processed; DELETING is being removed.
+examples:
+  - CREATED

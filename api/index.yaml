@@ -1,0 +1,917 @@
+openapi: 3.2.0
+info:
+  title: Pilgrims Videos Service API
+  version: 1.0.0
+  description: |
+    Manage videos, upload media, publish videos, and find playback links.
+    Administrators manage videos; viewers can read ready, published videos.
+    Viewer access may require authentication, depending on the service settings.
+    JSON fields use snake_case. IDs are UUIDs and timestamps use UTC.
+    Unavailable values are null. Previously shared playback links may remain
+    accessible for a time after a video is unpublished or deleted.
+servers:
+  - url: /v1
+    description: Version 1 of the API.
+security:
+  - bearer_auth: []
+tags:
+  - name: Videos
+    description: Create, update, publish, and delete videos.
+  - name: Uploads
+    description: Upload video files and confirm completed uploads.
+  - name: Playback
+    description: Get video playback links.
+  - name: Thumbnails
+    description: Upload custom thumbnails or use generated thumbnails.
+x-unresolved-decisions:
+  - Identity provider, admin role mapping, and whether viewer reads require authentication.
+  - Maximum source upload bytes, effective size enforcement, and confirmed-source finalization.
+  - Approved thumbnail formats, dimensions, aspect ratio, byte limit, and cropping policy.
+  - State retention following a rejected source confirmation.
+  - Active thumbnail representation after removing custom when generation has failed.
+paths:
+  /videos:
+    post:
+      tags:
+        - Videos
+      operationId: create_video
+      summary: Create a video draft
+      description: |
+        Create a draft with a title and optional description. Only administrators can
+        create videos. The video starts in CREATED with publication_status DRAFT.
+        Upload the video file separately.
+      x-required-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/video_create'
+            examples:
+              draft:
+                value:
+                  title: Introduction to Faith
+                  description: An introductory lesson
+      responses:
+        '201':
+          description: Video draft created.
+          headers:
+            Location:
+              description: Address of the new video.
+              required: true
+              schema:
+                type: string
+                format: uri-reference
+                examples:
+                  - /v1/videos/550e8400-e29b-41d4-a716-446655440000
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/video'
+              examples:
+                created:
+                  $ref: '#/components/examples/created_video'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+    get:
+      tags:
+        - Videos
+      operationId: list_videos
+      summary: List videos
+      description: |
+        List videos, newest first. Viewers see only READY, PUBLISHED videos.
+        Administrators can also see drafts and filter by status or publication_status;
+        viewers using those filters receive 400 INVALID_QUERY.
+        Search matches part of a title, ignoring case and surrounding spaces.
+        Use next_page_token as the cursor to fetch the next page with the same filters.
+        An invalid cursor or changed filters returns 400 INVALID_QUERY.
+      security:
+        - bearer_auth: []
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/status'
+        - $ref: '#/components/parameters/publication_status'
+        - $ref: '#/components/parameters/search'
+      responses:
+        '200':
+          description: A page of videos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/videos'
+              examples:
+                published_page:
+                  $ref: '#/components/examples/video_page'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    get:
+      tags:
+        - Videos
+      operationId: get_video
+      summary: Get a video
+      description: |
+        Get video details and processing status. Viewers can read only READY,
+        PUBLISHED videos; other videos return 404. Administrators can also read drafts,
+        processing errors, and videos being deleted. Check about every five seconds
+        while the video is QUEUED or PROCESSING, until it becomes READY or FAILED.
+        The thumbnail may still be PENDING after the video is ready.
+      security:
+        - bearer_auth: []
+        - {}
+      responses:
+        '200':
+          $ref: '#/components/responses/video_resource'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+    patch:
+      tags:
+        - Videos
+      operationId: update_video
+      summary: Update a video
+      description: |
+        Update only the supplied fields. Only administrators can update videos.
+        Publishing requires READY; otherwise, the request returns 409 VIDEO_NOT_READY.
+        Publishing sets published_at; publishing an already published video keeps its
+        existing date. Unpublishing clears the date, and republishing sets a new one.
+        Videos being deleted cannot be updated.
+      x-required-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/video_update'
+            examples:
+              publish:
+                value:
+                  title: Introduction to Christian Faith
+                  description: Updated lesson description
+                  publication_status: PUBLISHED
+              unpublish:
+                value:
+                  publication_status: DRAFT
+              clear_description:
+                value:
+                  description: null
+      responses:
+        '200':
+          $ref: '#/components/responses/video_resource'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+    delete:
+      tags:
+        - Videos
+      operationId: delete_video
+      summary: Delete a video
+      description: |
+        Request video deletion. Only administrators can delete videos.
+        The video becomes DELETING and can no longer be played, uploaded, or changed.
+        Administrators can check its status until deletion finishes.
+        Repeating the request returns 202 during deletion and 404 after removal.
+        Previously shared playback links may remain accessible for a time.
+      x-required-role: admin
+      responses:
+        '202':
+          description: Video deletion requested or already in progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/video_deletion'
+              examples:
+                deleting:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: DELETING
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/upload-url:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      tags:
+        - Uploads
+      operationId: create_source_upload_url
+      summary: Get a video upload URL
+      description: |
+        Get a URL for uploading an MP4 file. Only administrators can request it,
+        and the video must be CREATED or UPLOADING. Upload using PUT and the returned
+        headers, then confirm completion with upload_id. The URL normally expires
+        after 15 minutes. Requesting a new URL replaces the current upload attempt
+        and sets the video to UPLOADING. An unsupported file type returns
+        400 INVALID_FILE_TYPE; an unavailable state returns 409 INVALID_STATUS_TRANSITION.
+      x-required-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/source_upload_create'
+            examples:
+              mp4:
+                value:
+                  file_name: introduction.mp4
+                  content_type: video/mp4
+                  size_bytes: 524288000
+      responses:
+        '200':
+          description: Upload URL and instructions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/source_upload'
+              examples:
+                upload:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: UPLOADING
+                    upload:
+                      upload_id: 04d1790f-f941-4ba6-8d97-0e6830ca4394
+                      method: PUT
+                      url: https://uploads.example.com/source-attempt.mp4?signature=example
+                      headers:
+                        Content-Type: video/mp4
+                      expires_at: '2026-10-13T14:15:00Z'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '413':
+          $ref: '#/components/responses/file_too_large'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/complete-upload:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      tags:
+        - Uploads
+      operationId: complete_source_upload
+      summary: Confirm a video upload
+      description: |
+        Confirm the upload using its current upload_id. Only administrators can
+        confirm uploads. A missing file returns 404 UPLOAD_NOT_FOUND; an outdated
+        upload_id returns 409 STALE_UPLOAD_ATTEMPT. An accepted video becomes QUEUED
+        and processing begins separately from thumbnail generation.
+        Repeating an accepted upload_id returns the same processing_job_id and the
+        current status. Uploads cannot be confirmed while the video is being deleted.
+      x-required-role: admin
+      requestBody:
+        $ref: '#/components/requestBodies/upload_completion'
+      responses:
+        '202':
+          description: Upload accepted for processing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/source_upload_processing'
+              examples:
+                queued:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: QUEUED
+                    processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
+                    thumbnail_status: PENDING
+                replay_after_readiness:
+                  summary: Repeating confirmation after the video is ready.
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: READY
+                    processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
+                    thumbnail_status: PENDING
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          description: The video or uploaded file was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+              examples:
+                missing_upload:
+                  value:
+                    error:
+                      code: UPLOAD_NOT_FOUND
+                      message: The source upload was not found.
+        '409':
+          $ref: '#/components/responses/conflict'
+        '413':
+          $ref: '#/components/responses/file_too_large'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/playback:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    get:
+      tags:
+        - Playback
+      operationId: get_video_playback
+      summary: Get a video playback link
+      description: |
+        Get the HLS playback link. Viewers can play only READY, PUBLISHED videos;
+        other videos return 404. Administrators can preview READY drafts.
+        A video that is not ready returns 409 VIDEO_NOT_READY to administrators.
+        Videos being deleted cannot be played.
+      security:
+        - bearer_auth: []
+        - {}
+      responses:
+        '200':
+          description: Video playback link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/playback'
+              examples:
+                hls:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    playback:
+                      type: hls
+                      url: >-
+                        https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/hls/v1/master.m3u8
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/retry:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      tags:
+        - Videos
+      operationId: retry_video_processing
+      summary: Retry video processing
+      description: |
+        Retry processing a FAILED video that still has its uploaded source file.
+        Only administrators can retry. The video becomes QUEUED and remains DRAFT.
+        A duplicate retry returns 409 INVALID_STATUS_TRANSITION.
+        Retrying the video does not retry thumbnail generation.
+      x-required-role: admin
+      responses:
+        '202':
+          description: Video processing retry requested.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/video_retry'
+              examples:
+                second_attempt:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: QUEUED
+                    processing_job_id: ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5
+                    attempt: 2
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/thumbnail/upload-url:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      tags:
+        - Thumbnails
+      operationId: create_thumbnail_upload_url
+      summary: Get a thumbnail upload URL
+      description: |
+        Get a URL for uploading a custom thumbnail. Only administrators can request
+        it, and the video must not be DELETING. Upload using PUT and the returned
+        headers, then confirm completion with upload_id. The URL normally expires
+        after 15 minutes. The existing thumbnail stays active until confirmation.
+        An unsupported image type returns 400 INVALID_THUMBNAIL_TYPE.
+      x-required-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/thumbnail_upload_create'
+            examples:
+              custom_image:
+                value:
+                  file_name: faith-cover.jpg
+                  content_type: image/jpeg
+                  size_bytes: 183420
+      responses:
+        '200':
+          description: Thumbnail upload URL and instructions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/thumbnail_upload'
+              examples:
+                upload:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    upload:
+                      upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
+                      method: PUT
+                      url: https://uploads.example.com/thumbnail-attempt.jpg?signature=example
+                      headers:
+                        Content-Type: image/jpeg
+                      expires_at: '2026-10-13T14:15:00Z'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '413':
+          $ref: '#/components/responses/file_too_large'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/thumbnail/complete-upload:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      tags:
+        - Thumbnails
+      operationId: complete_thumbnail_upload
+      summary: Confirm a thumbnail upload
+      description: |
+        Confirm and use a custom thumbnail. Only administrators can confirm uploads,
+        and the video must not be DELETING. An outdated upload_id returns
+        409 STALE_UPLOAD_ATTEMPT; a missing file returns 404 THUMBNAIL_UPLOAD_NOT_FOUND;
+        an invalid image returns 400 INVALID_THUMBNAIL. Failed validation keeps the
+        existing thumbnail. Custom thumbnails take priority over generated images.
+        Repeating an accepted upload_id returns the current thumbnail.
+      x-required-role: admin
+      requestBody:
+        $ref: '#/components/requestBodies/upload_completion'
+      responses:
+        '200':
+          description: The current thumbnail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/thumbnail'
+              examples:
+                custom:
+                  $ref: '#/components/examples/custom_thumbnail'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          description: The video or uploaded thumbnail was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+              examples:
+                missing_image:
+                  value:
+                    error:
+                      code: THUMBNAIL_UPLOAD_NOT_FOUND
+                      message: The thumbnail upload was not found.
+        '409':
+          $ref: '#/components/responses/conflict'
+        '413':
+          $ref: '#/components/responses/file_too_large'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+  /videos/{id}/thumbnail:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    delete:
+      tags:
+        - Thumbnails
+      operationId: remove_custom_thumbnail
+      summary: Remove a custom thumbnail
+      description: |
+        Remove the custom thumbnail and use the generated image when available.
+        Only administrators can remove thumbnails, and the video must not be DELETING.
+        If generation is still pending, the thumbnail is PENDING with no image URL.
+        Repeating removal leaves the current result unchanged.
+      x-required-role: admin
+      responses:
+        '200':
+          description: The generated thumbnail or its current status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/thumbnail'
+              examples:
+                generated:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    thumbnail:
+                      status: READY
+                      source: GENERATED
+                      url: >-
+                        https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg
+                pending:
+                  value:
+                    video_id: 550e8400-e29b-41d4-a716-446655440000
+                    thumbnail:
+                      status: PENDING
+                      source: NONE
+                      url: null
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/video_not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_error'
+        '503':
+          $ref: '#/components/responses/unavailable'
+components:
+  securitySchemes:
+    bearer_auth:
+      type: http
+      scheme: bearer
+      description: Bearer token for authentication. Managing videos requires administrator access.
+  parameters:
+    id:
+      $ref: parameters/id.yaml
+    limit:
+      $ref: parameters/limit.yaml
+    cursor:
+      $ref: parameters/cursor.yaml
+    status:
+      $ref: parameters/status.yaml
+    publication_status:
+      $ref: parameters/publication_status.yaml
+    search:
+      $ref: parameters/search.yaml
+  requestBodies:
+    upload_completion:
+      required: true
+      description: The upload ID returned with the upload URL.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/upload_complete'
+          examples:
+            source_attempt:
+              value:
+                upload_id: 04d1790f-f941-4ba6-8d97-0e6830ca4394
+            thumbnail_attempt:
+              value:
+                upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
+  schemas:
+    status:
+      $ref: schemas/videos/status.yaml
+    publication_status:
+      $ref: schemas/videos/publication_status.yaml
+    thumbnail_status:
+      $ref: schemas/thumbnails/thumbnail_status.yaml
+    thumbnail_source:
+      $ref: schemas/thumbnails/thumbnail_source.yaml
+    title:
+      $ref: schemas/videos/title.yaml
+    description:
+      $ref: schemas/videos/description.yaml
+    timestamp:
+      $ref: schemas/shared/timestamp.yaml
+    delivery_url:
+      $ref: schemas/shared/delivery_url.yaml
+    thumbnail_image:
+      $ref: schemas/thumbnails/thumbnail_image.yaml
+    video:
+      $ref: schemas/videos/video.yaml
+    video_create:
+      $ref: schemas/videos/video_create.yaml
+    video_update:
+      $ref: schemas/videos/video_update.yaml
+    source_upload_create:
+      $ref: schemas/uploads/source_upload_create.yaml
+    thumbnail_upload_create:
+      $ref: schemas/thumbnails/thumbnail_upload_create.yaml
+    upload_complete:
+      $ref: schemas/uploads/upload_complete.yaml
+    upload:
+      $ref: schemas/uploads/upload.yaml
+    source_upload:
+      $ref: schemas/uploads/source_upload.yaml
+    thumbnail_upload:
+      $ref: schemas/thumbnails/thumbnail_upload.yaml
+    source_upload_processing:
+      $ref: schemas/uploads/source_upload_processing.yaml
+    video_retry:
+      $ref: schemas/videos/video_retry.yaml
+    video_deletion:
+      $ref: schemas/videos/video_deletion.yaml
+    playback:
+      $ref: schemas/playback/playback.yaml
+    thumbnail:
+      $ref: schemas/thumbnails/thumbnail.yaml
+    videos:
+      $ref: schemas/videos/videos.yaml
+    error:
+      type: object
+      required:
+        - error
+      description: An error code and a readable explanation.
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Code identifying the error.
+            message:
+              type: string
+              description: Readable explanation of the error.
+      examples:
+        - error:
+            code: INVALID_VIDEO_ID
+            message: The video ID must be a valid UUID.
+  responses:
+    video_resource:
+      description: Video details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/video'
+          examples:
+            ready_draft:
+              $ref: '#/components/examples/ready_video'
+    bad_request:
+      description: The request contains invalid values.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+          examples:
+            invalid_id:
+              value:
+                error:
+                  code: INVALID_VIDEO_ID
+                  message: The video ID must be a valid UUID.
+    unauthorized:
+      description: Authentication is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    forbidden:
+      description: Administrator access is required.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    video_not_found:
+      description: The video was not found or is not available to you.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+          examples:
+            missing:
+              value:
+                error:
+                  code: VIDEO_NOT_FOUND
+                  message: The video was not found.
+    conflict:
+      description: The video cannot accept this action in its current state, or the upload ID is
+        outdated.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+          examples:
+            invalid_state:
+              value:
+                error:
+                  code: INVALID_STATUS_TRANSITION
+                  message: The video is not eligible for this operation.
+            stale_attempt:
+              value:
+                error:
+                  code: STALE_UPLOAD_ATTEMPT
+                  message: This upload attempt is no longer current.
+            not_ready:
+              value:
+                error:
+                  code: VIDEO_NOT_READY
+                  message: The video is not ready.
+    file_too_large:
+      description: The file exceeds the allowed size.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+          examples:
+            too_large:
+              value:
+                error:
+                  code: FILE_TOO_LARGE
+                  message: The file exceeds the configured size limit.
+    too_many_requests:
+      description: Too many requests. Try again later.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    internal_error:
+      description: An unexpected error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    unavailable:
+      description: The service is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+  examples:
+    created_video:
+      summary: A new video draft.
+      value:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        title: Introduction to Faith
+        description: An introductory lesson
+        status: CREATED
+        publication_status: DRAFT
+        size_bytes: null
+        duration_seconds: null
+        thumbnail:
+          status: PENDING
+          source: NONE
+          url: null
+        published_at: null
+        created_at: '2026-10-13T14:00:00Z'
+        updated_at: '2026-10-13T14:00:00Z'
+    ready_video:
+      summary: A ready draft with a generated thumbnail.
+      value:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        title: Introduction to Faith
+        description: An introductory lesson
+        status: READY
+        publication_status: DRAFT
+        size_bytes: 524288000
+        duration_seconds: 1475.5
+        thumbnail:
+          status: READY
+          source: GENERATED
+          url: >-
+            https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg
+        published_at: null
+        created_at: '2026-10-13T14:00:00Z'
+        updated_at: '2026-10-13T14:05:00Z'
+    video_page:
+      summary: The final page of published videos.
+      value:
+        data:
+          - id: 550e8400-e29b-41d4-a716-446655440000
+            title: Introduction to Faith
+            description: An introductory lesson
+            status: READY
+            publication_status: PUBLISHED
+            size_bytes: 524288000
+            duration_seconds: 1475.5
+            thumbnail:
+              status: READY
+              source: CUSTOM
+              url: >-
+                https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
+            published_at: '2026-10-13T15:00:00Z'
+            created_at: '2026-10-13T14:00:00Z'
+            updated_at: '2026-10-13T15:00:00Z'
+        pagination:
+          next_page_token: null
+          has_more: false
+    custom_thumbnail:
+      summary: A video with a custom thumbnail.
+      value:
+        video_id: 550e8400-e29b-41d4-a716-446655440000
+        thumbnail:
+          status: READY
+          source: CUSTOM
+          url: >-
+            https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg

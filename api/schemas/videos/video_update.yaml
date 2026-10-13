@@ -1,0 +1,19 @@
+type: object
+description: Video fields to update. Supply at least one field.
+anyOf:
+  - required:
+      - title
+  - required:
+      - description
+  - required:
+      - publication_status
+properties:
+  title:
+    $ref: ./title.yaml
+  description:
+    $ref: ./description.yaml
+  publication_status:
+    $ref: ./publication_status.yaml
+examples:
+  - title: Introduction to Christian Faith
+    publication_status: PUBLISHED

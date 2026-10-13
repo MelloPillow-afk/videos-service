@@ -1,0 +1,5 @@
+name: publication_status
+in: query
+description: Filter by publication status. Administrators only.
+schema:
+  $ref: ../schemas/videos/publication_status.yaml

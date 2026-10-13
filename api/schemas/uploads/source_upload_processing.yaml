@@ -1,0 +1,26 @@
+type: object
+required:
+  - video_id
+  - status
+  - processing_job_id
+  - thumbnail_status
+properties:
+  video_id:
+    type: string
+    format: uuid
+  status:
+    $ref: ../videos/status.yaml
+    description: QUEUED when first accepted; current status on repeated confirmation.
+  processing_job_id:
+    type: string
+    format: uuid
+    description: Processing job ID. Repeated confirmation returns the same ID.
+  thumbnail_status:
+    $ref: ../thumbnails/thumbnail_status.yaml
+    description: Thumbnail status. Starts as PENDING.
+description: Video and thumbnail status after an upload is accepted.
+examples:
+  - video_id: 550e8400-e29b-41d4-a716-446655440000
+    status: QUEUED
+    processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
+    thumbnail_status: PENDING
