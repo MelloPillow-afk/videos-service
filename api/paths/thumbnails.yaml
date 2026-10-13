@@ -1,0 +1,181 @@
+/videos/{id}/thumbnail/upload-url:
+  parameters:
+    - $ref: ../parameters/id.yaml
+  post:
+    tags:
+      - Thumbnails
+    operationId: create_thumbnail_upload_url
+    summary: Get a thumbnail upload URL
+    description: |
+      Get a URL for uploading a custom thumbnail. Only administrators can request
+      it, and the video must not be DELETING. Upload using PUT and the returned
+      headers, then confirm completion with upload_id. The URL normally expires
+      after 15 minutes. The existing thumbnail stays active until confirmation.
+      An unsupported image type returns 400 INVALID_THUMBNAIL_TYPE.
+    x-required-role: admin
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/thumbnails/thumbnail_upload_create.yaml
+          examples:
+            custom_image:
+              value:
+                file_name: faith-cover.jpg
+                content_type: image/jpeg
+                size_bytes: 183420
+    responses:
+      '200':
+        description: Thumbnail upload URL and instructions.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/thumbnails/thumbnail_upload.yaml
+            examples:
+              upload:
+                value:
+                  video_id: 550e8400-e29b-41d4-a716-446655440000
+                  upload:
+                    upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
+                    method: PUT
+                    url: https://uploads.example.com/thumbnail-attempt.jpg?signature=example
+                    headers:
+                      Content-Type: image/jpeg
+                    expires_at: '2026-10-13T14:15:00Z'
+      '400':
+        $ref: ../responses/bad_request.yaml
+      '401':
+        $ref: ../responses/unauthorized.yaml
+      '403':
+        $ref: ../responses/forbidden.yaml
+      '404':
+        $ref: ../responses/video_not_found.yaml
+      '409':
+        $ref: ../responses/conflict.yaml
+      '413':
+        $ref: ../responses/file_too_large.yaml
+      '429':
+        $ref: ../responses/too_many_requests.yaml
+      '500':
+        $ref: ../responses/internal_error.yaml
+      '503':
+        $ref: ../responses/unavailable.yaml
+
+/videos/{id}/thumbnail/complete-upload:
+  parameters:
+    - $ref: ../parameters/id.yaml
+  post:
+    tags:
+      - Thumbnails
+    operationId: complete_thumbnail_upload
+    summary: Confirm a thumbnail upload
+    description: |
+      Confirm and use a custom thumbnail. Only administrators can confirm uploads,
+      and the video must not be DELETING. An outdated upload_id returns
+      409 STALE_UPLOAD_ATTEMPT; a missing file returns 404 THUMBNAIL_UPLOAD_NOT_FOUND;
+      an invalid image returns 400 INVALID_THUMBNAIL. Failed validation keeps the
+      existing thumbnail. Custom thumbnails take priority over generated images.
+      Repeating an accepted upload_id returns the current thumbnail.
+    x-required-role: admin
+    requestBody:
+      $ref: ../index.yaml#/components/requestBodies/upload_completion
+    responses:
+      '200':
+        description: The current thumbnail.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/thumbnails/thumbnail.yaml
+            examples:
+              custom:
+                summary: A video with a custom thumbnail.
+                value:
+                  video_id: 550e8400-e29b-41d4-a716-446655440000
+                  thumbnail:
+                    status: READY
+                    source: CUSTOM
+                    url: >-
+                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
+      '400':
+        $ref: ../responses/bad_request.yaml
+      '401':
+        $ref: ../responses/unauthorized.yaml
+      '403':
+        $ref: ../responses/forbidden.yaml
+      '404':
+        description: The video or uploaded thumbnail was not found.
+        content:
+          application/json:
+            schema:
+              $ref: ../index.yaml#/components/schemas/error
+            examples:
+              missing_image:
+                value:
+                  error:
+                    code: THUMBNAIL_UPLOAD_NOT_FOUND
+                    message: The thumbnail upload was not found.
+      '409':
+        $ref: ../responses/conflict.yaml
+      '413':
+        $ref: ../responses/file_too_large.yaml
+      '429':
+        $ref: ../responses/too_many_requests.yaml
+      '500':
+        $ref: ../responses/internal_error.yaml
+      '503':
+        $ref: ../responses/unavailable.yaml
+
+/videos/{id}/thumbnail:
+  parameters:
+    - $ref: ../parameters/id.yaml
+  delete:
+    tags:
+      - Thumbnails
+    operationId: remove_custom_thumbnail
+    summary: Remove a custom thumbnail
+    description: |
+      Remove the custom thumbnail and use the generated image when available.
+      Only administrators can remove thumbnails, and the video must not be DELETING.
+      If generation is still pending, the thumbnail is PENDING with no image URL.
+      Repeating removal leaves the current result unchanged.
+    x-required-role: admin
+    responses:
+      '200':
+        description: The generated thumbnail or its current status.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/thumbnails/thumbnail.yaml
+            examples:
+              generated:
+                value:
+                  video_id: 550e8400-e29b-41d4-a716-446655440000
+                  thumbnail:
+                    status: READY
+                    source: GENERATED
+                    url: >-
+                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg
+              pending:
+                value:
+                  video_id: 550e8400-e29b-41d4-a716-446655440000
+                  thumbnail:
+                    status: PENDING
+                    source: NONE
+                    url: null
+      '400':
+        $ref: ../responses/bad_request.yaml
+      '401':
+        $ref: ../responses/unauthorized.yaml
+      '403':
+        $ref: ../responses/forbidden.yaml
+      '404':
+        $ref: ../responses/video_not_found.yaml
+      '409':
+        $ref: ../responses/conflict.yaml
+      '429':
+        $ref: ../responses/too_many_requests.yaml
+      '500':
+        $ref: ../responses/internal_error.yaml
+      '503':
+        $ref: ../responses/unavailable.yaml

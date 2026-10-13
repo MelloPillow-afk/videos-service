@@ -1,0 +1,11 @@
+description: The file exceeds the allowed size.
+content:
+  application/json:
+    schema:
+      $ref: ../index.yaml#/components/schemas/error
+    examples:
+      too_large:
+        value:
+          error:
+            code: FILE_TOO_LARGE
+            message: The file exceeds the configured size limit.

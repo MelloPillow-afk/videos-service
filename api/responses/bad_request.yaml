@@ -1,0 +1,11 @@
+description: The request contains invalid values.
+content:
+  application/json:
+    schema:
+      $ref: ../index.yaml#/components/schemas/error
+    examples:
+      invalid_id:
+        value:
+          error:
+            code: INVALID_VIDEO_ID
+            message: The video ID must be a valid UUID.

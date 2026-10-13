@@ -1,0 +1,24 @@
+description: Video details.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/videos/video.yaml
+    examples:
+      ready_draft:
+        summary: A ready draft with a generated thumbnail.
+        value:
+          id: 550e8400-e29b-41d4-a716-446655440000
+          title: Introduction to Faith
+          description: An introductory lesson
+          status: READY
+          publication_status: DRAFT
+          size_bytes: 524288000
+          duration_seconds: 1475.5
+          thumbnail:
+            status: READY
+            source: GENERATED
+            url: >-
+              https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg
+          published_at: null
+          created_at: '2026-10-13T14:00:00Z'
+          updated_at: '2026-10-13T14:05:00Z'

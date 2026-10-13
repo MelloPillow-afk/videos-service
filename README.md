@@ -9,7 +9,17 @@ The authoritative HTTP contract is [`api/index.yaml`](api/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
 null unions, reusable schemas and responses, bearer authentication, and examples
 for all 12 operations. Paths are relative to the `/v1` server base path.
-JSON fields, operation IDs, and component names use snake_case. Schemas are grouped
+JSON fields, operation IDs, and component names use snake_case.
+
+`api/index.yaml` holds API metadata and references to the contract files. Paths
+are grouped by resource, with collections, individual resources, and their HTTP
+methods kept together. [`videos.yaml`](api/paths/videos.yaml) contains video paths,
+including uploads, playback, and retries. [`thumbnails.yaml`](api/paths/thumbnails.yaml)
+contains thumbnail paths. Reusable responses live in
+`api/responses/`; operation-specific responses stay in their path files. Examples
+are kept beside the operations and responses that use them.
+
+Schemas are grouped
 by purpose inside `api/schemas/`. Each schema has one example. A single video uses
 [`videos/video.yaml`](api/schemas/videos/video.yaml); a collection uses
 [`videos/videos.yaml`](api/schemas/videos/videos.yaml).
