@@ -1,13 +1,25 @@
 # Videos service
 
-The Python backend for the videos domain. The initial scaffold implements only
-`GET /ping`, returning HTTP 200 with `{"status":"ok"}` without authentication or
-a database query. Documentation endpoints are disabled, so `/ping` is the only
-registered HTTP path.
+The Python backend for the videos domain. Its prepared OpenAPI contract generates
+all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Generated
+handlers serve fixed, validated contract examples until a matching handwritten
+async implementation is added. Video business behavior and processing remain to
+be implemented. Documentation endpoints are disabled and every HTTP route is
+owned by the contract.
 
-Build the prototype from requirements first, then consolidate the contract as
-the video operations are implemented. The files in `api-specs/` describe future video
-operations; they are not implemented by this scaffold.
+Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
+
+```sh
+cargo run --locked --manifest-path ../api-code-generator/Cargo.toml -- .
+uv lock
+uv sync
+```
+
+`src/app.py` has the one-time `register(app)` integration. Later contract changes
+renew its generated registry without handwritten per-operation router wiring.
+Generation preserves configuration, lifecycle, domain/service/repository code,
+and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
+do not edit files under generated packages.
 
 ## Local development
 
@@ -22,8 +34,11 @@ make migrate
 make run
 ```
 
-Visit `http://127.0.0.1:8000/ping`. `make run` also works without PostgreSQL:
-the connection pool fills in the background and `/ping` stays available.
+Visit `http://127.0.0.1:8000/ping` or `/v1/videos`. To run contract mocks without
+background PostgreSQL connection attempts, use `DB_POOL_MIN_SIZE=0 make run`.
+The preserved database lifecycle opens and closes its pool, while mock handlers
+do not query it. The default pool still fills in the background when PostgreSQL
+is configured.
 Settings are read from `.env` and environment variables, with environment
 variables taking precedence. `.env` is ignored by Git.
 
@@ -43,9 +58,13 @@ src/
   app.py               # App factory and startup/shutdown lifecycle
   config.py            # pydantic-settings configuration
   handlers/            # HTTP input, service calls, response shaping
-    ping.py
+    generated/         # Renewable contract handlers
+    ping.py            # Preserved old handler; no direct HTTP registration
   schemas/             # Pydantic HTTP models
-    ping.py
+    generated/         # Renewable wire models
+    ping.py            # Preserved handwritten schema
+  core/
+    generated/         # Renewable validation, dispatch, and route registry
   services/            # Business operations and orchestration (empty initially)
   repositories/        # SQL, storage mapping, pooling, migration tooling
     database.py
@@ -65,9 +84,11 @@ Uvicorn, and uv. No framework-specific tooling from the reference carries over.
 Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
-The app factory invokes the repository resource lifecycle. `/ping` needs no
-business service or repository call. Add business models and operations when
-implementing video features.
+The app factory retains the repository resource lifecycle and registers the
+generated contract registry once. `/ping` and all fixed examples need no database
+query. Add handwritten business models and operations when implementing features.
+The generated and service-runtime dependency groups join the existing project
+and dev dependencies in normal `uv sync` and a single `uv.lock`.
 
 ## Checks and CI
 
@@ -78,6 +99,11 @@ make test-db-up
 make test-integration   # Real PostgreSQL transaction, timeout, and migration checks
 make test-all           # Entire suite, with terminal and XML coverage reports
 ```
+
+The existing runtime tests predate the generated API; their ping-only route
+inventory assertion needs updating before using that suite as full generated API
+acceptance. This change uses the required `make check` pipeline and the generator's
+[manual acceptance record](../api-code-generator/docs/ticket09-evidence.md).
 
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
@@ -107,11 +133,13 @@ Development migrations remain manual through Make.
 
 ## API design targets
 
-The planned video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
+The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
-null unions, reusable schemas and responses, and bearer authentication
-for all 12 operations. Paths are relative to the `/v1` server base path.
-JSON fields, operation IDs, and component names use snake_case.
+null unions, reusable schemas and responses, and security declarations for the
+12 video operations. Video paths are relative to the `/v1` server base path.
+The unauthenticated health operation overrides the server path to `/`, preserving
+`GET /ping`. JSON fields and component names use snake_case; operation IDs use
+Pythonic `module.function` names.
 
 `api-specs/index.yaml` holds API metadata and references to the contract files. Paths
 are grouped by resource, with collections, individual resources, and their HTTP
@@ -128,6 +156,7 @@ by purpose inside `api-specs/schemas/`. Each schema has one example. A single vi
 
 | Schema folder | Contents |
 | --- | --- |
+| `health/` | API reachability response. |
 | `videos/` | Video resources, collections, metadata, status, updates, retries, and deletion. |
 | `uploads/` | Video uploads, upload instructions, and completion or processing results. |
 | `thumbnails/` | Thumbnail resources, image status, and custom thumbnail uploads. |
@@ -140,6 +169,30 @@ status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the
 `next_page_token` as the `cursor` query parameter to request the next page.
 The common API error schema is defined in `api-specs/index.yaml`. Processing failure
 details are defined directly in `api-specs/schemas/videos/video.yaml`.
+
+### Generator naming and examples
+
+Generator input names are explicit:
+
+| Field | Meaning | Example |
+| --- | --- | --- |
+| `operationId` | Handler module and async function. | `videos.get_resource` |
+| `x-python-module` | Generated schema module. | `videos` |
+| `x-python-name` | Named Python schema type. | `Video` |
+
+For example, `videos.get_resource` targets `handlers/generated/videos.py` and
+its `get_resource` function. A handwritten override uses the same function name
+in `handlers/videos.py`. A schema named `videos.Video` targets
+`schemas/generated/videos.py`. These paths are relative to `src/`.
+Reusable schemas carry both naming extensions, including scalar schemas and the
+shared error schema. Nested inline properties do not need separate naming fields.
+
+Schema examples supply inline mock values; response examples take precedence when
+present. Required response headers need examples too. The creation response's
+`Location` header references `parameters/response_location.yaml`, a Header Object
+with an example and without the request-parameter `name` and `in` fields.
+These declarations control the generated interface. The complete prepared
+contract currently generates all 13 operations and their validated inline mocks.
 
 ## Validate the contract
 
@@ -175,7 +228,7 @@ uv run --locked python scripts/check_examples.py
 The source requirements are [`video-backend-spec.md`](../docs/video-backend-spec.md),
 its [consolidated specification](../.scratch/video-backend/spec.md), and the
 [approved API examples](../docs/pilgrims-progress-video-api-spec.md).
-`AGENTS.md` records the prototype-first workflow for this service.
+`AGENTS.md` records the essential contract and generated-output conventions.
 
 The contract keeps the existing handoff gaps visible:
 
