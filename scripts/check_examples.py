@@ -118,7 +118,7 @@ def main():
         "spec",
         type=Path,
         nargs="?",
-        default=Path(__file__).resolve().parents[1] / "api/index.yaml",
+        default=Path(__file__).resolve().parents[1] / "api-specs/index.yaml",
     )
     arguments = parser.parse_args()
     checked, errors = check_examples(arguments.spec)

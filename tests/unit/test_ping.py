@@ -1,0 +1,41 @@
+"""The only HTTP handler must stay reachable without a database."""
+
+import asyncio
+from pathlib import Path
+
+from httpx import ASGITransport, AsyncClient
+from psycopg_pool import PoolTimeout
+from pydantic import SecretStr
+
+from src.app import create_app
+from src.config import Settings
+from src.repositories import Database
+
+
+async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Path) -> None:
+    # This empty directory cannot contain a running PostgreSQL socket.
+    settings = Settings(
+        database_url=SecretStr(f"postgresql://videos:videos@/videos_test?host={tmp_path}"),
+        db_pool_min_size=1,
+        db_pool_timeout_seconds=0.05,
+    )
+    app = create_app(settings)
+    async with asyncio.timeout(2), app.router.lifespan_context(app):
+        database = app.state.database
+        assert isinstance(database, Database)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ping")
+            assert response.status_code == 200
+            assert response.json() == {"status": "ok"}
+            assert (await client.get("/v1/videos")).status_code == 404
+        try:
+            async with database.connection():
+                raise AssertionError("Unexpected database connection")
+        except PoolTimeout:
+            pass
+
+
+def test_ping_is_the_only_registered_path() -> None:
+    app = create_app(Settings())
+    assert set(app.openapi()["paths"]) == {"/ping"}
+    assert "security" not in app.openapi()["paths"]["/ping"]["get"]

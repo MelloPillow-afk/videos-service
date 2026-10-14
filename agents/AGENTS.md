@@ -2,6 +2,7 @@
 
 Python backend for the videos domain.
 
-- Follow contract-first architecture: `api/index.yaml` is the authoritative HTTP contract.
-- Update the contract before implementing API changes.
+- Build the prototype from the agreed requirements, then consolidate the API contract.
+- The initial scaffold exposes only `GET /ping`. The operations in `api-specs/` are design targets.
+- Before extending the scaffold, read `README.md` for layer responsibilities and test commands.
 - Run `make lint-api` after contract changes.

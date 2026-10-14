@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, format, and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.4"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: make check
+
+  tests:
+    name: HTTP, database, and migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://videos:videos@localhost:5432/videos_test
+      TEST_DATABASE_URL: postgresql://videos:videos@localhost:5432/videos_test
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: videos
+          POSTGRES_PASSWORD: videos
+          POSTGRES_DB: videos_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U videos -d videos_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.4"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: make migrate
+      - run: make test-all
