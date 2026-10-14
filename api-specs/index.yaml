@@ -15,6 +15,8 @@ servers:
 security:
   - bearer_auth: []
 tags:
+  - name: Health
+    description: Check API availability.
   - name: Videos
     description: Create, update, publish, and delete videos.
   - name: Uploads
@@ -30,6 +32,8 @@ x-unresolved-decisions:
   - State retention following a rejected source confirmation.
   - Active thumbnail representation after removing custom when generation has failed.
 paths:
+  /ping:
+    $ref: paths/health.yaml#/~1ping
   /videos:
     $ref: paths/videos.yaml#/~1videos
   /videos/{id}:
@@ -67,6 +71,9 @@ components:
       $ref: parameters/publication_status.yaml
     search:
       $ref: parameters/search.yaml
+  headers:
+    response_location:
+      $ref: parameters/response_location.yaml
   requestBodies:
     upload_completion:
       required: true
@@ -83,6 +90,8 @@ components:
               value:
                 upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
   schemas:
+    ping:
+      $ref: schemas/health/ping.yaml
     status:
       $ref: schemas/videos/status.yaml
     publication_status:
@@ -132,6 +141,8 @@ components:
     videos:
       $ref: schemas/videos/videos.yaml
     error:
+      x-python-module: errors
+      x-python-name: Error
       type: object
       required:
         - error

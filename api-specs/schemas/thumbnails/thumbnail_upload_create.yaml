@@ -1,3 +1,5 @@
+x-python-module: thumbnails
+x-python-name: ThumbnailUploadCreate
 type: object
 required:
   - file_name

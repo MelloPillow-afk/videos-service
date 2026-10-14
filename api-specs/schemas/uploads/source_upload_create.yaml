@@ -1,3 +1,5 @@
+x-python-module: uploads
+x-python-name: SourceUploadCreate
 type: object
 required:
   - file_name

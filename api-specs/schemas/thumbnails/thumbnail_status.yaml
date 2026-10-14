@@ -1,3 +1,5 @@
+x-python-module: thumbnails
+x-python-name: ThumbnailStatus
 type: string
 enum:
   - PENDING

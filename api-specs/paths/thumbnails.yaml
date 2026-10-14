@@ -4,7 +4,7 @@
   post:
     tags:
       - Thumbnails
-    operationId: create_thumbnail_upload_url
+    operationId: thumbnail_uploads.create_resource
     summary: Create Video Thumbnail Upload URL
     description: Get a URL and instructions to upload a custom thumbnail.
     x-required-role: admin
@@ -46,7 +46,7 @@
   post:
     tags:
       - Thumbnails
-    operationId: complete_thumbnail_upload
+    operationId: thumbnail_uploads.complete_resource
     summary: Confirm Video Thumbnail Upload
     description: Confirm an upload and use it as the custom thumbnail.
     x-required-role: admin
@@ -88,7 +88,7 @@
   delete:
     tags:
       - Thumbnails
-    operationId: remove_custom_thumbnail
+    operationId: thumbnails.delete_resource
     summary: Delete Video Thumbnail
     description: Remove the custom thumbnail and use the generated image.
     x-required-role: admin

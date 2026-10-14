@@ -2,7 +2,7 @@
   post:
     tags:
       - Videos
-    operationId: create_video
+    operationId: videos.create_resource
     summary: Create Video
     description: Create a draft with a title and optional description.
     x-required-role: admin
@@ -17,11 +17,7 @@
         description: Video draft created.
         headers:
           Location:
-            description: Address of the new video.
-            required: true
-            schema:
-              type: string
-              format: uri-reference
+            $ref: ../parameters/response_location.yaml
         content:
           application/json:
             schema:
@@ -41,7 +37,7 @@
   get:
     tags:
       - Videos
-    operationId: list_videos
+    operationId: videos.get_collection
     summary: Get Videos Collection
     description: Browse videos with search, filters, and pagination.
     security:
@@ -79,7 +75,7 @@
   get:
     tags:
       - Videos
-    operationId: get_video
+    operationId: videos.get_resource
     summary: Get Video
     description: Get video details and processing status.
     security:
@@ -105,7 +101,7 @@
   patch:
     tags:
       - Videos
-    operationId: update_video
+    operationId: videos.update_resource
     summary: Update Video
     description: Edit video details or publish and unpublish a video.
     x-required-role: admin
@@ -137,7 +133,7 @@
   delete:
     tags:
       - Videos
-    operationId: delete_video
+    operationId: videos.delete_resource
     summary: Delete Video
     description: Delete a video and its media files.
     x-required-role: admin
@@ -171,7 +167,7 @@
   post:
     tags:
       - Uploads
-    operationId: create_source_upload_url
+    operationId: source_uploads.create_resource
     summary: Create Video Upload URL
     description: Get a URL and instructions to upload an MP4 file.
     x-required-role: admin
@@ -213,7 +209,7 @@
   post:
     tags:
       - Uploads
-    operationId: complete_source_upload
+    operationId: source_uploads.complete_resource
     summary: Confirm Video Upload
     description: Confirm an upload and start video and thumbnail processing.
     x-required-role: admin
@@ -255,7 +251,7 @@
   get:
     tags:
       - Playback
-    operationId: get_video_playback
+    operationId: playback.get_resource
     summary: Get Video Playback
     description: Get the HLS playback link for a video.
     security:
@@ -291,7 +287,7 @@
   post:
     tags:
       - Videos
-    operationId: retry_video_processing
+    operationId: videos.retry_processing
     summary: Retry Video Processing
     description: Retry failed video processing.
     x-required-role: admin
