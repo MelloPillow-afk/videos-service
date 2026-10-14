@@ -1,14 +1,16 @@
 /ping:
+  servers:
+    - url: /
   get:
     tags:
       - Health
     operationId: health.get_resource
     summary: Get Health
-    description: Check that the API is available.
+    description: Check API reachability. Does not check the database.
     security: []
     responses:
       '200':
-        description: The API is available.
+        description: The API is responding.
         content:
           application/json:
             schema:
