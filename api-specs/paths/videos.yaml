@@ -12,11 +12,6 @@
         application/json:
           schema:
             $ref: ../schemas/videos/video_create.yaml
-          examples:
-            draft:
-              value:
-                title: Introduction to Faith
-                description: An introductory lesson
     responses:
       '201':
         description: Video draft created.
@@ -27,30 +22,10 @@
             schema:
               type: string
               format: uri-reference
-              examples:
-                - /v1/videos/550e8400-e29b-41d4-a716-446655440000
         content:
           application/json:
             schema:
               $ref: ../schemas/videos/video.yaml
-            examples:
-              created:
-                summary: A new video draft.
-                value:
-                  id: 550e8400-e29b-41d4-a716-446655440000
-                  title: Introduction to Faith
-                  description: An introductory lesson
-                  status: CREATED
-                  publication_status: DRAFT
-                  size_bytes: null
-                  duration_seconds: null
-                  thumbnail:
-                    status: PENDING
-                    source: NONE
-                    url: null
-                  published_at: null
-                  created_at: '2026-10-13T14:00:00Z'
-                  updated_at: '2026-10-13T14:00:00Z'
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -85,29 +60,6 @@
           application/json:
             schema:
               $ref: ../schemas/videos/videos.yaml
-            examples:
-              published_page:
-                summary: The final page of published videos.
-                value:
-                  data:
-                    - id: 550e8400-e29b-41d4-a716-446655440000
-                      title: Introduction to Faith
-                      description: An introductory lesson
-                      status: READY
-                      publication_status: PUBLISHED
-                      size_bytes: 524288000
-                      duration_seconds: 1475.5
-                      thumbnail:
-                        status: READY
-                        source: CUSTOM
-                        url: >-
-                          https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
-                      published_at: '2026-10-13T15:00:00Z'
-                      created_at: '2026-10-13T14:00:00Z'
-                      updated_at: '2026-10-13T15:00:00Z'
-                  pagination:
-                    next_page_token: null
-                    has_more: false
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -163,18 +115,6 @@
         application/json:
           schema:
             $ref: ../schemas/videos/video_update.yaml
-          examples:
-            publish:
-              value:
-                title: Introduction to Christian Faith
-                description: Updated lesson description
-                publication_status: PUBLISHED
-            unpublish:
-              value:
-                publication_status: DRAFT
-            clear_description:
-              value:
-                description: null
     responses:
       '200':
         $ref: ../responses/video_resource.yaml
@@ -208,11 +148,6 @@
           application/json:
             schema:
               $ref: ../schemas/videos/video_deletion.yaml
-            examples:
-              deleting:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: DELETING
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -246,12 +181,6 @@
         application/json:
           schema:
             $ref: ../schemas/uploads/source_upload_create.yaml
-          examples:
-            mp4:
-              value:
-                file_name: introduction.mp4
-                content_type: video/mp4
-                size_bytes: 524288000
     responses:
       '200':
         description: Upload URL and instructions.
@@ -259,18 +188,6 @@
           application/json:
             schema:
               $ref: ../schemas/uploads/source_upload.yaml
-            examples:
-              upload:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: UPLOADING
-                  upload:
-                    upload_id: 04d1790f-f941-4ba6-8d97-0e6830ca4394
-                    method: PUT
-                    url: https://uploads.example.com/source-attempt.mp4?signature=example
-                    headers:
-                      Content-Type: video/mp4
-                    expires_at: '2026-10-13T14:15:00Z'
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -309,20 +226,6 @@
           application/json:
             schema:
               $ref: ../schemas/uploads/source_upload_processing.yaml
-            examples:
-              queued:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: QUEUED
-                  processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
-                  thumbnail_status: PENDING
-              replay_after_readiness:
-                summary: Repeating confirmation after the video is ready.
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: READY
-                  processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
-                  thumbnail_status: PENDING
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -335,12 +238,6 @@
           application/json:
             schema:
               $ref: ../index.yaml#/components/schemas/error
-            examples:
-              missing_upload:
-                value:
-                  error:
-                    code: UPLOAD_NOT_FOUND
-                    message: The source upload was not found.
       '409':
         $ref: ../responses/conflict.yaml
       '413':
@@ -371,14 +268,6 @@
           application/json:
             schema:
               $ref: ../schemas/playback/playback.yaml
-            examples:
-              hls:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  playback:
-                    type: hls
-                    url: >-
-                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/hls/v1/master.m3u8
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -413,13 +302,6 @@
           application/json:
             schema:
               $ref: ../schemas/videos/video_retry.yaml
-            examples:
-              second_attempt:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: QUEUED
-                  processing_job_id: ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5
-                  attempt: 2
       '400':
         $ref: ../responses/bad_request.yaml
       '401':

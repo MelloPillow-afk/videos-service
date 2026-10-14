@@ -109,7 +109,7 @@ Development migrations remain manual through Make.
 
 The planned video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
-null unions, reusable schemas and responses, bearer authentication, and examples
+null unions, reusable schemas and responses, and bearer authentication
 for all 12 operations. Paths are relative to the `/v1` server base path.
 JSON fields, operation IDs, and component names use snake_case.
 
@@ -119,7 +119,7 @@ methods kept together. [`videos.yaml`](api-specs/paths/videos.yaml) contains vid
 including uploads, playback, and retries. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
 contains thumbnail paths. Reusable responses live in
 `api-specs/responses/`; operation-specific responses stay in their path files. Examples
-are kept beside the operations and responses that use them.
+are kept in schemas, reusable responses, parameters, and shared request bodies.
 
 Schemas are grouped
 by purpose inside `api-specs/schemas/`. Each schema has one example. A single video uses
