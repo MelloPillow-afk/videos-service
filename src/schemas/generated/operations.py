@@ -8,9 +8,9 @@ from pydantic import AfterValidator, Field
 
 from src.schemas.generated.schema_support import validate_format
 
-type VideosGetCollectionLimitParameter = Annotated[int, Field(ge=1, le=100)]
-
 type VideosGetCollectionCursorParameter = str
+
+type VideosGetCollectionLimitParameter = Annotated[int, Field(ge=1, le=100)]
 
 type VideosGetCollectionSearchParameter = Annotated[str, Field(max_length=200)]
 
