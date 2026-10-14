@@ -3,10 +3,7 @@ required:
   - status
   - source
   - url
-description: |
-  The active thumbnail. Custom images take priority over generated images.
-  Thumbnail generation may finish after the video is ready. The URL is null
-  when no image is available.
+description: The current thumbnail.
 properties:
   status:
     $ref: ./thumbnail_status.yaml
@@ -18,7 +15,7 @@ properties:
       - 'null'
     format: uri
     pattern: ^https://
-    description: Thumbnail image URL, or null when unavailable.
+    description: Thumbnail image URL.
 examples:
   - status: READY
     source: CUSTOM

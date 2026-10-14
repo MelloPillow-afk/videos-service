@@ -5,7 +5,7 @@ required:
   - url
   - headers
   - expires_at
-description: Use PUT and the supplied headers to upload the file before the URL expires.
+description: File upload URL and instructions.
 properties:
   upload_id:
     type: string

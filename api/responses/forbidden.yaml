@@ -1,4 +1,4 @@
-description: Administrator access is required.
+description: Access denied.
 content:
   application/json:
     schema:

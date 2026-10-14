@@ -1,5 +1,5 @@
 name: status
 in: query
-description: Filter by video status. Administrators only.
+description: Filter by video status.
 schema:
   $ref: ../schemas/videos/status.yaml

@@ -1,4 +1,4 @@
-description: The video cannot accept this action in its current state, or the upload ID is outdated.
+description: The request conflicts with the current video or upload state.
 content:
   application/json:
     schema:

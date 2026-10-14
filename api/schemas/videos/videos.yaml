@@ -17,11 +17,11 @@ properties:
         type:
           - string
           - 'null'
-        description: Token for the next page, or null when there are no more results.
+        description: Token for the next page.
       has_more:
         type: boolean
         description: Whether another page of results is available.
-description: A page of videos and information for fetching the next page.
+description: A page of videos.
 examples:
   - data:
       - id: 550e8400-e29b-41d4-a716-446655440000

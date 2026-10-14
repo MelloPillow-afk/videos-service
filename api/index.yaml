@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: |
     Manage videos, upload media, publish videos, and find playback links.
-    Administrators manage videos; viewers can read ready, published videos.
+    All changes require admin access; viewers see ready, published videos.
     Viewer access may require authentication, depending on the service settings.
     JSON fields use snake_case. IDs are UUIDs and timestamps use UTC.
     Unavailable values are null. Previously shared playback links may remain

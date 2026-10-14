@@ -1,6 +1,6 @@
 name: cursor
 in: query
-description: Use next_page_token from the previous page with the same filters.
+description: Token from the previous page.
 schema:
   type: string
   examples:

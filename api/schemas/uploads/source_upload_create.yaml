@@ -11,7 +11,7 @@ properties:
   content_type:
     type: string
     const: video/mp4
-    description: File media type. Must be video/mp4.
+    description: Video media type.
   size_bytes:
     type: integer
     format: int64

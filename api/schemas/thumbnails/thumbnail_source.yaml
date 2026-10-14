@@ -3,6 +3,6 @@ enum:
   - GENERATED
   - CUSTOM
   - NONE
-description: The active image source. Custom images take priority over generated images.
+description: Thumbnail source.
 examples:
   - GENERATED

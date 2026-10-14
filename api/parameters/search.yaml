@@ -1,6 +1,6 @@
 name: search
 in: query
-description: Find titles containing this text, ignoring case and surrounding spaces.
+description: Search video titles.
 schema:
   type: string
   maxLength: 200

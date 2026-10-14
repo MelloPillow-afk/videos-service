@@ -11,7 +11,7 @@ required:
   - published_at
   - created_at
   - updated_at
-description: Video details. Unavailable values are null; processing_error is administrator-only.
+description: Video details.
 properties:
   id:
     type: string
@@ -30,13 +30,13 @@ properties:
       - 'null'
     format: int64
     minimum: 1
-    description: Uploaded file size in bytes, or null before it is verified.
+    description: Uploaded file size in bytes.
   duration_seconds:
     type:
       - number
       - 'null'
     minimum: 0
-    description: Video length in seconds, or null until available.
+    description: Video length in seconds.
   thumbnail:
     $ref: ../thumbnails/thumbnail_image.yaml
   published_at:
@@ -44,7 +44,7 @@ properties:
       - string
       - 'null'
     format: date-time
-    description: Start of the current publication period in UTC, or null for drafts.
+    description: When the video was published.
   created_at:
     $ref: ../shared/timestamp.yaml
   updated_at:
@@ -54,7 +54,7 @@ properties:
     required:
       - code
       - message
-    description: Details of a processing failure, visible only to administrators.
+    description: Processing failure details.
     properties:
       code:
         type: string

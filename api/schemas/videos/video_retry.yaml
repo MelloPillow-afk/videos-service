@@ -17,7 +17,7 @@ properties:
   attempt:
     type: integer
     minimum: 2
-    description: Processing attempt number. The first retry is attempt 2.
+    description: Processing attempt number.
 description: Video status and processing attempt after a retry is accepted.
 examples:
   - video_id: 550e8400-e29b-41d4-a716-446655440000

@@ -1,7 +1,7 @@
 name: id
 in: path
 required: true
-description: The video ID. Invalid UUIDs return 400 INVALID_VIDEO_ID.
+description: Video ID.
 schema:
   type: string
   format: uuid

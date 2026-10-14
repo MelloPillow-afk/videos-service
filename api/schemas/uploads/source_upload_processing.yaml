@@ -10,14 +10,14 @@ properties:
     format: uuid
   status:
     $ref: ../videos/status.yaml
-    description: QUEUED when first accepted; current status on repeated confirmation.
+    description: Current video status.
   processing_job_id:
     type: string
     format: uuid
-    description: Processing job ID. Repeated confirmation returns the same ID.
+    description: Processing job ID.
   thumbnail_status:
     $ref: ../thumbnails/thumbnail_status.yaml
-    description: Thumbnail status. Starts as PENDING.
+    description: Thumbnail status.
 description: Video and thumbnail status after an upload is accepted.
 examples:
   - video_id: 550e8400-e29b-41d4-a716-446655440000

@@ -3,11 +3,8 @@
     tags:
       - Videos
     operationId: create_video
-    summary: Create a video draft
-    description: |
-      Create a draft with a title and optional description. Only administrators can
-      create videos. The video starts in CREATED with publication_status DRAFT.
-      Upload the video file separately.
+    summary: Create Video
+    description: Create a draft with a title and optional description.
     x-required-role: admin
     requestBody:
       required: true
@@ -70,14 +67,8 @@
     tags:
       - Videos
     operationId: list_videos
-    summary: List videos
-    description: |
-      List videos, newest first. Viewers see only READY, PUBLISHED videos.
-      Administrators can also see drafts and filter by status or publication_status;
-      viewers using those filters receive 400 INVALID_QUERY.
-      Search matches part of a title, ignoring case and surrounding spaces.
-      Use next_page_token as the cursor to fetch the next page with the same filters.
-      An invalid cursor or changed filters returns 400 INVALID_QUERY.
+    summary: Get Videos Collection
+    description: Browse videos with search, filters, and pagination.
     security:
       - bearer_auth: []
       - {}
@@ -137,13 +128,8 @@
     tags:
       - Videos
     operationId: get_video
-    summary: Get a video
-    description: |
-      Get video details and processing status. Viewers can read only READY,
-      PUBLISHED videos; other videos return 404. Administrators can also read drafts,
-      processing errors, and videos being deleted. Check about every five seconds
-      while the video is QUEUED or PROCESSING, until it becomes READY or FAILED.
-      The thumbnail may still be PENDING after the video is ready.
+    summary: Get Video
+    description: Get video details and processing status.
     security:
       - bearer_auth: []
       - {}
@@ -168,13 +154,8 @@
     tags:
       - Videos
     operationId: update_video
-    summary: Update a video
-    description: |
-      Update only the supplied fields. Only administrators can update videos.
-      Publishing requires READY; otherwise, the request returns 409 VIDEO_NOT_READY.
-      Publishing sets published_at; publishing an already published video keeps its
-      existing date. Unpublishing clears the date, and republishing sets a new one.
-      Videos being deleted cannot be updated.
+    summary: Update Video
+    description: Edit video details or publish and unpublish a video.
     x-required-role: admin
     requestBody:
       required: true
@@ -217,13 +198,8 @@
     tags:
       - Videos
     operationId: delete_video
-    summary: Delete a video
-    description: |
-      Request video deletion. Only administrators can delete videos.
-      The video becomes DELETING and can no longer be played, uploaded, or changed.
-      Administrators can check its status until deletion finishes.
-      Repeating the request returns 202 during deletion and 404 after removal.
-      Previously shared playback links may remain accessible for a time.
+    summary: Delete Video
+    description: Delete a video and its media files.
     x-required-role: admin
     responses:
       '202':
@@ -261,14 +237,8 @@
     tags:
       - Uploads
     operationId: create_source_upload_url
-    summary: Get a video upload URL
-    description: |
-      Get a URL for uploading an MP4 file. Only administrators can request it,
-      and the video must be CREATED or UPLOADING. Upload using PUT and the returned
-      headers, then confirm completion with upload_id. The URL normally expires
-      after 15 minutes. Requesting a new URL replaces the current upload attempt
-      and sets the video to UPLOADING. An unsupported file type returns
-      400 INVALID_FILE_TYPE; an unavailable state returns 409 INVALID_STATUS_TRANSITION.
+    summary: Create Video Upload URL
+    description: Get a URL and instructions to upload an MP4 file.
     x-required-role: admin
     requestBody:
       required: true
@@ -327,14 +297,8 @@
     tags:
       - Uploads
     operationId: complete_source_upload
-    summary: Confirm a video upload
-    description: |
-      Confirm the upload using its current upload_id. Only administrators can
-      confirm uploads. A missing file returns 404 UPLOAD_NOT_FOUND; an outdated
-      upload_id returns 409 STALE_UPLOAD_ATTEMPT. An accepted video becomes QUEUED
-      and processing begins separately from thumbnail generation.
-      Repeating an accepted upload_id returns the same processing_job_id and the
-      current status. Uploads cannot be confirmed while the video is being deleted.
+    summary: Confirm Video Upload
+    description: Confirm an upload and start video and thumbnail processing.
     x-required-role: admin
     requestBody:
       $ref: ../index.yaml#/components/requestBodies/upload_completion
@@ -395,12 +359,8 @@
     tags:
       - Playback
     operationId: get_video_playback
-    summary: Get a video playback link
-    description: |
-      Get the HLS playback link. Viewers can play only READY, PUBLISHED videos;
-      other videos return 404. Administrators can preview READY drafts.
-      A video that is not ready returns 409 VIDEO_NOT_READY to administrators.
-      Videos being deleted cannot be played.
+    summary: Get Video Playback
+    description: Get the HLS playback link for a video.
     security:
       - bearer_auth: []
       - {}
@@ -443,12 +403,8 @@
     tags:
       - Videos
     operationId: retry_video_processing
-    summary: Retry video processing
-    description: |
-      Retry processing a FAILED video that still has its uploaded source file.
-      Only administrators can retry. The video becomes QUEUED and remains DRAFT.
-      A duplicate retry returns 409 INVALID_STATUS_TRANSITION.
-      Retrying the video does not retry thumbnail generation.
+    summary: Retry Video Processing
+    description: Retry failed video processing.
     x-required-role: admin
     responses:
       '202':

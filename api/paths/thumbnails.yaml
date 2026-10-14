@@ -5,13 +5,8 @@
     tags:
       - Thumbnails
     operationId: create_thumbnail_upload_url
-    summary: Get a thumbnail upload URL
-    description: |
-      Get a URL for uploading a custom thumbnail. Only administrators can request
-      it, and the video must not be DELETING. Upload using PUT and the returned
-      headers, then confirm completion with upload_id. The URL normally expires
-      after 15 minutes. The existing thumbnail stays active until confirmation.
-      An unsupported image type returns 400 INVALID_THUMBNAIL_TYPE.
+    summary: Create Video Thumbnail Upload URL
+    description: Get a URL and instructions to upload a custom thumbnail.
     x-required-role: admin
     requestBody:
       required: true
@@ -69,14 +64,8 @@
     tags:
       - Thumbnails
     operationId: complete_thumbnail_upload
-    summary: Confirm a thumbnail upload
-    description: |
-      Confirm and use a custom thumbnail. Only administrators can confirm uploads,
-      and the video must not be DELETING. An outdated upload_id returns
-      409 STALE_UPLOAD_ATTEMPT; a missing file returns 404 THUMBNAIL_UPLOAD_NOT_FOUND;
-      an invalid image returns 400 INVALID_THUMBNAIL. Failed validation keeps the
-      existing thumbnail. Custom thumbnails take priority over generated images.
-      Repeating an accepted upload_id returns the current thumbnail.
+    summary: Confirm Video Thumbnail Upload
+    description: Confirm an upload and use it as the custom thumbnail.
     x-required-role: admin
     requestBody:
       $ref: ../index.yaml#/components/requestBodies/upload_completion
@@ -133,12 +122,8 @@
     tags:
       - Thumbnails
     operationId: remove_custom_thumbnail
-    summary: Remove a custom thumbnail
-    description: |
-      Remove the custom thumbnail and use the generated image when available.
-      Only administrators can remove thumbnails, and the video must not be DELETING.
-      If generation is still pending, the thumbnail is PENDING with no image URL.
-      Repeating removal leaves the current result unchanged.
+    summary: Delete Video Thumbnail
+    description: Remove the custom thumbnail and use the generated image.
     x-required-role: admin
     responses:
       '200':
