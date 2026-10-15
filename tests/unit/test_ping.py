@@ -1,4 +1,4 @@
-"""The only HTTP handler must stay reachable without a database."""
+"""The health handler stays reachable without a database."""
 
 import asyncio
 from pathlib import Path
@@ -27,7 +27,7 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
             response = await client.get("/ping")
             assert response.status_code == 200
             assert response.json() == {"status": "ok"}
-            assert (await client.get("/v1/videos")).status_code == 404
+            assert (await client.get("/v1/videos")).status_code == 200
         try:
             async with database.connection():
                 raise AssertionError("Unexpected database connection")
@@ -35,7 +35,12 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
             pass
 
 
-def test_ping_is_the_only_registered_path() -> None:
+def test_health_stays_at_root_and_documentation_remains_disabled() -> None:
     app = create_app(Settings())
-    assert set(app.openapi()["paths"]) == {"/ping"}
-    assert "security" not in app.openapi()["paths"]["/ping"]["get"]
+    paths = app.openapi()["paths"]
+    assert "/ping" in paths
+    assert "/v1/ping" not in paths
+    assert paths["/ping"]["get"].get("security", []) == []
+    assert app.docs_url is None
+    assert app.redoc_url is None
+    assert app.openapi_url is None

@@ -1,11 +1,9 @@
-description: The request contains invalid values.
+description: A deliberate application rejection, such as unsupported media.
 content:
   application/json:
     schema:
       $ref: ../index.yaml#/components/schemas/error
     examples:
-      invalid_id:
+      unsupported_media:
         value:
-          error:
-            code: INVALID_VIDEO_ID
-            message: The video ID must be a valid UUID.
+          detail: The uploaded media is not supported.

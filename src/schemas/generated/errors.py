@@ -7,11 +7,6 @@ from pydantic import ConfigDict, Field
 from src.schemas.generated.schema_support import WireModel
 
 
-class ErrorError(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
-    code: str = Field(description="Code identifying the error.")
-    message: str = Field(description="Readable explanation of the error.")
-
 class Error(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
-    error: ErrorError
+    model_config = ConfigDict(extra='allow')
+    detail: str = Field(description="Readable explanation of the error.")

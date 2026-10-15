@@ -6,6 +6,4 @@ content:
     examples:
       missing:
         value:
-          error:
-            code: VIDEO_NOT_FOUND
-            message: The video was not found.
+          detail: The video was not found.

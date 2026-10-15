@@ -1,13 +1,15 @@
 # Generated; do not edit.
 # fmt: off
-import json as _generator_json
+from fastapi import APIRouter as _generator_APIRouter
+from pydantic import TypeAdapter as _generator_TypeAdapter
 
-from src.core.generated.runtime import HandlerResponse as _generator_HandlerResponse
-from src.core.generated.runtime import endpoint as _generator_endpoint
-from src.core.generated.runtime import model_adapter as _generator_model_adapter
+from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.health import Ping as _GetResourceResponse
 
+router = _generator_APIRouter(prefix="")
 
-@_generator_endpoint("health.get_resource")
-async def get_resource() -> _generator_HandlerResponse[_GetResourceResponse]:
-    return _generator_HandlerResponse(payload=_generator_model_adapter("src.schemas.generated.health.Ping").validate_json(_generator_json.dumps({"status": "ok"}), strict=True), headers={})
+
+@router.get("/ping", response_model=_GetResourceResponse, status_code=200, response_model_exclude_unset=True, operation_id="health.get_resource", tags=["Health"], summary="Get Health", description="Check API reachability. Does not check the database.", responses={"200": {"content": {"application/json": {}}, "description": "The API is responding."}, "500": {"content": {"text/plain": {"schema": {"examples": ["Internal Server Error"], "type": "string"}}}, "description": "An unexpected server failure. Production responses do not include exception details."}}, openapi_extra={"security": []})
+@_generator_select_endpoint("health.get_resource")
+async def get_resource() -> _GetResourceResponse:
+    return _generator_TypeAdapter(_GetResourceResponse).validate_python({"status": "ok"})

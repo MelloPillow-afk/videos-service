@@ -1,5 +1,7 @@
-description: An unexpected error occurred.
+description: An unexpected server failure. Production responses do not include exception details.
 content:
-  application/json:
+  text/plain:
     schema:
-      $ref: ../index.yaml#/components/schemas/error
+      type: string
+      examples:
+        - Internal Server Error

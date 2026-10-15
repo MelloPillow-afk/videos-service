@@ -4,8 +4,8 @@ The Python backend for the videos domain. Its prepared OpenAPI contract generate
 all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Generated
 handlers serve fixed, validated contract examples until a matching handwritten
 async implementation is added. Video business behavior and processing remain to
-be implemented. Documentation endpoints are disabled and every HTTP route is
-owned by the contract.
+be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
+documentation settings and may add handwritten routes or mounts.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
 
@@ -15,8 +15,9 @@ uv lock
 uv sync
 ```
 
-`src/app.py` has the one-time `register(app)` integration. Later contract changes
-renew its generated registry without handwritten per-operation router wiring.
+`src/app.py` calls `register_routers(app)` from `src.core.generated.routers` once.
+Later contract changes renew its explicit router inclusions without handwritten
+per-operation wiring.
 Generation preserves configuration, lifecycle, domain/service/repository code,
 and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
 do not edit files under generated packages.
@@ -64,7 +65,7 @@ src/
     generated/         # Renewable wire models
     ping.py            # Preserved handwritten schema
   core/
-    generated/         # Renewable validation, dispatch, and route registry
+    generated/         # Renewable router composition and override selection
   services/            # Business operations and orchestration (empty initially)
   repositories/        # SQL, storage mapping, pooling, migration tooling
     database.py
@@ -85,7 +86,7 @@ Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
 The app factory retains the repository resource lifecycle and registers the
-generated contract registry once. `/ping` and all fixed examples need no database
+generated routers once. `/ping` and all fixed examples need no database
 query. Add handwritten business models and operations when implementing features.
 The generated and service-runtime dependency groups join the existing project
 and dev dependencies in normal `uv sync` and a single `uv.lock`.
@@ -100,10 +101,11 @@ make test-integration   # Real PostgreSQL transaction, timeout, and migration ch
 make test-all           # Entire suite, with terminal and XML coverage reports
 ```
 
-The existing runtime tests predate the generated API; their ping-only route
-inventory assertion needs updating before using that suite as full generated API
-acceptance. This change uses the required `make check` pipeline and the generator's
-[manual acceptance record](../api-code-generator/docs/ticket09-evidence.md).
+The HTTP suite covers all 13 generated operations, exact paths, deterministic
+example bodies, creation headers, native validation, and application-owned routes.
+The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
+executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
+overrides, dependency injection, regeneration, and generation failures.
 
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
@@ -167,8 +169,10 @@ Each query or path parameter has a definition in `api-specs/parameters/`. IDs, p
 and search schemas are written directly in those files for readability. Video
 status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the collection's
 `next_page_token` as the `cursor` query parameter to request the next page.
-The common API error schema is defined in `api-specs/index.yaml`. Processing failure
-details are defined directly in `api-specs/schemas/videos/video.yaml`.
+The HTTP-exception schema is defined in `api-specs/index.yaml`; native
+request-validation errors are documented in
+`api-specs/responses/validation_error.yaml`. Processing failure details are defined
+directly in `api-specs/schemas/videos/video.yaml`.
 
 ### Generator naming and examples
 
@@ -193,6 +197,25 @@ present. Required response headers need examples too. The creation response's
 with an example and without the request-parameter `name` and `in` fields.
 These declarations control the generated interface. The complete prepared
 contract currently generates all 13 operations and their validated inline mocks.
+
+### Handwritten implementations
+
+Generated routers select a matching async function in `src/handlers/<module>.py`
+before registering the route. A missing module or function serves the fixed
+example. A broken import or incompatible signature fails application construction.
+Use the generated function's contract argument names, types, defaults, and return
+annotation. Compatible signature-preserving decorators and additional native
+`Request`, `Response`, or `Depends` parameters are supported. FastAPI executes the
+selected function's dependency graph, including dependencies that raise HTTP errors.
+Security declarations document the contract; implementing authentication and
+administrator policy remains handwritten work.
+
+Return the generated Pydantic model directly. For example, a creation handler
+accepts `response: Response` and assigns `response.headers["Location"]` to the new
+resource URL. Response models handle serialization and omit unset optional fields;
+required nullable fields remain present. Required headers are checked by endpoint
+acceptance tests. Omitting a header does not trigger a generated server error.
+Reusable error responses describe behavior and do not create runtime error factories.
 
 ## Validate the contract
 
@@ -245,11 +268,12 @@ The contract keeps the existing handoff gaps visible:
 - Database layout, job dispatch/reconciliation, encoding, resource limits,
   retention, CDN configuration, and cache policy remain implementation decisions.
 
-The general requirements reserve HTTP 422 for well-formed but unsupported or
-invalid media. No supplied endpoint assigns that status specifically: custom
-image rejection uses 400, and real MP4 validation occurs asynchronously. Resolve
-the endpoint mapping before adding a 422 response; avoid inventing a synchronous
-MP4 validation step.
+Invalid path, query, and body values use FastAPI's native HTTP 422 JSON response,
+with validation errors in `detail`. Deliberate application errors use standard
+`HTTPException` responses such as `{"detail": "The video was not found."}`. HTTP
+400 documents deliberate rejections such as unsupported media; request validation
+does not use 400. Unexpected failures and invalid response bodies use the normal
+production HTTP 500 text response, `Internal Server Error`.
 
 Uploads go directly to R2; the API accepts no media bytes. Publishing and deletion
 govern API discovery, while previously retrieved public CDN URLs may remain
