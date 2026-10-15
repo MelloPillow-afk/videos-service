@@ -153,38 +153,6 @@ components:
           description: Readable explanation of the error.
       examples:
         - detail: The video was not found.
-    validation_error:
-      x-python-module: errors
-      x-python-name: ValidationError
-      type: object
-      required:
-        - detail
-      description: Native FastAPI request-validation errors.
-      properties:
-        detail:
-          type: array
-          items:
-            type: object
-            required:
-              - loc
-              - msg
-              - type
-            properties:
-              loc:
-                type: array
-                items:
-                  anyOf:
-                    - type: string
-                    - type: integer
-              msg:
-                type: string
-              type:
-                type: string
-      examples:
-        - detail:
-            - loc: [body, title]
-              msg: Field required
-              type: missing
   responses:
     video_resource:
       $ref: responses/video_resource.yaml

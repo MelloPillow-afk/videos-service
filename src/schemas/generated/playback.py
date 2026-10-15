@@ -14,11 +14,11 @@ if TYPE_CHECKING:
 
 
 class PlaybackPlayback(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     type: Literal["hls"]
     url: _schema_shared.DeliveryUrl = Field(description="HTTPS link to the media.")
 
 class Playback(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     playback: PlaybackPlayback
     video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

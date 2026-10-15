@@ -21,14 +21,14 @@ if TYPE_CHECKING:
 type PublicationStatus = Literal["DRAFT", "PUBLISHED"]
 
 class VideoDeletion(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     status: Literal["DELETING"]
     video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
 type VideoDescription = Annotated[str, Field(max_length=5000)] | None
 
 class VideoRetry(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     attempt: Annotated[int, Field(ge=2)] = Field(description="Processing attempt number.")
     processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
     status: Literal["QUEUED"]
@@ -39,12 +39,12 @@ type VideoStatus = Literal["CREATED", "UPLOADING", "QUEUED", "PROCESSING", "READ
 type VideoTitle = Annotated[str, Field(min_length=1, max_length=200, pattern="\\S")]
 
 class VideoProcessingError(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     code: str = Field(description="Code identifying the processing failure.")
     message: str = Field(description="Readable explanation of the processing failure.")
 
 class Video(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     created_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
     description: VideoDescription = Field(description="Optional video description.")
     duration_seconds: Annotated[float, Field(ge=0)] | None = Field(description="Video length in seconds.")
@@ -59,12 +59,12 @@ class Video(WireModel):
     updated_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
 
 class VideoCreate(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     description: VideoDescription = Field(default_factory=omitted, description="Optional video description.")
     title: VideoTitle = Field(description="Video title.")
 
 class VideoUpdate(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow', json_schema_extra={'anyOf': [{"required": ["title"]}, {"required": ["description"]}, {"required": ["publication_status"]}]})
+    model_config = ConfigDict(extra='allow', json_schema_extra={'anyOf': [{"required": ["title"]}, {"required": ["description"]}, {"required": ["publication_status"]}]})
     description: VideoDescription = Field(default_factory=omitted, description="Optional video description.")
     publication_status: PublicationStatus = Field(default_factory=omitted, description="Whether the video is a draft or published.")
     title: VideoTitle = Field(default_factory=omitted, description="Video title.")
@@ -75,11 +75,11 @@ class VideoUpdate(WireModel):
         return require_properties(value, [["title"], ["description"], ["publication_status"]])
 
 class VideosPagination(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     has_more: bool = Field(description="Whether another page of results is available.")
     next_page_token: str | None = Field(description="Token for the next page.")
 
 class Videos(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     data: list[Video]
     pagination: VideosPagination

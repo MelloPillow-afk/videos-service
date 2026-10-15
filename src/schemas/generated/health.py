@@ -10,5 +10,5 @@ from src.schemas.generated.schema_support import WireModel
 
 
 class Ping(WireModel):
-    model_config = ConfigDict(strict=True, extra='allow')
+    model_config = ConfigDict(extra='allow')
     status: Literal["ok"]

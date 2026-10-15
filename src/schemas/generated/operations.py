@@ -14,8 +14,6 @@ type VideosGetCollectionLimitParameter = Annotated[int, Field(ge=1, le=100)]
 
 type VideosGetCollectionSearchParameter = Annotated[str, Field(max_length=200)]
 
-type VideosCreateResourceResponseHeader0 = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uri-reference'))]
-
 type VideosDeleteResourceIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
 type VideosGetResourceIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

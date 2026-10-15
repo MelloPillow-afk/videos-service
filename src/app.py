@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.config import Settings
-from src.core.generated.registry import register
+from src.core.generated.routers import register_routers
 from src.repositories import Database
 
 
@@ -29,5 +29,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     app.state.database = database
-    register(app)
+    register_routers(app)
     return app

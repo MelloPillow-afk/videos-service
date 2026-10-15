@@ -103,7 +103,8 @@ make test-all           # Entire suite, with terminal and XML coverage reports
 
 The HTTP suite covers all 13 generated operations, exact paths, deterministic
 example bodies, creation headers, native validation, and application-owned routes.
-The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
+The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
+executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
 overrides, dependency injection, regeneration, and generation failures.
 
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
@@ -168,9 +169,10 @@ Each query or path parameter has a definition in `api-specs/parameters/`. IDs, p
 and search schemas are written directly in those files for readability. Video
 status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the collection's
 `next_page_token` as the `cursor` query parameter to request the next page.
-The HTTP-exception and request-validation error schemas are defined in
-`api-specs/index.yaml`. Processing failure
-details are defined directly in `api-specs/schemas/videos/video.yaml`.
+The HTTP-exception schema is defined in `api-specs/index.yaml`; native
+request-validation errors are documented in
+`api-specs/responses/validation_error.yaml`. Processing failure details are defined
+directly in `api-specs/schemas/videos/video.yaml`.
 
 ### Generator naming and examples
 

@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class WireModel(BaseModel):
-    model_config = ConfigDict(strict=True, extra="allow")
+    model_config = ConfigDict(extra="allow")
 
 
 def omitted() -> Any:
