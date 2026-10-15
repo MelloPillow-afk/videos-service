@@ -1,0 +1,5 @@
+description: Path, query, or body values failed native request validation.
+content:
+  application/json:
+    schema:
+      $ref: ../index.yaml#/components/schemas/validation_error

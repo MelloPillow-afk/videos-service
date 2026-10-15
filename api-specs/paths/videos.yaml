@@ -28,6 +28,8 @@
         $ref: ../responses/unauthorized.yaml
       '403':
         $ref: ../responses/forbidden.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -62,6 +64,8 @@
         $ref: ../responses/unauthorized.yaml
       '403':
         $ref: ../responses/forbidden.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -92,6 +96,8 @@
         $ref: ../responses/forbidden.yaml
       '404':
         $ref: ../responses/video_not_found.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -124,6 +130,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -154,6 +162,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -196,6 +206,8 @@
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -238,6 +250,8 @@
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -274,6 +288,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -308,6 +324,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':

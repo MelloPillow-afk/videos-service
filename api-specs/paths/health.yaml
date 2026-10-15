@@ -15,7 +15,5 @@
           application/json:
             schema:
               $ref: ../schemas/health/ping.yaml
-      '400':
-        $ref: ../responses/bad_request.yaml
       '500':
         $ref: ../responses/internal_error.yaml

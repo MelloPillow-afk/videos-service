@@ -145,28 +145,51 @@ components:
       x-python-name: Error
       type: object
       required:
-        - error
-      description: An error code and a readable explanation.
+        - detail
+      description: A deliberate HTTP error raised by the application.
       properties:
-        error:
-          type: object
-          required:
-            - code
-            - message
-          properties:
-            code:
-              type: string
-              description: Code identifying the error.
-            message:
-              type: string
-              description: Readable explanation of the error.
+        detail:
+          type: string
+          description: Readable explanation of the error.
       examples:
-        - error:
-            code: INVALID_VIDEO_ID
-            message: The video ID must be a valid UUID.
+        - detail: The video was not found.
+    validation_error:
+      x-python-module: errors
+      x-python-name: ValidationError
+      type: object
+      required:
+        - detail
+      description: Native FastAPI request-validation errors.
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required:
+              - loc
+              - msg
+              - type
+            properties:
+              loc:
+                type: array
+                items:
+                  anyOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+      examples:
+        - detail:
+            - loc: [body, title]
+              msg: Field required
+              type: missing
   responses:
     video_resource:
       $ref: responses/video_resource.yaml
+    validation_error:
+      $ref: responses/validation_error.yaml
     bad_request:
       $ref: responses/bad_request.yaml
     unauthorized:
