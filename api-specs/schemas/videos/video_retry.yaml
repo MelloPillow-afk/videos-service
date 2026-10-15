@@ -1,3 +1,5 @@
+x-python-module: videos
+x-python-name: VideoRetry
 type: object
 required:
   - video_id

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: SecretStr = SecretStr("postgresql://videos:videos@localhost:5432/videos_dev")
+    db_schema: str = Field(default="public", pattern=r"^[a-z_][a-z0-9_]{0,62}$")
     db_pool_min_size: int = Field(default=1, ge=0)
     db_pool_max_size: int = Field(default=5, ge=1)
     db_pool_timeout_seconds: float = Field(default=5, gt=0)

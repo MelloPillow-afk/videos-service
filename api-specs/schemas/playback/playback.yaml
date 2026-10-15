@@ -1,3 +1,5 @@
+x-python-module: playback
+x-python-name: Playback
 type: object
 required:
   - video_id

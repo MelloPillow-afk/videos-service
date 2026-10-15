@@ -6,6 +6,4 @@ content:
     examples:
       too_large:
         value:
-          error:
-            code: FILE_TOO_LARGE
-            message: The file exceeds the configured size limit.
+          detail: The file exceeds the configured size limit.

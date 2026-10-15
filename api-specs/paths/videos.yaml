@@ -2,7 +2,7 @@
   post:
     tags:
       - Videos
-    operationId: create_video
+    operationId: videos.create_video
     summary: Create Video
     description: Create a draft with a title and optional description.
     x-required-role: admin
@@ -12,51 +12,24 @@
         application/json:
           schema:
             $ref: ../schemas/videos/video_create.yaml
-          examples:
-            draft:
-              value:
-                title: Introduction to Faith
-                description: An introductory lesson
     responses:
       '201':
         description: Video draft created.
         headers:
           Location:
-            description: Address of the new video.
-            required: true
-            schema:
-              type: string
-              format: uri-reference
-              examples:
-                - /v1/videos/550e8400-e29b-41d4-a716-446655440000
+            $ref: ../parameters/response_location.yaml
         content:
           application/json:
             schema:
               $ref: ../schemas/videos/video.yaml
-            examples:
-              created:
-                summary: A new video draft.
-                value:
-                  id: 550e8400-e29b-41d4-a716-446655440000
-                  title: Introduction to Faith
-                  description: An introductory lesson
-                  status: CREATED
-                  publication_status: DRAFT
-                  size_bytes: null
-                  duration_seconds: null
-                  thumbnail:
-                    status: PENDING
-                    source: NONE
-                    url: null
-                  published_at: null
-                  created_at: '2026-10-13T14:00:00Z'
-                  updated_at: '2026-10-13T14:00:00Z'
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
         $ref: ../responses/unauthorized.yaml
       '403':
         $ref: ../responses/forbidden.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -66,7 +39,7 @@
   get:
     tags:
       - Videos
-    operationId: list_videos
+    operationId: videos.list_videos
     summary: Get Videos Collection
     description: Browse videos with search, filters, and pagination.
     security:
@@ -85,35 +58,14 @@
           application/json:
             schema:
               $ref: ../schemas/videos/videos.yaml
-            examples:
-              published_page:
-                summary: The final page of published videos.
-                value:
-                  data:
-                    - id: 550e8400-e29b-41d4-a716-446655440000
-                      title: Introduction to Faith
-                      description: An introductory lesson
-                      status: READY
-                      publication_status: PUBLISHED
-                      size_bytes: 524288000
-                      duration_seconds: 1475.5
-                      thumbnail:
-                        status: READY
-                        source: CUSTOM
-                        url: >-
-                          https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
-                      published_at: '2026-10-13T15:00:00Z'
-                      created_at: '2026-10-13T14:00:00Z'
-                      updated_at: '2026-10-13T15:00:00Z'
-                  pagination:
-                    next_page_token: null
-                    has_more: false
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
         $ref: ../responses/unauthorized.yaml
       '403':
         $ref: ../responses/forbidden.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -127,7 +79,7 @@
   get:
     tags:
       - Videos
-    operationId: get_video
+    operationId: videos.get_video
     summary: Get Video
     description: Get video details and processing status.
     security:
@@ -144,6 +96,8 @@
         $ref: ../responses/forbidden.yaml
       '404':
         $ref: ../responses/video_not_found.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -153,7 +107,7 @@
   patch:
     tags:
       - Videos
-    operationId: update_video
+    operationId: videos.update_video
     summary: Update Video
     description: Edit video details or publish and unpublish a video.
     x-required-role: admin
@@ -163,18 +117,6 @@
         application/json:
           schema:
             $ref: ../schemas/videos/video_update.yaml
-          examples:
-            publish:
-              value:
-                title: Introduction to Christian Faith
-                description: Updated lesson description
-                publication_status: PUBLISHED
-            unpublish:
-              value:
-                publication_status: DRAFT
-            clear_description:
-              value:
-                description: null
     responses:
       '200':
         $ref: ../responses/video_resource.yaml
@@ -188,6 +130,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -197,7 +141,7 @@
   delete:
     tags:
       - Videos
-    operationId: delete_video
+    operationId: videos.delete_video
     summary: Delete Video
     description: Delete a video and its media files.
     x-required-role: admin
@@ -208,11 +152,6 @@
           application/json:
             schema:
               $ref: ../schemas/videos/video_deletion.yaml
-            examples:
-              deleting:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: DELETING
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -223,6 +162,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -230,13 +171,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/upload-url:
+/videos/{id}:upload-url:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Uploads
-    operationId: create_source_upload_url
+    operationId: videos.upload_url
     summary: Create Video Upload URL
     description: Get a URL and instructions to upload an MP4 file.
     x-required-role: admin
@@ -246,12 +187,6 @@
         application/json:
           schema:
             $ref: ../schemas/uploads/source_upload_create.yaml
-          examples:
-            mp4:
-              value:
-                file_name: introduction.mp4
-                content_type: video/mp4
-                size_bytes: 524288000
     responses:
       '200':
         description: Upload URL and instructions.
@@ -259,18 +194,6 @@
           application/json:
             schema:
               $ref: ../schemas/uploads/source_upload.yaml
-            examples:
-              upload:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: UPLOADING
-                  upload:
-                    upload_id: 04d1790f-f941-4ba6-8d97-0e6830ca4394
-                    method: PUT
-                    url: https://uploads.example.com/source-attempt.mp4?signature=example
-                    headers:
-                      Content-Type: video/mp4
-                    expires_at: '2026-10-13T14:15:00Z'
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -283,6 +206,8 @@
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -290,13 +215,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/complete-upload:
+/videos/{id}:complete-upload:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Uploads
-    operationId: complete_source_upload
+    operationId: videos.complete_upload
     summary: Confirm Video Upload
     description: Confirm an upload and start video and thumbnail processing.
     x-required-role: admin
@@ -309,20 +234,6 @@
           application/json:
             schema:
               $ref: ../schemas/uploads/source_upload_processing.yaml
-            examples:
-              queued:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: QUEUED
-                  processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
-                  thumbnail_status: PENDING
-              replay_after_readiness:
-                summary: Repeating confirmation after the video is ready.
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: READY
-                  processing_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
-                  thumbnail_status: PENDING
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -335,16 +246,12 @@
           application/json:
             schema:
               $ref: ../index.yaml#/components/schemas/error
-            examples:
-              missing_upload:
-                value:
-                  error:
-                    code: UPLOAD_NOT_FOUND
-                    message: The source upload was not found.
       '409':
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -358,7 +265,7 @@
   get:
     tags:
       - Playback
-    operationId: get_video_playback
+    operationId: playback.get_playback
     summary: Get Video Playback
     description: Get the HLS playback link for a video.
     security:
@@ -371,14 +278,6 @@
           application/json:
             schema:
               $ref: ../schemas/playback/playback.yaml
-            examples:
-              hls:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  playback:
-                    type: hls
-                    url: >-
-                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/hls/v1/master.m3u8
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -389,6 +288,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -396,13 +297,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/retry:
+/videos/{id}:retry:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Videos
-    operationId: retry_video_processing
+    operationId: videos.retry_processing
     summary: Retry Video Processing
     description: Retry failed video processing.
     x-required-role: admin
@@ -413,13 +314,6 @@
           application/json:
             schema:
               $ref: ../schemas/videos/video_retry.yaml
-            examples:
-              second_attempt:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  status: QUEUED
-                  processing_job_id: ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5
-                  attempt: 2
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -430,6 +324,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':

@@ -47,3 +47,20 @@ async def test_queries_have_a_bounded_timeout(test_database: tuple[str, str]) ->
             assert await cursor.fetchone() == (1,)
     finally:
         await database.close()
+
+
+async def test_pool_uses_the_configured_isolated_schema(test_database: tuple[str, str]) -> None:
+    url, schema = test_database
+    database = Database(Settings(database_url=SecretStr(url), db_schema=schema))
+    await database.connect()
+    try:
+        async with database.connection() as connection:
+            cursor = await connection.execute("SELECT current_schema()")
+            assert await cursor.fetchone() == (schema,)
+            await connection.execute("CREATE TABLE isolated_probe (id integer)")
+            cursor = await connection.execute(
+                "SELECT table_schema FROM information_schema.tables WHERE table_name = 'isolated_probe'"
+            )
+            assert await cursor.fetchall() == [(schema,)]
+    finally:
+        await database.close()

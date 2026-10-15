@@ -91,7 +91,10 @@ def check_examples(spec_path: Path) -> tuple[int, list[str]]:
                     example = resolve_example(example, uri)
                     if "value" in example:
                         validate_example(
-                            example["value"], f"{location}/schema", f"{location}/examples/{name}", uri
+                            example["value"],
+                            f"{location}/schema",
+                            f"{location}/examples/{name}",
+                            uri,
                         )
                     else:
                         errors.append(f"{uri}{location}/examples/{name}: provide an inline value")

@@ -1,13 +1,28 @@
 # Videos service
 
-The Python backend for the videos domain. The initial scaffold implements only
-`GET /ping`, returning HTTP 200 with `{"status":"ok"}` without authentication or
-a database query. Documentation endpoints are disabled, so `/ping` is the only
-registered HTTP path.
+The Python backend for the videos domain. Its prepared OpenAPI contract generates
+all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Generated
+handlers serve fixed, validated contract examples until a matching handwritten
+async implementation is added. Video business behavior and processing remain to
+be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
+documentation settings and may add handwritten routes or mounts.
 
-Build the prototype from requirements first, then consolidate the contract as
-the video operations are implemented. The files in `api-specs/` describe future video
-operations; they are not implemented by this scaffold.
+Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
+
+```sh
+cargo run --locked --manifest-path ../api-code-generator/Cargo.toml -- .
+uv lock
+uv sync
+```
+
+`src/app.py` calls `register_routers(app)` from `src.core.generated.routers` once.
+Later contract changes renew its explicit router inclusions without handwritten
+per-operation wiring.
+Generated decorators contain runtime settings only; API documentation stays in
+`api-specs/`.
+Generation preserves configuration, lifecycle, domain/service/repository code,
+and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
+do not edit files under generated packages.
 
 ## Local development
 
@@ -22,8 +37,11 @@ make migrate
 make run
 ```
 
-Visit `http://127.0.0.1:8000/ping`. `make run` also works without PostgreSQL:
-the connection pool fills in the background and `/ping` stays available.
+Visit `http://127.0.0.1:8000/ping` or `/v1/videos`. To run contract mocks without
+background PostgreSQL connection attempts, use `DB_POOL_MIN_SIZE=0 make run`.
+The preserved database lifecycle opens and closes its pool, while mock handlers
+do not query it. The default pool still fills in the background when PostgreSQL
+is configured.
 Settings are read from `.env` and environment variables, with environment
 variables taking precedence. `.env` is ignored by Git.
 
@@ -43,9 +61,13 @@ src/
   app.py               # App factory and startup/shutdown lifecycle
   config.py            # pydantic-settings configuration
   handlers/            # HTTP input, service calls, response shaping
-    ping.py
+    generated/         # Renewable contract handlers
+    ping.py            # Preserved old handler; no direct HTTP registration
   schemas/             # Pydantic HTTP models
-    ping.py
+    generated/         # Renewable wire models
+    ping.py            # Preserved handwritten schema
+  core/
+    generated/         # Renewable router composition and override selection
   services/            # Business operations and orchestration (empty initially)
   repositories/        # SQL, storage mapping, pooling, migration tooling
     database.py
@@ -65,9 +87,11 @@ Uvicorn, and uv. No framework-specific tooling from the reference carries over.
 Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
-The app factory invokes the repository resource lifecycle. `/ping` needs no
-business service or repository call. Add business models and operations when
-implementing video features.
+The app factory retains the repository resource lifecycle and registers the
+generated routers once. `/ping` and all fixed examples need no database
+query. Add handwritten business models and operations when implementing features.
+The generated and service-runtime dependency groups join the existing project
+and dev dependencies in normal `uv sync` and a single `uv.lock`.
 
 ## Checks and CI
 
@@ -78,6 +102,12 @@ make test-db-up
 make test-integration   # Real PostgreSQL transaction, timeout, and migration checks
 make test-all           # Entire suite, with terminal and XML coverage reports
 ```
+
+The HTTP suite covers all 13 generated operations, exact paths, deterministic
+example bodies, creation headers, native validation, and application-owned routes.
+The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
+executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
+overrides, dependency injection, regeneration, and generation failures.
 
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
@@ -107,11 +137,20 @@ Development migrations remain manual through Make.
 
 ## API design targets
 
-The planned video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
+The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
-null unions, reusable schemas and responses, bearer authentication, and examples
-for all 12 operations. Paths are relative to the `/v1` server base path.
-JSON fields, operation IDs, and component names use snake_case.
+null unions, reusable schemas and responses, and security declarations for the
+12 video operations. Video paths are relative to the `/v1` server base path.
+The unauthenticated health operation overrides the server path to `/`, preserving
+`GET /ping`. JSON fields and component names use snake_case; operation IDs use
+Pythonic `module.function` names. Resource operations name their noun explicitly,
+using singular names for one resource (`videos.get_video`) and plural names for
+lists (`videos.list_videos`). Custom methods use colon suffixes with hyphenated
+words, such as `/videos/{id}:upload-url` and
+`/videos/{id}/thumbnails:complete-upload`, with operation IDs such as
+`videos.upload_url` and `thumbnails.complete_upload`.
+The plural `/videos/{id}/thumbnails` path still represents one active thumbnail;
+deleting the custom thumbnail restores the generated fallback.
 
 `api-specs/index.yaml` holds API metadata and references to the contract files. Paths
 are grouped by resource, with collections, individual resources, and their HTTP
@@ -119,7 +158,7 @@ methods kept together. [`videos.yaml`](api-specs/paths/videos.yaml) contains vid
 including uploads, playback, and retries. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
 contains thumbnail paths. Reusable responses live in
 `api-specs/responses/`; operation-specific responses stay in their path files. Examples
-are kept beside the operations and responses that use them.
+are kept in schemas, reusable responses, parameters, and shared request bodies.
 
 Schemas are grouped
 by purpose inside `api-specs/schemas/`. Each schema has one example. A single video uses
@@ -128,6 +167,7 @@ by purpose inside `api-specs/schemas/`. Each schema has one example. A single vi
 
 | Schema folder | Contents |
 | --- | --- |
+| `health/` | API reachability response. |
 | `videos/` | Video resources, collections, metadata, status, updates, retries, and deletion. |
 | `uploads/` | Video uploads, upload instructions, and completion or processing results. |
 | `thumbnails/` | Thumbnail resources, image status, and custom thumbnail uploads. |
@@ -138,8 +178,53 @@ Each query or path parameter has a definition in `api-specs/parameters/`. IDs, p
 and search schemas are written directly in those files for readability. Video
 status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the collection's
 `next_page_token` as the `cursor` query parameter to request the next page.
-The common API error schema is defined in `api-specs/index.yaml`. Processing failure
-details are defined directly in `api-specs/schemas/videos/video.yaml`.
+The HTTP-exception schema is defined in `api-specs/index.yaml`; native
+request-validation errors are documented in
+`api-specs/responses/validation_error.yaml`. Processing failure details are defined
+directly in `api-specs/schemas/videos/video.yaml`.
+
+### Generator naming and examples
+
+Generator input names are explicit:
+
+| Field | Meaning | Example |
+| --- | --- | --- |
+| `operationId` | Handler module and async function. | `videos.get_video` |
+| `x-python-module` | Generated schema module. | `videos` |
+| `x-python-name` | Named Python schema type. | `Video` |
+
+For example, `videos.get_video` targets `handlers/generated/videos.py` and
+its `get_video` function. A handwritten override uses the same function name
+in `handlers/videos.py`. A schema named `videos.Video` targets
+`schemas/generated/videos.py`. These paths are relative to `src/`.
+Reusable schemas carry both naming extensions, including scalar schemas and the
+shared error schema. Nested inline properties do not need separate naming fields.
+
+Schema examples supply inline mock values; response examples take precedence when
+present. Required response headers need examples too. The creation response's
+`Location` header references `parameters/response_location.yaml`, a Header Object
+with an example and without the request-parameter `name` and `in` fields.
+These declarations control the generated interface. The complete prepared
+contract currently generates all 13 operations and their validated inline mocks.
+
+### Handwritten implementations
+
+Generated routers select a matching async function in `src/handlers/<module>.py`
+before registering the route. A missing module or function serves the fixed
+example. A broken import or incompatible signature fails application construction.
+Use the generated function's contract argument names, types, defaults, and return
+annotation. Compatible signature-preserving decorators and additional native
+`Request`, `Response`, or `Depends` parameters are supported. FastAPI executes the
+selected function's dependency graph, including dependencies that raise HTTP errors.
+Security declarations document the contract; implementing authentication and
+administrator policy remains handwritten work.
+
+Return the generated Pydantic model directly. For example, a creation handler
+accepts `response: Response` and assigns `response.headers["Location"]` to the new
+resource URL. Response models handle serialization and omit unset optional fields;
+required nullable fields remain present. Required headers are checked by endpoint
+acceptance tests. Omitting a header does not trigger a generated server error.
+Reusable error responses describe behavior and do not create runtime error factories.
 
 ## Validate the contract
 
@@ -175,7 +260,7 @@ uv run --locked python scripts/check_examples.py
 The source requirements are [`video-backend-spec.md`](../docs/video-backend-spec.md),
 its [consolidated specification](../.scratch/video-backend/spec.md), and the
 [approved API examples](../docs/pilgrims-progress-video-api-spec.md).
-`AGENTS.md` records the prototype-first workflow for this service.
+`AGENTS.md` records the essential contract and generated-output conventions.
 
 The contract keeps the existing handoff gaps visible:
 
@@ -192,12 +277,35 @@ The contract keeps the existing handoff gaps visible:
 - Database layout, job dispatch/reconciliation, encoding, resource limits,
   retention, CDN configuration, and cache policy remain implementation decisions.
 
-The general requirements reserve HTTP 422 for well-formed but unsupported or
-invalid media. No supplied endpoint assigns that status specifically: custom
-image rejection uses 400, and real MP4 validation occurs asynchronously. Resolve
-the endpoint mapping before adding a 422 response; avoid inventing a synchronous
-MP4 validation step.
+Invalid path, query, and body values use FastAPI's native HTTP 422 JSON response,
+with validation errors in `detail`. Deliberate application errors use standard
+`HTTPException` responses such as `{"detail": "The video was not found."}`. HTTP
+400 documents deliberate rejections such as unsupported media; request validation
+does not use 400. Unexpected failures and invalid response bodies use the normal
+production HTTP 500 text response, `Internal Server Error`.
 
 Uploads go directly to R2; the API accepts no media bytes. Publishing and deletion
 govern API discovery, while previously retrieved public CDN URLs may remain
 accessible until cache expiration or purge.
+
+
+## Generated HTTP integration tests
+
+`ag` generates one test module per handler module under `tests/generated/`.
+Tests use Arrange → Act → Assert, the real app lifespan and HTTP stack, and a fresh
+PostgreSQL schema per case. `tests/conftest.py` configures the app from
+`TEST_DATABASE_URL`; missing test infrastructure fails setup. The test database is
+still started with `make test-db-up`, and `make test-integration` or normal `pytest`
+runs the generated cases. `make test` continues to select non-integration tests.
+
+Customize operation fixtures such as `arrange_videos_get_video(api_case, api_app)`
+in `tests/conftest.py` as handlers are implemented. Arrange records and adjust
+`api_case.path_params`, `.query`, `.headers`, `.body`, or `.expected_body` before the
+request. Yield fixtures can inspect `.response`, assert stored effects, and clean up
+in `finally`. No hook or fixture belongs inside `tests/generated`.
+
+Schema examples are authoritative for success assertions. Parameter validation keeps
+FastAPI's native 422 responses. The current generated suite has 23 cases; 202
+operations are outside MVP coverage, and all gaps appear in
+`tests/generated/coverage.json`. Service-specific business effects require handwritten
+assertions. The service currently serves generated mocks for its 13 operations.

@@ -1,3 +1,5 @@
+x-python-module: thumbnails
+x-python-name: Thumbnail
 type: object
 required:
   - video_id

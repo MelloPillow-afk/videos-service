@@ -1,3 +1,5 @@
+x-python-module: uploads
+x-python-name: SourceUploadProcessing
 type: object
 required:
   - video_id

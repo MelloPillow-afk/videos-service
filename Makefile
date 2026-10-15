@@ -1,4 +1,4 @@
-.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-check typecheck test test-integration test-all
+.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration test-all
 
 install:
 	uv sync --locked
@@ -24,13 +24,16 @@ migrations:
 check: lint format-check typecheck
 
 lint: lint-api
-	uv run --locked ruff check src tests/unit tests/integration
+	uv run --locked ruff check src tests/unit tests/integration tests/conftest.py tests/generated
 
-format:
-	uv run --locked ruff format src tests/unit tests/integration
+format: format-src
+	uv run --locked ruff format tests/unit tests/integration tests/conftest.py tests/generated
+
+format-src:
+	uv run --locked ruff format src
 
 format-check:
-	uv run --locked ruff format --check src tests/unit tests/integration
+	uv run --locked ruff format --check src tests/unit tests/integration tests/conftest.py tests/generated
 
 typecheck:
 	uv run --locked pyright

@@ -1,3 +1,5 @@
+x-python-module: videos
+x-python-name: VideoDescription
 type:
   - string
   - 'null'

@@ -2,7 +2,7 @@
 
 Python backend for the videos domain.
 
-- Build the prototype from the agreed requirements, then consolidate the API contract.
-- The initial scaffold exposes only `GET /ping`. The operations in `api-specs/` are design targets.
-- Before extending the scaffold, read `README.md` for layer responsibilities and test commands.
+- Before extending or regenerating the service, read `README.md` for layer responsibilities and checks.
+- `api-specs/index.yaml` owns the generated HTTP interfaces.
+- The generator owns generated packages; handwritten handlers live outside those packages.
 - Run `make lint-api` after contract changes.

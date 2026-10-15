@@ -1,10 +1,10 @@
-/videos/{id}/thumbnail/upload-url:
+/videos/{id}/thumbnails:upload-url:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Thumbnails
-    operationId: create_thumbnail_upload_url
+    operationId: thumbnails.upload_url
     summary: Create Video Thumbnail Upload URL
     description: Get a URL and instructions to upload a custom thumbnail.
     x-required-role: admin
@@ -14,12 +14,6 @@
         application/json:
           schema:
             $ref: ../schemas/thumbnails/thumbnail_upload_create.yaml
-          examples:
-            custom_image:
-              value:
-                file_name: faith-cover.jpg
-                content_type: image/jpeg
-                size_bytes: 183420
     responses:
       '200':
         description: Thumbnail upload URL and instructions.
@@ -27,17 +21,6 @@
           application/json:
             schema:
               $ref: ../schemas/thumbnails/thumbnail_upload.yaml
-            examples:
-              upload:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  upload:
-                    upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
-                    method: PUT
-                    url: https://uploads.example.com/thumbnail-attempt.jpg?signature=example
-                    headers:
-                      Content-Type: image/jpeg
-                    expires_at: '2026-10-13T14:15:00Z'
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -50,6 +33,8 @@
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -57,13 +42,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/thumbnail/complete-upload:
+/videos/{id}/thumbnails:complete-upload:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Thumbnails
-    operationId: complete_thumbnail_upload
+    operationId: thumbnails.complete_upload
     summary: Confirm Video Thumbnail Upload
     description: Confirm an upload and use it as the custom thumbnail.
     x-required-role: admin
@@ -76,16 +61,6 @@
           application/json:
             schema:
               $ref: ../schemas/thumbnails/thumbnail.yaml
-            examples:
-              custom:
-                summary: A video with a custom thumbnail.
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  thumbnail:
-                    status: READY
-                    source: CUSTOM
-                    url: >-
-                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -98,16 +73,12 @@
           application/json:
             schema:
               $ref: ../index.yaml#/components/schemas/error
-            examples:
-              missing_image:
-                value:
-                  error:
-                    code: THUMBNAIL_UPLOAD_NOT_FOUND
-                    message: The thumbnail upload was not found.
       '409':
         $ref: ../responses/conflict.yaml
       '413':
         $ref: ../responses/file_too_large.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':
@@ -115,13 +86,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/thumbnail:
+/videos/{id}/thumbnails:
   parameters:
     - $ref: ../parameters/id.yaml
   delete:
     tags:
       - Thumbnails
-    operationId: remove_custom_thumbnail
+    operationId: thumbnails.delete_thumbnail
     summary: Delete Video Thumbnail
     description: Remove the custom thumbnail and use the generated image.
     x-required-role: admin
@@ -132,22 +103,6 @@
           application/json:
             schema:
               $ref: ../schemas/thumbnails/thumbnail.yaml
-            examples:
-              generated:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  thumbnail:
-                    status: READY
-                    source: GENERATED
-                    url: >-
-                      https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg
-              pending:
-                value:
-                  video_id: 550e8400-e29b-41d4-a716-446655440000
-                  thumbnail:
-                    status: PENDING
-                    source: NONE
-                    url: null
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -158,6 +113,8 @@
         $ref: ../responses/video_not_found.yaml
       '409':
         $ref: ../responses/conflict.yaml
+      '422':
+        $ref: ../responses/validation_error.yaml
       '429':
         $ref: ../responses/too_many_requests.yaml
       '500':

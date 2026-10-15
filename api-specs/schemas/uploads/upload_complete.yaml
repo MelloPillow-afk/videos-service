@@ -1,3 +1,5 @@
+x-python-module: uploads
+x-python-name: UploadComplete
 type: object
 required:
   - upload_id

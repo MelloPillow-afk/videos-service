@@ -1,3 +1,5 @@
+x-python-module: videos
+x-python-name: PublicationStatus
 type: string
 enum:
   - DRAFT

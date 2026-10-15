@@ -1,3 +1,5 @@
+x-python-module: videos
+x-python-name: VideoUpdate
 type: object
 description: Video fields to update.
 anyOf:
@@ -15,5 +17,6 @@ properties:
   publication_status:
     $ref: ./publication_status.yaml
 examples:
-  - title: Introduction to Christian Faith
-    publication_status: PUBLISHED
+  - title: Introduction to Faith
+    description: An introductory lesson
+    publication_status: DRAFT

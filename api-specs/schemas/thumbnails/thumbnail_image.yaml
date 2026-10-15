@@ -1,3 +1,5 @@
+x-python-module: thumbnails
+x-python-name: ThumbnailImage
 type: object
 required:
   - status

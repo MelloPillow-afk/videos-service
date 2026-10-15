@@ -15,6 +15,8 @@ servers:
 security:
   - bearer_auth: []
 tags:
+  - name: Health
+    description: Check API availability.
   - name: Videos
     description: Create, update, publish, and delete videos.
   - name: Uploads
@@ -30,24 +32,26 @@ x-unresolved-decisions:
   - State retention following a rejected source confirmation.
   - Active thumbnail representation after removing custom when generation has failed.
 paths:
+  /ping:
+    $ref: paths/health.yaml#/~1ping
   /videos:
     $ref: paths/videos.yaml#/~1videos
   /videos/{id}:
     $ref: paths/videos.yaml#/~1videos~1{id}
-  /videos/{id}/upload-url:
-    $ref: paths/videos.yaml#/~1videos~1{id}~1upload-url
-  /videos/{id}/complete-upload:
-    $ref: paths/videos.yaml#/~1videos~1{id}~1complete-upload
+  /videos/{id}:upload-url:
+    $ref: paths/videos.yaml#/~1videos~1{id}:upload-url
+  /videos/{id}:complete-upload:
+    $ref: paths/videos.yaml#/~1videos~1{id}:complete-upload
   /videos/{id}/playback:
     $ref: paths/videos.yaml#/~1videos~1{id}~1playback
-  /videos/{id}/retry:
-    $ref: paths/videos.yaml#/~1videos~1{id}~1retry
-  /videos/{id}/thumbnail/upload-url:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnail~1upload-url
-  /videos/{id}/thumbnail/complete-upload:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnail~1complete-upload
-  /videos/{id}/thumbnail:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnail
+  /videos/{id}:retry:
+    $ref: paths/videos.yaml#/~1videos~1{id}:retry
+  /videos/{id}/thumbnails:upload-url:
+    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:upload-url
+  /videos/{id}/thumbnails:complete-upload:
+    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:complete-upload
+  /videos/{id}/thumbnails:
+    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails
 components:
   securitySchemes:
     bearer_auth:
@@ -67,6 +71,9 @@ components:
       $ref: parameters/publication_status.yaml
     search:
       $ref: parameters/search.yaml
+  headers:
+    response_location:
+      $ref: parameters/response_location.yaml
   requestBodies:
     upload_completion:
       required: true
@@ -83,6 +90,8 @@ components:
               value:
                 upload_id: 50fd0382-794f-4c9b-9a12-60e92a89e008
   schemas:
+    ping:
+      $ref: schemas/health/ping.yaml
     status:
       $ref: schemas/videos/status.yaml
     publication_status:
@@ -132,30 +141,23 @@ components:
     videos:
       $ref: schemas/videos/videos.yaml
     error:
+      x-python-module: errors
+      x-python-name: Error
       type: object
       required:
-        - error
-      description: An error code and a readable explanation.
+        - detail
+      description: A deliberate HTTP error raised by the application.
       properties:
-        error:
-          type: object
-          required:
-            - code
-            - message
-          properties:
-            code:
-              type: string
-              description: Code identifying the error.
-            message:
-              type: string
-              description: Readable explanation of the error.
+        detail:
+          type: string
+          description: Readable explanation of the error.
       examples:
-        - error:
-            code: INVALID_VIDEO_ID
-            message: The video ID must be a valid UUID.
+        - detail: The video was not found.
   responses:
     video_resource:
       $ref: responses/video_resource.yaml
+    validation_error:
+      $ref: responses/validation_error.yaml
     bad_request:
       $ref: responses/bad_request.yaml
     unauthorized:
