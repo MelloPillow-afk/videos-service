@@ -17,5 +17,6 @@ properties:
   publication_status:
     $ref: ./publication_status.yaml
 examples:
-  - title: Introduction to Christian Faith
-    publication_status: PUBLISHED
+  - title: Introduction to Faith
+    description: An introductory lesson
+    publication_status: DRAFT

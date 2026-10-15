@@ -287,3 +287,25 @@ production HTTP 500 text response, `Internal Server Error`.
 Uploads go directly to R2; the API accepts no media bytes. Publishing and deletion
 govern API discovery, while previously retrieved public CDN URLs may remain
 accessible until cache expiration or purge.
+
+
+## Generated HTTP integration tests
+
+`ag` generates one test module per handler module under `tests/generated/`.
+Tests use Arrange → Act → Assert, the real app lifespan and HTTP stack, and a fresh
+PostgreSQL schema per case. `tests/conftest.py` configures the app from
+`TEST_DATABASE_URL`; missing test infrastructure fails setup. The test database is
+still started with `make test-db-up`, and `make test-integration` or normal `pytest`
+runs the generated cases. `make test` continues to select non-integration tests.
+
+Customize operation fixtures such as `arrange_videos_get_video(api_case, api_app)`
+in `tests/conftest.py` as handlers are implemented. Arrange records and adjust
+`api_case.path_params`, `.query`, `.headers`, `.body`, or `.expected_body` before the
+request. Yield fixtures can inspect `.response`, assert stored effects, and clean up
+in `finally`. No hook or fixture belongs inside `tests/generated`.
+
+Schema examples are authoritative for success assertions. Parameter validation keeps
+FastAPI's native 422 responses. The current generated suite has 23 cases; 202
+operations are outside MVP coverage, and all gaps appear in
+`tests/generated/coverage.json`. Service-specific business effects require handwritten
+assertions. The service currently serves generated mocks for its 13 operations.

@@ -24,8 +24,7 @@ async def test_invalid_video_id_uses_native_request_validation() -> None:
     assert "error" not in response.json()
 
 
-# Literal expectations follow the approved contract examples, including the
-# reusable ready-draft response that differs from the Video schema example.
+# Literal expectations follow the authoritative schema examples.
 VIDEO_ID = "550e8400-e29b-41d4-a716-446655440000"
 RESOURCE = f"/v1/videos/{VIDEO_ID}"
 CREATED: dict[str, object] = {
@@ -79,8 +78,8 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ("GET", "/ping", None, 200, {"status": "ok"}),
         ("GET", "/v1/videos", None, 200, COLLECTION),
         ("POST", "/v1/videos", {"title": "A new video"}, 201, CREATED),
-        ("GET", RESOURCE, None, 200, READY),
-        ("PATCH", RESOURCE, {"title": "Updated title"}, 200, READY),
+        ("GET", RESOURCE, None, 200, CREATED),
+        ("PATCH", RESOURCE, {"title": "Updated title"}, 200, CREATED),
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
@@ -231,7 +230,7 @@ async def test_native_query_parsing_and_nullable_updates_are_accepted() -> None:
         for body in [{"description": None}, {"title": "Renamed"}]:
             response = await client.patch(RESOURCE, json=body)
             assert response.status_code == 200
-            assert response.json() == READY
+            assert response.json() == CREATED
         # The collection route preserves its exact contract spelling.
         response = await client.get("/v1/videos/")
         assert response.status_code == 307

@@ -938,6 +938,11 @@ generated-runtime = [
     { name = "pydantic-settings" },
     { name = "uvicorn" },
 ]
+generated-tests = [
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -970,6 +975,11 @@ generated-runtime = [
     { name = "pydantic", specifier = ">=2.10,<3" },
     { name = "pydantic-settings", specifier = ">=2.7,<3" },
     { name = "uvicorn", specifier = ">=0.34,<1" },
+]
+generated-tests = [
+    { name = "httpx", specifier = ">=0.28,<1" },
+    { name = "pytest", specifier = ">=8,<10" },
+    { name = "pytest-asyncio", specifier = ">=1,<2" },
 ]
 service-runtime = []
 

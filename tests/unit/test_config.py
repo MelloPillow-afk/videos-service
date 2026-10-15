@@ -24,3 +24,9 @@ def test_invalid_pool_range_is_rejected() -> None:
 def test_unbounded_timeouts_are_rejected(timeout: int) -> None:
     with pytest.raises(ValidationError):
         Settings(db_pool_timeout_seconds=timeout)
+
+
+@pytest.mark.parametrize("schema", ["public,other", "bad schema", "MixedCase", "x" * 64])
+def test_unsafe_database_schema_is_rejected(schema: str) -> None:
+    with pytest.raises(ValidationError):
+        Settings(db_schema=schema)

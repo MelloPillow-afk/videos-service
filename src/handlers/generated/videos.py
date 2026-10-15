@@ -185,19 +185,15 @@ async def get_video(
         {
             "created_at": "2026-10-13T14:00:00Z",
             "description": "An introductory lesson",
-            "duration_seconds": 1475.5,
+            "duration_seconds": None,
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "publication_status": "DRAFT",
             "published_at": None,
-            "size_bytes": 524288000,
-            "status": "READY",
-            "thumbnail": {
-                "source": "GENERATED",
-                "status": "READY",
-                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
-            },
+            "size_bytes": None,
+            "status": "CREATED",
+            "thumbnail": {"source": "NONE", "status": "PENDING", "url": None},
             "title": "Introduction to Faith",
-            "updated_at": "2026-10-13T14:05:00Z",
+            "updated_at": "2026-10-13T14:00:00Z",
         },
     )
 
@@ -221,19 +217,15 @@ async def update_video(
         {
             "created_at": "2026-10-13T14:00:00Z",
             "description": "An introductory lesson",
-            "duration_seconds": 1475.5,
+            "duration_seconds": None,
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "publication_status": "DRAFT",
             "published_at": None,
-            "size_bytes": 524288000,
-            "status": "READY",
-            "thumbnail": {
-                "source": "GENERATED",
-                "status": "READY",
-                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
-            },
+            "size_bytes": None,
+            "status": "CREATED",
+            "thumbnail": {"source": "NONE", "status": "PENDING", "url": None},
             "title": "Introduction to Faith",
-            "updated_at": "2026-10-13T14:05:00Z",
+            "updated_at": "2026-10-13T14:00:00Z",
         },
     )
 
