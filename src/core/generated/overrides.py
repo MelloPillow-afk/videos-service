@@ -1,4 +1,3 @@
-# fmt: off
 """Select handwritten endpoints before FastAPI registers their dependencies."""
 
 from collections.abc import Callable
@@ -64,13 +63,9 @@ def select_endpoint(operation_id: str) -> Callable[..., Any]:
         except ModuleNotFoundError as error:
             if error.name and target.startswith(error.name + "."):
                 return generated
-            raise RuntimeError(
-                f"{operation_id}: cannot inspect override {target}"
-            ) from error
+            raise RuntimeError(f"{operation_id}: cannot inspect override {target}") from error
         except Exception as error:
-            raise RuntimeError(
-                f"{operation_id}: cannot inspect override {target}"
-            ) from error
+            raise RuntimeError(f"{operation_id}: cannot inspect override {target}") from error
         if module_spec is None:
             return generated
         try:
@@ -105,13 +100,11 @@ def select_endpoint(operation_id: str) -> Callable[..., Any]:
                         raise ValueError(f"parameter kind differs: {name}")
                     if parameter.default != contract_parameter.default:
                         raise ValueError(f"parameter default differs: {name}")
-                    if _underlying(
-                        actual_types.get(name, parameter.annotation)
-                    ) != _underlying(expected_types.get(name)):
+                    if _underlying(actual_types.get(name, parameter.annotation)) != _underlying(
+                        expected_types.get(name)
+                    ):
                         raise ValueError(f"parameter annotation differs: {name}")
-                    effective.append(
-                        contract_parameter.replace(annotation=expected_metadata[name])
-                    )
+                    effective.append(contract_parameter.replace(annotation=expected_metadata[name]))
                 else:
                     parameter = parameter.replace(
                         annotation=actual_metadata.get(name, parameter.annotation)
@@ -122,18 +115,14 @@ def select_endpoint(operation_id: str) -> Callable[..., Any]:
                     ):
                         raise ValueError(f"uninspectable extra parameter: {name}")
                     if not _injected(parameter):
-                        raise ValueError(
-                            f"extra parameter must use native injection: {name}"
-                        )
+                        raise ValueError(f"extra parameter must use native injection: {name}")
                     effective.append(parameter)
             missing = expected.parameters.keys() - actual.parameters.keys()
             if missing:
-                raise ValueError(
-                    f"missing contract parameters: {', '.join(sorted(missing))}"
-                )
-            if _underlying(
-                actual_types.get("return", actual.return_annotation)
-            ) != _underlying(expected_types.get("return")):
+                raise ValueError(f"missing contract parameters: {', '.join(sorted(missing))}")
+            if _underlying(actual_types.get("return", actual.return_annotation)) != _underlying(
+                expected_types.get("return")
+            ):
                 raise ValueError("return annotation differs")
             # FastAPI inspects and executes this callable directly. Resolved annotations
             # also preserve decorators whose wrapper has different module globals.

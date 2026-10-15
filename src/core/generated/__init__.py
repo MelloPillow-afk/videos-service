@@ -1,2 +1,1 @@
-# fmt: off
 # Generated package.

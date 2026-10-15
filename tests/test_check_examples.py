@@ -15,38 +15,48 @@ class CheckExamplesTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         self.spec = self.root / "index.yaml"
-        self.write("index.yaml", {
-            "content": {
-                "application/json": {
-                    "schema": {"$ref": "schemas/video.yaml"},
-                    "examples": {"video": {"$ref": "examples/video.yaml"}},
-                }
+        self.write(
+            "index.yaml",
+            {
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "schemas/video.yaml"},
+                        "examples": {"video": {"$ref": "examples/video.yaml"}},
+                    }
+                },
+                "parameters": [{"$ref": "parameters/limit.yaml"}],
             },
-            "parameters": [{"$ref": "parameters/limit.yaml"}],
-        })
-        self.write("schemas/video.yaml", {
-            "type": "object",
-            "required": ["id"],
-            "properties": {"id": {"$ref": "id.yaml"}},
-        })
-        self.write("schemas/id.yaml", {
-            "type": "string",
-            "format": "uuid",
-            "examples": ["550e8400-e29b-41d4-a716-446655440000"],
-        })
+        )
+        self.write(
+            "schemas/video.yaml",
+            {
+                "type": "object",
+                "required": ["id"],
+                "properties": {"id": {"$ref": "id.yaml"}},
+            },
+        )
+        self.write(
+            "schemas/id.yaml",
+            {
+                "type": "string",
+                "format": "uuid",
+                "examples": ["550e8400-e29b-41d4-a716-446655440000"],
+            },
+        )
         self.write("examples/video.yaml", {"$ref": "nested/video.yaml"})
-        self.write("examples/nested/video.yaml", {
-            "value": {"id": "550e8400-e29b-41d4-a716-446655440000"}
-        })
-        self.write("parameters/limit.yaml", {
-            "name": "limit",
-            "in": "query",
-            "schema": {"$ref": "../schemas/limit.yaml"},
-            "example": 20,
-        })
-        self.write("schemas/limit.yaml", {
-            "type": "integer", "minimum": 1, "maximum": 100
-        })
+        self.write(
+            "examples/nested/video.yaml", {"value": {"id": "550e8400-e29b-41d4-a716-446655440000"}}
+        )
+        self.write(
+            "parameters/limit.yaml",
+            {
+                "name": "limit",
+                "in": "query",
+                "schema": {"$ref": "../schemas/limit.yaml"},
+                "example": 20,
+            },
+        )
+        self.write("schemas/limit.yaml", {"type": "integer", "minimum": 1, "maximum": 100})
 
     def write(self, relative_path, document):
         path = self.root / relative_path
@@ -65,9 +75,7 @@ class CheckExamplesTests(unittest.TestCase):
         self.assertIn("'uuid'", errors[0])
 
     def test_checks_examples_inside_external_schemas(self):
-        self.write("schemas/id.yaml", {
-            "type": "string", "format": "uuid", "examples": ["invalid"]
-        })
+        self.write("schemas/id.yaml", {"type": "string", "format": "uuid", "examples": ["invalid"]})
         checked, errors = check_examples(self.spec)
         self.assertEqual(checked, 3)
         self.assertEqual(len(errors), 1)

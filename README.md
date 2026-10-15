@@ -18,6 +18,8 @@ uv sync
 `src/app.py` calls `register_routers(app)` from `src.core.generated.routers` once.
 Later contract changes renew its explicit router inclusions without handwritten
 per-operation wiring.
+Generated decorators contain runtime settings only; API documentation stays in
+`api-specs/`.
 Generation preserves configuration, lifecycle, domain/service/repository code,
 and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
 do not edit files under generated packages.

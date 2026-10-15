@@ -2,10 +2,19 @@
 
 import pytest
 from fastapi import HTTPException
+from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
 
 from src.app import create_app
 from src.config import Settings
+from src.handlers.generated import (
+    health,
+    playback,
+    source_uploads,
+    thumbnail_uploads,
+    thumbnails,
+    videos,
+)
 
 
 async def test_invalid_video_id_uses_native_request_validation() -> None:
@@ -258,14 +267,19 @@ async def test_application_routes_keep_native_errors_and_preserved_lifecycle() -
             assert (await client.get("/openapi.json")).status_code == 404
 
 
-def test_response_documentation_describes_native_errors_and_original_tags() -> None:
-    paths = create_app(Settings(db_pool_min_size=0)).openapi()["paths"]
-    operation = paths["/v1/videos"]["post"]
-    responses = operation["responses"]
-    validation = responses["422"]["content"]["application/json"]["schema"]
-    assert validation["properties"]["detail"]["type"] == "array"
-    deliberate = responses["400"]["content"]["application/json"]["schema"]
-    assert deliberate["properties"]["detail"]["type"] == "string"
-    assert responses["500"]["content"]["text/plain"]["schema"]["type"] == "string"
-    assert operation["tags"] == ["Videos"]
-    assert paths["/v1/videos/{id}/upload-url"]["post"]["tags"] == ["Uploads"]
+def test_generated_routes_keep_runtime_settings_without_contract_documentation() -> None:
+    modules = (health, playback, source_uploads, thumbnail_uploads, thumbnails, videos)
+    routes = [
+        route for module in modules for route in module.router.routes if isinstance(route, APIRoute)
+    ]
+    assert len(routes) == 13
+    for route in routes:
+        assert route.response_model is not None
+        assert route.response_model_exclude_unset is True
+        assert route.operation_id is None
+        assert route.tags == []
+        assert route.summary is None
+        assert route.description == ""
+        assert route.deprecated is None
+        assert route.responses == {}
+        assert route.openapi_extra is None

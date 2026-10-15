@@ -1,4 +1,3 @@
-# fmt: off
 """Generated wire-schema helpers: validation preserves original JSON strings."""
 
 import re

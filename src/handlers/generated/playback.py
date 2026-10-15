@@ -1,5 +1,4 @@
 # Generated; do not edit.
-# fmt: off
 from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
@@ -15,7 +14,25 @@ from src.schemas.generated.playback import Playback as _GetResourceResponse
 router = _generator_APIRouter(prefix="/v1/videos")
 
 
-@router.get("/{id}/playback", response_model=_GetResourceResponse, status_code=200, response_model_exclude_unset=True, operation_id="playback.get_resource", tags=["Playback"], summary="Get Video Playback", description="Get the HLS playback link for a video.", responses={"200": {"content": {"application/json": {}}, "description": "Video playback link."}, "400": {"content": {"application/json": {"examples": {"unsupported_media": {"value": {"detail": "The uploaded media is not supported."}}}, "schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "A deliberate application rejection, such as unsupported media."}, "401": {"content": {"application/json": {"schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "Authentication is missing or invalid."}, "403": {"content": {"application/json": {"schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "Access denied."}, "404": {"content": {"application/json": {"examples": {"missing": {"value": {"detail": "The video was not found."}}}, "schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "The video was not found or is not available to you."}, "409": {"content": {"application/json": {"examples": {"invalid_state": {"value": {"detail": "The video is not eligible for this operation."}}, "not_ready": {"value": {"detail": "The video is not ready."}}, "stale_attempt": {"value": {"detail": "This upload attempt is no longer current."}}}, "schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "The request conflicts with the current video or upload state."}, "422": {"content": {"application/json": {"schema": {"description": "Native FastAPI request-validation errors.", "examples": [{"detail": [{"loc": ["body", "title"], "msg": "Field required", "type": "missing"}]}], "properties": {"detail": {"items": {"properties": {"loc": {"items": {"anyOf": [{"type": "string"}, {"type": "integer"}]}, "type": "array"}, "msg": {"type": "string"}, "type": {"type": "string"}}, "required": ["loc", "msg", "type"], "type": "object"}, "type": "array"}}, "required": ["detail"], "type": "object"}}}, "description": "Path, query, or body values failed native request validation."}, "429": {"content": {"application/json": {"schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "Too many requests. Try again later."}, "500": {"content": {"text/plain": {"schema": {"examples": ["Internal Server Error"], "type": "string"}}}, "description": "An unexpected server failure. Production responses do not include exception details."}, "503": {"content": {"application/json": {"schema": {"description": "A deliberate HTTP error raised by the application.", "examples": [{"detail": "The video was not found."}], "properties": {"detail": {"description": "Readable explanation of the error.", "type": "string"}}, "required": ["detail"], "type": "object", "x-python-module": "errors", "x-python-name": "Error"}}}, "description": "The service is temporarily unavailable."}}, openapi_extra={"security": [{"bearer_auth": []}, {}]})
+@router.get(
+    "/{id}/playback",
+    response_model=_GetResourceResponse,
+    status_code=200,
+    response_model_exclude_unset=True,
+)
 @_generator_select_endpoint("playback.get_resource")
-async def get_resource(*, id: _generator_Annotated[_GetResourceIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _GetResourceResponse:
-    return _generator_TypeAdapter(_GetResourceResponse).validate_python({"playback": {"type": "hls", "url": "https://media.example.com/videos/intro/hls/master.m3u8"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def get_resource(
+    *,
+    id: _generator_Annotated[
+        _GetResourceIdParameter, _generator_Path(alias="id", description="Video ID.")
+    ],
+) -> _GetResourceResponse:
+    return _generator_TypeAdapter(_GetResourceResponse).validate_python(
+        {
+            "playback": {
+                "type": "hls",
+                "url": "https://media.example.com/videos/intro/hls/master.m3u8",
+            },
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        }
+    )

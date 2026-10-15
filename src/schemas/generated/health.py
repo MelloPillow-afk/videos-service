@@ -1,5 +1,4 @@
 # Generated; do not edit.
-# fmt: off
 from __future__ import annotations
 
 from typing import Literal
@@ -10,5 +9,5 @@ from src.schemas.generated.schema_support import WireModel
 
 
 class Ping(WireModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     status: Literal["ok"]
