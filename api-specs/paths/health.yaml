@@ -4,7 +4,7 @@
   get:
     tags:
       - Health
-    operationId: health.get_resource
+    operationId: health.ping
     summary: Get Health
     description: Check API reachability. Does not check the database.
     security: []

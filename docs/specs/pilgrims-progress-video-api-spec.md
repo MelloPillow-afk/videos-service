@@ -124,17 +124,17 @@ Error codes are stable; messages are intended for humans. No raw FFmpeg logs, cr
 | Method | Endpoint | Authorization | Purpose |
 |---|---|---|---|
 | `POST` | `/v1/videos` | Admin | Create video draft |
-| `POST` | `/v1/videos/{id}/upload-url` | Admin | Issue/renew source upload URL |
-| `POST` | `/v1/videos/{id}/complete-upload` | Admin | Verify source and queue jobs |
+| `POST` | `/v1/videos/{id}:upload-url` | Admin | Issue/renew source upload URL |
+| `POST` | `/v1/videos/{id}:complete-upload` | Admin | Verify source and queue jobs |
 | `GET` | `/v1/videos/{id}` | Admin / eligible viewer | Read video and status |
 | `GET` | `/v1/videos/{id}/playback` | Eligible viewer | Obtain HLS URL |
 | `GET` | `/v1/videos` | Admin / viewer | Cursor-paginated video list |
 | `PATCH` | `/v1/videos/{id}` | Admin | Update metadata / publication |
-| `POST` | `/v1/videos/{id}/retry` | Admin | Retry failed transcoding |
+| `POST` | `/v1/videos/{id}:retry` | Admin | Retry failed transcoding |
 | `DELETE` | `/v1/videos/{id}` | Admin | Schedule video deletion |
-| `POST` | `/v1/videos/{id}/thumbnail/upload-url` | Admin | Issue custom thumbnail upload URL |
-| `POST` | `/v1/videos/{id}/thumbnail/complete-upload` | Admin | Validate and activate custom thumbnail |
-| `DELETE` | `/v1/videos/{id}/thumbnail` | Admin | Remove custom thumbnail; restore generated fallback |
+| `POST` | `/v1/videos/{id}/thumbnails:upload-url` | Admin | Issue custom thumbnail upload URL |
+| `POST` | `/v1/videos/{id}/thumbnails:complete-upload` | Admin | Validate and activate custom thumbnail |
+| `DELETE` | `/v1/videos/{id}/thumbnails` | Admin | Remove custom thumbnail; restore generated fallback |
 
 No endpoint sends media bytes through Cloud Run. The two *upload-url* operations return signed R2 PUT instructions.
 
@@ -167,7 +167,7 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 
 ### 4.2 Generate / renew source upload URL
 
-**`POST /v1/videos/{id}/upload-url`** — `200 OK`  
+**`POST /v1/videos/{id}:upload-url`** — `200 OK`\
 **Path:** `id` required UUID  
 **Query:** None  
 **Body:**
@@ -216,7 +216,7 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 
 ### 4.3 Complete source upload
 
-**`POST /v1/videos/{id}/complete-upload`** — `202 Accepted`  
+**`POST /v1/videos/{id}:complete-upload`** — `202 Accepted`\
 **Path:** `id` required UUID  
 **Query:** None  
 **Body:**
@@ -354,7 +354,7 @@ Example: `GET /v1/videos?limit=20&status=READY&publicationStatus=PUBLISHED&searc
 
 ### 4.8 Retry video processing
 
-**`POST /v1/videos/{id}/retry`** — `202 Accepted`  
+**`POST /v1/videos/{id}:retry`** — `202 Accepted`\
 **Path:** `id` UUID  
 **Query/body:** None
 
@@ -402,7 +402,7 @@ Thumbnails are part of the approved MVP. **Every successfully confirmed video up
 
 ### 5.1 Get custom thumbnail upload URL
 
-**`POST /v1/videos/{id}/thumbnail/upload-url`** — `200 OK`  
+**`POST /v1/videos/{id}/thumbnails:upload-url`** — `200 OK`\
 **Path:** `id` UUID  
 **Query:** None  
 **Body:**
@@ -436,7 +436,7 @@ Thumbnails are part of the approved MVP. **Every successfully confirmed video up
 
 ### 5.2 Confirm and activate custom thumbnail
 
-**`POST /v1/videos/{id}/thumbnail/complete-upload`** — `200 OK`  
+**`POST /v1/videos/{id}/thumbnails:complete-upload`** — `200 OK`\
 **Path:** `id` UUID  
 **Query:** None  
 **Body:**
@@ -464,7 +464,7 @@ Thumbnails are part of the approved MVP. **Every successfully confirmed video up
 
 ### 5.3 Remove custom thumbnail
 
-**`DELETE /v1/videos/{id}/thumbnail`** — `200 OK`  
+**`DELETE /v1/videos/{id}/thumbnails`** — `200 OK`\
 **Path:** `id` UUID  
 **Query/body:** None
 
@@ -496,9 +496,9 @@ No manual endpoint is required to trigger generation. `complete-upload` creates 
 ### 6.1 Upload + processing
 
 1. Admin `POST /videos` -> `CREATED` + video UUID.
-2. Admin `POST /videos/{id}/upload-url` -> `UPLOADING` + `uploadId` + presigned PUT.
+2. Admin `POST /videos/{id}:upload-url` -> `UPLOADING` + `uploadId` + presigned PUT.
 3. Browser `PUT` bytes **directly to R2** with returned headers.
-4. Browser `POST /videos/{id}/complete-upload` with `uploadId` -> `202 QUEUED`.
+4. Browser `POST /videos/{id}:complete-upload` with `uploadId` -> `202 QUEUED`.
 5. Dispatcher launches independent **HLS transcoding** and **generated thumbnail** jobs.
 6. UI polls `GET /videos/{id}` every ~5 seconds; transcode eventually `READY` or `FAILED`. Thumbnail status may change independently.
 7. Admin `PATCH /videos/{id}` with `publicationStatus=PUBLISHED` after `READY`.
@@ -506,12 +506,12 @@ No manual endpoint is required to trigger generation. `complete-upload` creates 
 
 ### 6.2 Custom thumbnail before processing finishes
 
-1. At any time after video creation, admin calls `POST /videos/{id}/thumbnail/upload-url`.
+1. At any time after video creation, admin calls `POST /videos/{id}/thumbnails:upload-url`.
 2. Browser PUTs image bytes directly to R2.
-3. Admin calls `POST /videos/{id}/thumbnail/complete-upload` with upload ID.
+3. Admin calls `POST /videos/{id}/thumbnails:complete-upload` with upload ID.
 4. API validates actual image properties; valid custom becomes active, invalid custom leaves old thumbnail in place.
 5. Generated-thumbnail job eventually writes fallback and **does not replace** active custom.
-6. `DELETE /videos/{id}/thumbnail` restores generated fallback when present.
+6. `DELETE /videos/{id}/thumbnails` restores generated fallback when present.
 
 ---
 

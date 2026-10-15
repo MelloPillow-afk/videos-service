@@ -1,10 +1,10 @@
-/videos/{id}/thumbnail/upload-url:
+/videos/{id}/thumbnails:upload-url:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Thumbnails
-    operationId: thumbnail_uploads.create_resource
+    operationId: thumbnails.upload_url
     summary: Create Video Thumbnail Upload URL
     description: Get a URL and instructions to upload a custom thumbnail.
     x-required-role: admin
@@ -42,13 +42,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/thumbnail/complete-upload:
+/videos/{id}/thumbnails:complete-upload:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Thumbnails
-    operationId: thumbnail_uploads.complete_resource
+    operationId: thumbnails.complete_upload
     summary: Confirm Video Thumbnail Upload
     description: Confirm an upload and use it as the custom thumbnail.
     x-required-role: admin
@@ -86,13 +86,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/thumbnail:
+/videos/{id}/thumbnails:
   parameters:
     - $ref: ../parameters/id.yaml
   delete:
     tags:
       - Thumbnails
-    operationId: thumbnails.delete_resource
+    operationId: thumbnails.delete_thumbnail
     summary: Delete Video Thumbnail
     description: Remove the custom thumbnail and use the generated image.
     x-required-role: admin

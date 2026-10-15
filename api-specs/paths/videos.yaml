@@ -2,7 +2,7 @@
   post:
     tags:
       - Videos
-    operationId: videos.create_resource
+    operationId: videos.create_video
     summary: Create Video
     description: Create a draft with a title and optional description.
     x-required-role: admin
@@ -39,7 +39,7 @@
   get:
     tags:
       - Videos
-    operationId: videos.get_collection
+    operationId: videos.list_videos
     summary: Get Videos Collection
     description: Browse videos with search, filters, and pagination.
     security:
@@ -79,7 +79,7 @@
   get:
     tags:
       - Videos
-    operationId: videos.get_resource
+    operationId: videos.get_video
     summary: Get Video
     description: Get video details and processing status.
     security:
@@ -107,7 +107,7 @@
   patch:
     tags:
       - Videos
-    operationId: videos.update_resource
+    operationId: videos.update_video
     summary: Update Video
     description: Edit video details or publish and unpublish a video.
     x-required-role: admin
@@ -141,7 +141,7 @@
   delete:
     tags:
       - Videos
-    operationId: videos.delete_resource
+    operationId: videos.delete_video
     summary: Delete Video
     description: Delete a video and its media files.
     x-required-role: admin
@@ -171,13 +171,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/upload-url:
+/videos/{id}:upload-url:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Uploads
-    operationId: source_uploads.create_resource
+    operationId: videos.upload_url
     summary: Create Video Upload URL
     description: Get a URL and instructions to upload an MP4 file.
     x-required-role: admin
@@ -215,13 +215,13 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/complete-upload:
+/videos/{id}:complete-upload:
   parameters:
     - $ref: ../parameters/id.yaml
   post:
     tags:
       - Uploads
-    operationId: source_uploads.complete_resource
+    operationId: videos.complete_upload
     summary: Confirm Video Upload
     description: Confirm an upload and start video and thumbnail processing.
     x-required-role: admin
@@ -265,7 +265,7 @@
   get:
     tags:
       - Playback
-    operationId: playback.get_resource
+    operationId: playback.get_playback
     summary: Get Video Playback
     description: Get the HLS playback link for a video.
     security:
@@ -297,7 +297,7 @@
       '503':
         $ref: ../responses/unavailable.yaml
 
-/videos/{id}/retry:
+/videos/{id}:retry:
   parameters:
     - $ref: ../parameters/id.yaml
   post:

@@ -10,8 +10,6 @@ from src.config import Settings
 from src.handlers.generated import (
     health,
     playback,
-    source_uploads,
-    thumbnail_uploads,
     thumbnails,
     videos,
 )
@@ -86,7 +84,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
-            f"{RESOURCE}/upload-url",
+            f"{RESOURCE}:upload-url",
             {"file_name": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 524288000},
             200,
             {
@@ -103,7 +101,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ),
         (
             "POST",
-            f"{RESOURCE}/complete-upload",
+            f"{RESOURCE}:complete-upload",
             {"upload_id": SOURCE_UPLOAD_ID},
             202,
             {
@@ -128,7 +126,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ),
         (
             "POST",
-            f"{RESOURCE}/retry",
+            f"{RESOURCE}:retry",
             None,
             202,
             {
@@ -140,7 +138,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ),
         (
             "POST",
-            f"{RESOURCE}/thumbnail/upload-url",
+            f"{RESOURCE}/thumbnails:upload-url",
             {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 183420},
             200,
             {
@@ -156,14 +154,14 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ),
         (
             "POST",
-            f"{RESOURCE}/thumbnail/complete-upload",
+            f"{RESOURCE}/thumbnails:complete-upload",
             {"upload_id": THUMBNAIL_UPLOAD_ID},
             200,
             {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
         ),
         (
             "DELETE",
-            f"{RESOURCE}/thumbnail",
+            f"{RESOURCE}/thumbnails",
             None,
             200,
             {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
@@ -198,15 +196,15 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ("PATCH", RESOURCE, {"unknown": "value"}),
         ("PATCH", RESOURCE, {"title": None}),
         ("PATCH", RESOURCE, {"publication_status": "UNKNOWN"}),
-        ("POST", f"{RESOURCE}/complete-upload", {"upload_id": "invalid"}),
+        ("POST", f"{RESOURCE}:complete-upload", {"upload_id": "invalid"}),
         (
             "POST",
-            f"{RESOURCE}/upload-url",
+            f"{RESOURCE}:upload-url",
             {"file_name": "lesson.mp4", "content_type": "video/webm", "size_bytes": 5},
         ),
         (
             "POST",
-            f"{RESOURCE}/thumbnail/upload-url",
+            f"{RESOURCE}/thumbnails:upload-url",
             {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 0},
         ),
     ],
@@ -268,7 +266,7 @@ async def test_application_routes_keep_native_errors_and_preserved_lifecycle() -
 
 
 def test_generated_routes_keep_runtime_settings_without_contract_documentation() -> None:
-    modules = (health, playback, source_uploads, thumbnail_uploads, thumbnails, videos)
+    modules = (health, playback, thumbnails, videos)
     routes = [
         route for module in modules for route in module.router.routes if isinstance(route, APIRoute)
     ]

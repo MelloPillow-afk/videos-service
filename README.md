@@ -143,7 +143,14 @@ null unions, reusable schemas and responses, and security declarations for the
 12 video operations. Video paths are relative to the `/v1` server base path.
 The unauthenticated health operation overrides the server path to `/`, preserving
 `GET /ping`. JSON fields and component names use snake_case; operation IDs use
-Pythonic `module.function` names.
+Pythonic `module.function` names. Resource operations name their noun explicitly,
+using singular names for one resource (`videos.get_video`) and plural names for
+lists (`videos.list_videos`). Custom methods use colon suffixes with hyphenated
+words, such as `/videos/{id}:upload-url` and
+`/videos/{id}/thumbnails:complete-upload`, with operation IDs such as
+`videos.upload_url` and `thumbnails.complete_upload`.
+The plural `/videos/{id}/thumbnails` path still represents one active thumbnail;
+deleting the custom thumbnail restores the generated fallback.
 
 `api-specs/index.yaml` holds API metadata and references to the contract files. Paths
 are grouped by resource, with collections, individual resources, and their HTTP
@@ -182,12 +189,12 @@ Generator input names are explicit:
 
 | Field | Meaning | Example |
 | --- | --- | --- |
-| `operationId` | Handler module and async function. | `videos.get_resource` |
+| `operationId` | Handler module and async function. | `videos.get_video` |
 | `x-python-module` | Generated schema module. | `videos` |
 | `x-python-name` | Named Python schema type. | `Video` |
 
-For example, `videos.get_resource` targets `handlers/generated/videos.py` and
-its `get_resource` function. A handwritten override uses the same function name
+For example, `videos.get_video` targets `handlers/generated/videos.py` and
+its `get_video` function. A handwritten override uses the same function name
 in `handlers/videos.py`. A schema named `videos.Video` targets
 `schemas/generated/videos.py`. These paths are relative to `src/`.
 Reusable schemas carry both naming extensions, including scalar schemas and the
