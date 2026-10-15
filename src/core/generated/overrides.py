@@ -5,12 +5,37 @@ from collections.abc import Callable
 from importlib import import_module
 from importlib.util import find_spec
 from inspect import Parameter, iscoroutinefunction, signature, unwrap
-from typing import Annotated, Any, cast, get_args, get_origin, get_type_hints
+from types import UnionType
+from typing import (
+    Annotated,
+    Any,
+    TypeAliasType,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from fastapi import BackgroundTasks, Request, Response, WebSocket
 from fastapi.params import Depends
 from fastapi.security import SecurityScopes
 from starlette.requests import HTTPConnection
+
+
+def _underlying(annotation: Any) -> Any:
+    """Compare schema aliases by value while retaining their binding metadata later."""
+    if isinstance(annotation, TypeAliasType):
+        return _underlying(annotation.__value__)
+    origin = get_origin(annotation)
+    arguments = get_args(annotation)
+    if origin is Annotated:
+        return _underlying(arguments[0])
+    if origin in (Union, UnionType):
+        return (UnionType, frozenset(_underlying(value) for value in arguments))
+    if origin is not None:
+        return (origin, tuple(_underlying(value) for value in arguments))
+    return annotation
 
 
 def _injected(parameter: Parameter) -> bool:
@@ -80,9 +105,9 @@ def select_endpoint(operation_id: str) -> Callable[..., Any]:
                         raise ValueError(f"parameter kind differs: {name}")
                     if parameter.default != contract_parameter.default:
                         raise ValueError(f"parameter default differs: {name}")
-                    if actual_types.get(
-                        name, parameter.annotation
-                    ) != expected_types.get(name):
+                    if _underlying(
+                        actual_types.get(name, parameter.annotation)
+                    ) != _underlying(expected_types.get(name)):
                         raise ValueError(f"parameter annotation differs: {name}")
                     effective.append(
                         contract_parameter.replace(annotation=expected_metadata[name])
@@ -106,9 +131,9 @@ def select_endpoint(operation_id: str) -> Callable[..., Any]:
                 raise ValueError(
                     f"missing contract parameters: {', '.join(sorted(missing))}"
                 )
-            if actual_types.get(
-                "return", actual.return_annotation
-            ) != expected_types.get("return"):
+            if _underlying(
+                actual_types.get("return", actual.return_annotation)
+            ) != _underlying(expected_types.get("return")):
                 raise ValueError("return annotation differs")
             # FastAPI inspects and executes this callable directly. Resolved annotations
             # also preserve decorators whose wrapper has different module globals.

@@ -19,6 +19,13 @@ def omitted() -> Any:
     return None
 
 
+def validate_allowed_values[T](value: T, allowed: list[object]) -> T:
+    """Apply enum/const semantics after native scalar parsing."""
+    if value not in allowed:
+        raise ValueError(f"expected one of {allowed!r}")
+    return value
+
+
 def require_properties(value: object, alternatives: list[list[str]]) -> object:
     """Presence depends on supplied wire keys, independently of their values."""
     if isinstance(value, dict):

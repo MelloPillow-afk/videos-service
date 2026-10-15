@@ -38,3 +38,14 @@ UV_NO_SYNC=1`:
 No database infrastructure, migrations, or integration suite was run. Broader
 handwritten override, dependency injection, and ownership-failure scenarios are
 covered by the generator's CLI-to-HTTP acceptance suite.
+
+## Final integration verification
+
+Regenerated again from generator integration `b0e3ee3`, including final scalar-alias
+compatibility and schema-semantic fixes. From the original service checkout,
+`UV_CACHE_DIR=/private/tmp/pilgrims-uv-cache make check` and `make test` passed:
+46 contract examples, Ruff lint/format, strict Pyright, and 34 nonintegration tests.
+Three database integration tests were deselected. A second generation preserved
+SHA-256 digests across all 29 generated/preserved files in the verification scope.
+The final generator acceptance suite passed 30 tests. Independent final Standards
+and Spec reviews both reported zero remaining actionable findings.
