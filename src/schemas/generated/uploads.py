@@ -18,7 +18,9 @@ if TYPE_CHECKING:
 class SourceUploadCreate(WireModel):
     model_config = ConfigDict(extra='allow')
     content_type: Literal["video/mp4"] = Field(description="Video media type.")
-    file_name: Annotated[str, Field(min_length=1)] = Field(description="Name of the video file.")
+    file_name: Annotated[str, Field(min_length=1)] = Field(
+        description="Name of the video file.",
+    )
     size_bytes: Annotated[int, Field(ge=1)] = Field(description="File size in bytes.")
 
 class UploadHeaders(WireModel):
@@ -32,7 +34,13 @@ class Upload(WireModel):
     headers: UploadHeaders = Field(description="Headers to include with the upload.")
     method: Literal["PUT"]
     upload_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-    url: Annotated[str, Field(pattern="^https://"), AfterValidator(lambda value: validate_format(value, 'uri'))] = Field(description="URL to use for uploading the file.")
+    url: Annotated[
+        str,
+        Field(pattern="^https://"),
+        AfterValidator(lambda value: validate_format(value, 'uri')),
+    ] = Field(
+        description="URL to use for uploading the file.",
+    )
 
 class SourceUpload(WireModel):
     model_config = ConfigDict(extra='allow')
@@ -42,11 +50,17 @@ class SourceUpload(WireModel):
 
 class UploadComplete(WireModel):
     model_config = ConfigDict(extra='allow')
-    upload_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(description="Upload ID returned with the upload URL.")
+    upload_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
+        description="Upload ID returned with the upload URL.",
+    )
 
 class SourceUploadProcessing(WireModel):
     model_config = ConfigDict(extra='allow')
-    processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(description="Processing job ID.")
+    processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
+        description="Processing job ID.",
+    )
     status: _schema_videos.VideoStatus = Field(description="Current video status.")
-    thumbnail_status: _schema_thumbnails.ThumbnailStatus = Field(description="Thumbnail status.")
+    thumbnail_status: _schema_thumbnails.ThumbnailStatus = Field(
+        description="Thumbnail status.",
+    )
     video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

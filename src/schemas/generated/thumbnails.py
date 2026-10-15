@@ -19,8 +19,16 @@ type ThumbnailStatus = Literal["PENDING", "READY", "FAILED"]
 class ThumbnailImage(WireModel):
     model_config = ConfigDict(extra='allow')
     source: ThumbnailSource = Field(description="Thumbnail source.")
-    status: ThumbnailStatus = Field(description="Whether the thumbnail is pending, ready, or failed.")
-    url: Annotated[str, Field(pattern="^https://"), AfterValidator(lambda value: validate_format(value, 'uri'))] | None = Field(description="Thumbnail image URL.")
+    status: ThumbnailStatus = Field(
+        description="Whether the thumbnail is pending, ready, or failed.",
+    )
+    url: Annotated[
+        str,
+        Field(pattern="^https://"),
+        AfterValidator(lambda value: validate_format(value, 'uri')),
+    ] | None = Field(
+        description="Thumbnail image URL.",
+    )
 
 class Thumbnail(WireModel):
     model_config = ConfigDict(extra='allow')
@@ -29,8 +37,12 @@ class Thumbnail(WireModel):
 
 class ThumbnailUploadCreate(WireModel):
     model_config = ConfigDict(extra='allow')
-    content_type: Annotated[str, Field(min_length=1)] = Field(description="Image media type, such as image/jpeg.")
-    file_name: Annotated[str, Field(min_length=1)] = Field(description="Name of the image file.")
+    content_type: Annotated[str, Field(min_length=1)] = Field(
+        description="Image media type, such as image/jpeg.",
+    )
+    file_name: Annotated[str, Field(min_length=1)] = Field(
+        description="Name of the image file.",
+    )
     size_bytes: Annotated[int, Field(ge=1)] = Field(description="File size in bytes.")
 
 class ThumbnailUpload(WireModel):

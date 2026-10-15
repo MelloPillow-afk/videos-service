@@ -66,8 +66,56 @@ router = _generator_APIRouter(prefix="/v1")
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.list_videos")
-async def list_videos(*, cursor: _generator_Annotated[_ListVideosCursorParameter | None, _generator_Query(alias="cursor", description="Token from the previous page.")] = None, limit: _generator_Annotated[_ListVideosLimitParameter, _generator_Query(alias="limit", description="Maximum number of videos to return.")] = 20, publication_status: _generator_Annotated[_ListVideosPublicationStatusParameter | None, _generator_Query(alias="publication_status", description="Filter by publication status.")] = None, search: _generator_Annotated[_ListVideosSearchParameter | None, _generator_Query(alias="search", description="Search video titles.")] = None, status: _generator_Annotated[_ListVideosStatusParameter | None, _generator_Query(alias="status", description="Filter by video status.")] = None) -> _ListVideosResponse:
-    return _generator_TypeAdapter(_ListVideosResponse).validate_python({"data": [{"created_at": "2026-10-13T14:00:00Z", "description": "An introductory lesson", "duration_seconds": 1475.5, "id": "550e8400-e29b-41d4-a716-446655440000", "publication_status": "PUBLISHED", "published_at": "2026-10-13T15:00:00Z", "size_bytes": 524288000, "status": "READY", "thumbnail": {"source": "CUSTOM", "status": "READY", "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg"}, "title": "Introduction to Faith", "updated_at": "2026-10-13T15:00:00Z"}], "pagination": {"has_more": True, "next_page_token": "example_next_page_token"}})
+async def list_videos(
+    *,
+    cursor: _generator_Annotated[
+        _ListVideosCursorParameter | None,
+        _generator_Query(alias="cursor", description="Token from the previous page."),
+    ] = None,
+    limit: _generator_Annotated[
+        _ListVideosLimitParameter,
+        _generator_Query(alias="limit", description="Maximum number of videos to return."),
+    ] = 20,
+    publication_status: _generator_Annotated[
+        _ListVideosPublicationStatusParameter | None,
+        _generator_Query(
+            alias="publication_status",
+            description="Filter by publication status.",
+        ),
+    ] = None,
+    search: _generator_Annotated[
+        _ListVideosSearchParameter | None,
+        _generator_Query(alias="search", description="Search video titles."),
+    ] = None,
+    status: _generator_Annotated[
+        _ListVideosStatusParameter | None,
+        _generator_Query(alias="status", description="Filter by video status."),
+    ] = None,
+) -> _ListVideosResponse:
+    return _generator_TypeAdapter(_ListVideosResponse).validate_python(
+        {
+            "data": [
+                {
+                    "created_at": "2026-10-13T14:00:00Z",
+                    "description": "An introductory lesson",
+                    "duration_seconds": 1475.5,
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "publication_status": "PUBLISHED",
+                    "published_at": "2026-10-13T15:00:00Z",
+                    "size_bytes": 524288000,
+                    "status": "READY",
+                    "thumbnail": {
+                        "source": "CUSTOM",
+                        "status": "READY",
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+                    },
+                    "title": "Introduction to Faith",
+                    "updated_at": "2026-10-13T15:00:00Z",
+                },
+            ],
+            "pagination": {"has_more": True, "next_page_token": "example_next_page_token"},
+        },
+    )
 
 
 @router.post(
@@ -77,9 +125,27 @@ async def list_videos(*, cursor: _generator_Annotated[_ListVideosCursorParameter
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.create_video")
-async def create_video(*, body: _generator_Annotated[_CreateVideoBody, _generator_Body()], response: _generator_Response) -> _CreateVideoResponse:
+async def create_video(
+    *,
+    body: _generator_Annotated[_CreateVideoBody, _generator_Body()],
+    response: _generator_Response,
+) -> _CreateVideoResponse:
     response.headers["Location"] = "/v1/videos/550e8400-e29b-41d4-a716-446655440000"
-    return _generator_TypeAdapter(_CreateVideoResponse).validate_python({"created_at": "2026-10-13T14:00:00Z", "description": "An introductory lesson", "duration_seconds": None, "id": "550e8400-e29b-41d4-a716-446655440000", "publication_status": "DRAFT", "published_at": None, "size_bytes": None, "status": "CREATED", "thumbnail": {"source": "NONE", "status": "PENDING", "url": None}, "title": "Introduction to Faith", "updated_at": "2026-10-13T14:00:00Z"})
+    return _generator_TypeAdapter(_CreateVideoResponse).validate_python(
+        {
+            "created_at": "2026-10-13T14:00:00Z",
+            "description": "An introductory lesson",
+            "duration_seconds": None,
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "publication_status": "DRAFT",
+            "published_at": None,
+            "size_bytes": None,
+            "status": "CREATED",
+            "thumbnail": {"source": "NONE", "status": "PENDING", "url": None},
+            "title": "Introduction to Faith",
+            "updated_at": "2026-10-13T14:00:00Z",
+        },
+    )
 
 
 @router.delete(
@@ -89,8 +155,16 @@ async def create_video(*, body: _generator_Annotated[_CreateVideoBody, _generato
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.delete_video")
-async def delete_video(*, id: _generator_Annotated[_DeleteVideoIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _DeleteVideoResponse:
-    return _generator_TypeAdapter(_DeleteVideoResponse).validate_python({"status": "DELETING", "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def delete_video(
+    *,
+    id: _generator_Annotated[
+        _DeleteVideoIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _DeleteVideoResponse:
+    return _generator_TypeAdapter(_DeleteVideoResponse).validate_python(
+        {"status": "DELETING", "video_id": "550e8400-e29b-41d4-a716-446655440000"},
+    )
 
 
 @router.get(
@@ -100,8 +174,32 @@ async def delete_video(*, id: _generator_Annotated[_DeleteVideoIdParameter, _gen
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.get_video")
-async def get_video(*, id: _generator_Annotated[_GetVideoIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _GetVideoResponse:
-    return _generator_TypeAdapter(_GetVideoResponse).validate_python({"created_at": "2026-10-13T14:00:00Z", "description": "An introductory lesson", "duration_seconds": 1475.5, "id": "550e8400-e29b-41d4-a716-446655440000", "publication_status": "DRAFT", "published_at": None, "size_bytes": 524288000, "status": "READY", "thumbnail": {"source": "GENERATED", "status": "READY", "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg"}, "title": "Introduction to Faith", "updated_at": "2026-10-13T14:05:00Z"})
+async def get_video(
+    *,
+    id: _generator_Annotated[
+        _GetVideoIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _GetVideoResponse:
+    return _generator_TypeAdapter(_GetVideoResponse).validate_python(
+        {
+            "created_at": "2026-10-13T14:00:00Z",
+            "description": "An introductory lesson",
+            "duration_seconds": 1475.5,
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "publication_status": "DRAFT",
+            "published_at": None,
+            "size_bytes": 524288000,
+            "status": "READY",
+            "thumbnail": {
+                "source": "GENERATED",
+                "status": "READY",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
+            },
+            "title": "Introduction to Faith",
+            "updated_at": "2026-10-13T14:05:00Z",
+        },
+    )
 
 
 @router.patch(
@@ -111,8 +209,33 @@ async def get_video(*, id: _generator_Annotated[_GetVideoIdParameter, _generator
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.update_video")
-async def update_video(*, id: _generator_Annotated[_UpdateVideoIdParameter, _generator_Path(alias="id", description="Video ID.")], body: _generator_Annotated[_UpdateVideoBody, _generator_Body()]) -> _UpdateVideoResponse:
-    return _generator_TypeAdapter(_UpdateVideoResponse).validate_python({"created_at": "2026-10-13T14:00:00Z", "description": "An introductory lesson", "duration_seconds": 1475.5, "id": "550e8400-e29b-41d4-a716-446655440000", "publication_status": "DRAFT", "published_at": None, "size_bytes": 524288000, "status": "READY", "thumbnail": {"source": "GENERATED", "status": "READY", "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg"}, "title": "Introduction to Faith", "updated_at": "2026-10-13T14:05:00Z"})
+async def update_video(
+    *,
+    id: _generator_Annotated[
+        _UpdateVideoIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+    body: _generator_Annotated[_UpdateVideoBody, _generator_Body()],
+) -> _UpdateVideoResponse:
+    return _generator_TypeAdapter(_UpdateVideoResponse).validate_python(
+        {
+            "created_at": "2026-10-13T14:00:00Z",
+            "description": "An introductory lesson",
+            "duration_seconds": 1475.5,
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "publication_status": "DRAFT",
+            "published_at": None,
+            "size_bytes": 524288000,
+            "status": "READY",
+            "thumbnail": {
+                "source": "GENERATED",
+                "status": "READY",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
+            },
+            "title": "Introduction to Faith",
+            "updated_at": "2026-10-13T14:05:00Z",
+        },
+    )
 
 
 @router.post(
@@ -122,8 +245,22 @@ async def update_video(*, id: _generator_Annotated[_UpdateVideoIdParameter, _gen
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.complete_upload")
-async def complete_upload(*, id: _generator_Annotated[_CompleteUploadIdParameter, _generator_Path(alias="id", description="Video ID.")], body: _generator_Annotated[_CompleteUploadBody, _generator_Body()]) -> _CompleteUploadResponse:
-    return _generator_TypeAdapter(_CompleteUploadResponse).validate_python({"processing_job_id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0", "status": "QUEUED", "thumbnail_status": "PENDING", "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def complete_upload(
+    *,
+    id: _generator_Annotated[
+        _CompleteUploadIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+    body: _generator_Annotated[_CompleteUploadBody, _generator_Body()],
+) -> _CompleteUploadResponse:
+    return _generator_TypeAdapter(_CompleteUploadResponse).validate_python(
+        {
+            "processing_job_id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
+            "status": "QUEUED",
+            "thumbnail_status": "PENDING",
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )
 
 
 @router.post(
@@ -133,8 +270,21 @@ async def complete_upload(*, id: _generator_Annotated[_CompleteUploadIdParameter
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.retry_processing")
-async def retry_processing(*, id: _generator_Annotated[_RetryProcessingIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _RetryProcessingResponse:
-    return _generator_TypeAdapter(_RetryProcessingResponse).validate_python({"attempt": 2, "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5", "status": "QUEUED", "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def retry_processing(
+    *,
+    id: _generator_Annotated[
+        _RetryProcessingIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _RetryProcessingResponse:
+    return _generator_TypeAdapter(_RetryProcessingResponse).validate_python(
+        {
+            "attempt": 2,
+            "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
+            "status": "QUEUED",
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )
 
 
 @router.post(
@@ -144,5 +294,24 @@ async def retry_processing(*, id: _generator_Annotated[_RetryProcessingIdParamet
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("videos.upload_url")
-async def upload_url(*, id: _generator_Annotated[_UploadUrlIdParameter, _generator_Path(alias="id", description="Video ID.")], body: _generator_Annotated[_UploadUrlBody, _generator_Body()]) -> _UploadUrlResponse:
-    return _generator_TypeAdapter(_UploadUrlResponse).validate_python({"status": "UPLOADING", "upload": {"expires_at": "2026-10-13T14:15:00Z", "headers": {"Content-Type": "video/mp4"}, "method": "PUT", "upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394", "url": "https://uploads.example.com/source.mp4?signature=example"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def upload_url(
+    *,
+    id: _generator_Annotated[
+        _UploadUrlIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+    body: _generator_Annotated[_UploadUrlBody, _generator_Body()],
+) -> _UploadUrlResponse:
+    return _generator_TypeAdapter(_UploadUrlResponse).validate_python(
+        {
+            "status": "UPLOADING",
+            "upload": {
+                "expires_at": "2026-10-13T14:15:00Z",
+                "headers": {"Content-Type": "video/mp4"},
+                "method": "PUT",
+                "upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394",
+                "url": "https://uploads.example.com/source.mp4?signature=example",
+            },
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )

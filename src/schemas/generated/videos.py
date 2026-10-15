@@ -47,26 +47,57 @@ class Video(WireModel):
     model_config = ConfigDict(extra='allow')
     created_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
     description: VideoDescription = Field(description="Optional video description.")
-    duration_seconds: Annotated[float, Field(ge=0)] | None = Field(description="Video length in seconds.")
+    duration_seconds: Annotated[float, Field(ge=0)] | None = Field(
+        description="Video length in seconds.",
+    )
     id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-    processing_error: VideoProcessingError = Field(default_factory=omitted, description="Processing failure details.")
-    publication_status: PublicationStatus = Field(description="Whether the video is a draft or published.")
-    published_at: Annotated[str, AfterValidator(lambda value: validate_format(value, 'date-time'))] | None = Field(description="When the video was published.")
-    size_bytes: Annotated[int, Field(ge=1)] | None = Field(description="Uploaded file size in bytes.")
+    processing_error: VideoProcessingError = Field(
+        default_factory=omitted,
+        description="Processing failure details.",
+    )
+    publication_status: PublicationStatus = Field(
+        description="Whether the video is a draft or published.",
+    )
+    published_at: Annotated[str, AfterValidator(lambda value: validate_format(value, 'date-time'))] | None = Field(
+        description="When the video was published.",
+    )
+    size_bytes: Annotated[int, Field(ge=1)] | None = Field(
+        description="Uploaded file size in bytes.",
+    )
     status: VideoStatus = Field(description="Current video processing or deletion status.")
-    thumbnail: _schema_thumbnails.ThumbnailImage = Field(description="The current thumbnail.")
+    thumbnail: _schema_thumbnails.ThumbnailImage = Field(
+        description="The current thumbnail.",
+    )
     title: VideoTitle = Field(description="Video title.")
     updated_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
 
 class VideoCreate(WireModel):
     model_config = ConfigDict(extra='allow')
-    description: VideoDescription = Field(default_factory=omitted, description="Optional video description.")
+    description: VideoDescription = Field(
+        default_factory=omitted,
+        description="Optional video description.",
+    )
     title: VideoTitle = Field(description="Video title.")
 
 class VideoUpdate(WireModel):
-    model_config = ConfigDict(extra='allow', json_schema_extra={'anyOf': [{"required": ["title"]}, {"required": ["description"]}, {"required": ["publication_status"]}]})
-    description: VideoDescription = Field(default_factory=omitted, description="Optional video description.")
-    publication_status: PublicationStatus = Field(default_factory=omitted, description="Whether the video is a draft or published.")
+    model_config = ConfigDict(
+        extra='allow',
+        json_schema_extra={
+            "anyOf": [
+                {"required": ["title"]},
+                {"required": ["description"]},
+                {"required": ["publication_status"]},
+            ],
+        },
+    )
+    description: VideoDescription = Field(
+        default_factory=omitted,
+        description="Optional video description.",
+    )
+    publication_status: PublicationStatus = Field(
+        default_factory=omitted,
+        description="Whether the video is a draft or published.",
+    )
     title: VideoTitle = Field(default_factory=omitted, description="Video title.")
 
     @model_validator(mode='before')

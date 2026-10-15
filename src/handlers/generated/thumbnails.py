@@ -33,8 +33,23 @@ router = _generator_APIRouter(prefix="/v1/videos")
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("thumbnails.delete_thumbnail")
-async def delete_thumbnail(*, id: _generator_Annotated[_DeleteThumbnailIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _DeleteThumbnailResponse:
-    return _generator_TypeAdapter(_DeleteThumbnailResponse).validate_python({"thumbnail": {"source": "CUSTOM", "status": "READY", "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def delete_thumbnail(
+    *,
+    id: _generator_Annotated[
+        _DeleteThumbnailIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _DeleteThumbnailResponse:
+    return _generator_TypeAdapter(_DeleteThumbnailResponse).validate_python(
+        {
+            "thumbnail": {
+                "source": "CUSTOM",
+                "status": "READY",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+            },
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )
 
 
 @router.post(
@@ -44,8 +59,24 @@ async def delete_thumbnail(*, id: _generator_Annotated[_DeleteThumbnailIdParamet
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("thumbnails.complete_upload")
-async def complete_upload(*, id: _generator_Annotated[_CompleteUploadIdParameter, _generator_Path(alias="id", description="Video ID.")], body: _generator_Annotated[_CompleteUploadBody, _generator_Body()]) -> _CompleteUploadResponse:
-    return _generator_TypeAdapter(_CompleteUploadResponse).validate_python({"thumbnail": {"source": "CUSTOM", "status": "READY", "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def complete_upload(
+    *,
+    id: _generator_Annotated[
+        _CompleteUploadIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+    body: _generator_Annotated[_CompleteUploadBody, _generator_Body()],
+) -> _CompleteUploadResponse:
+    return _generator_TypeAdapter(_CompleteUploadResponse).validate_python(
+        {
+            "thumbnail": {
+                "source": "CUSTOM",
+                "status": "READY",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+            },
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )
 
 
 @router.post(
@@ -55,5 +86,23 @@ async def complete_upload(*, id: _generator_Annotated[_CompleteUploadIdParameter
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("thumbnails.upload_url")
-async def upload_url(*, id: _generator_Annotated[_UploadUrlIdParameter, _generator_Path(alias="id", description="Video ID.")], body: _generator_Annotated[_UploadUrlBody, _generator_Body()]) -> _UploadUrlResponse:
-    return _generator_TypeAdapter(_UploadUrlResponse).validate_python({"upload": {"expires_at": "2026-10-13T14:15:00Z", "headers": {"Content-Type": "image/jpeg"}, "method": "PUT", "upload_id": "50fd0382-794f-4c9b-9a12-60e92a89e008", "url": "https://uploads.example.com/thumbnail.jpg?signature=example"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def upload_url(
+    *,
+    id: _generator_Annotated[
+        _UploadUrlIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+    body: _generator_Annotated[_UploadUrlBody, _generator_Body()],
+) -> _UploadUrlResponse:
+    return _generator_TypeAdapter(_UploadUrlResponse).validate_python(
+        {
+            "upload": {
+                "expires_at": "2026-10-13T14:15:00Z",
+                "headers": {"Content-Type": "image/jpeg"},
+                "method": "PUT",
+                "upload_id": "50fd0382-794f-4c9b-9a12-60e92a89e008",
+                "url": "https://uploads.example.com/thumbnail.jpg?signature=example",
+            },
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )

@@ -22,5 +22,16 @@ router = _generator_APIRouter(prefix="/v1/videos")
     response_model_exclude_unset=True,
 )
 @_generator_select_endpoint("playback.get_playback")
-async def get_playback(*, id: _generator_Annotated[_GetPlaybackIdParameter, _generator_Path(alias="id", description="Video ID.")]) -> _GetPlaybackResponse:
-    return _generator_TypeAdapter(_GetPlaybackResponse).validate_python({"playback": {"type": "hls", "url": "https://media.example.com/videos/intro/hls/master.m3u8"}, "video_id": "550e8400-e29b-41d4-a716-446655440000"})
+async def get_playback(
+    *,
+    id: _generator_Annotated[
+        _GetPlaybackIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _GetPlaybackResponse:
+    return _generator_TypeAdapter(_GetPlaybackResponse).validate_python(
+        {
+            "playback": {"type": "hls", "url": "https://media.example.com/videos/intro/hls/master.m3u8"},
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+    )
