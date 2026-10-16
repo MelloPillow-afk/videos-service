@@ -153,7 +153,12 @@
       - Videos
     operationId: videos.delete_video
     summary: Delete Video
-    description: Delete a video and its media files.
+    description: |
+      Atomically enter DELETING and record cleanup work before direct launch.
+      Discovery and mutations are blocked immediately. Repeated deletion while
+      in progress returns 202 without creating another cleanup job; missing or
+      fully removed videos return 404. Acceptance does not mean physical media
+      cleanup is complete. Cleanup failures remain visible to administrators.
     x-required-role: admin
     responses:
       '202':
