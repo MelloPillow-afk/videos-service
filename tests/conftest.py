@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import LiteralString, cast
 from uuid import UUID, uuid4
@@ -10,6 +11,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
+from PIL import Image
 from psycopg import AsyncConnection, sql
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -221,3 +223,74 @@ async def arrange_playback_get_playback(
     api_app: FastAPI,
 ) -> None:
     await arrange_ready_example(test_database)
+
+
+@pytest_asyncio.fixture
+async def arrange_thumbnails_upload_url(
+    api_case: APICase,
+    api_client: AsyncClient,
+    signing_keys: LocalSigningKeys,
+) -> None:
+    api_case.headers["Authorization"] = "Bearer " + signing_keys.token()
+    created = await api_client.post("/v1/videos", headers=api_case.headers, json={"title": "Cover"})
+    assert created.status_code == 201
+    id = "550e8400-e29b-41d4-a716-446655440000"
+    api_case.expected_body["upload"].update(
+        {
+            "upload_id": id,
+            "url": f"https://uploads.test/videos/{id}/uploads/{id}/thumbnail.jpg?signature=controlled",
+            "headers": {"Content-Type": "image/jpeg", "If-None-Match": "*"},
+        }
+    )
+
+
+@pytest_asyncio.fixture
+async def arrange_thumbnails_complete_upload(
+    api_case: APICase,
+    api_client: AsyncClient,
+    signing_keys: LocalSigningKeys,
+    storage: MemoryStorage,
+) -> None:
+    api_case.headers["Authorization"] = "Bearer " + signing_keys.token()
+    created = await api_client.post("/v1/videos", headers=api_case.headers, json={"title": "Cover"})
+    assert created.status_code == 201
+    output = BytesIO()
+    Image.new("RGB", (1280, 720), color="blue").save(output, format="JPEG")
+    data = output.getvalue()
+    issued = await api_client.post(
+        created.headers["Location"] + "/thumbnails:upload-url",
+        headers=api_case.headers,
+        json={"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": len(data)},
+    )
+    assert issued.status_code == 200
+    upload = issued.json()["upload"]
+    await storage.browser_put(upload["url"], data, upload["headers"])
+    api_case.body = {"upload_id": upload["upload_id"]}
+    id = "550e8400-e29b-41d4-a716-446655440000"
+    api_case.expected_body["thumbnail"]["url"] = (
+        f"https://media.example.com/videos/{id}/thumbnails/custom/{id}/image.jpg"
+    )
+
+
+@pytest_asyncio.fixture
+async def arrange_thumbnails_delete_thumbnail(
+    api_case: APICase,
+    api_client: AsyncClient,
+    signing_keys: LocalSigningKeys,
+    test_database: tuple[str, str],
+) -> None:
+    api_case.headers["Authorization"] = "Bearer " + signing_keys.token()
+    created = await api_client.post("/v1/videos", headers=api_case.headers, json={"title": "Cover"})
+    assert created.status_code == 201
+    url, schema = test_database
+    async with await AsyncConnection.connect(url, autocommit=True) as connection:
+        await connection.execute(
+            sql.SQL(
+                "UPDATE {}.videos SET generated_thumbnail_status='READY',generated_thumbnail_key='fallback.jpg',custom_thumbnail_key='custom.jpg'"
+            ).format(sql.Identifier(schema))
+        )
+    api_case.expected_body["thumbnail"] = {
+        "status": "READY",
+        "source": "GENERATED",
+        "url": "https://media.example.com/fallback.jpg",
+    }

@@ -16,7 +16,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.uploads.UploadComplete",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel8/api-specs/schemas/uploads/upload_complete.yaml#",
+            "source": "/private/tmp/videos-showcase-mel12/api-specs/schemas/uploads/upload_complete.yaml#",
         },
         "expected_body": {
             "thumbnail": {
@@ -81,7 +81,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.thumbnails.ThumbnailUploadCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel8/api-specs/schemas/thumbnails/thumbnail_upload_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel12/api-specs/schemas/thumbnails/thumbnail_upload_create.yaml#",
         },
         "expected_body": {
             "upload": {
