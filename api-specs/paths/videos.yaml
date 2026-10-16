@@ -81,7 +81,9 @@
       - Videos
     operationId: videos.get_video
     summary: Get Video
-    description: Get video details and processing status.
+    description: |
+      Administrators see full lifecycle details. Anonymous viewers see only
+      READY and PUBLISHED videos; hidden and nonexistent videos return 404.
     security:
       - bearer_auth: []
       - {}
@@ -109,7 +111,10 @@
       - Videos
     operationId: videos.update_video
     summary: Update Video
-    description: Edit video details or publish and unpublish a video.
+    description: |
+      Edit metadata independently of processing. Only READY videos can publish;
+      thumbnail readiness does not gate publication. Repeated publication keeps
+      published_at; unpublishing clears it. DELETING videos reject mutations.
     x-required-role: admin
     requestBody:
       required: true
@@ -179,7 +184,10 @@
       - Uploads
     operationId: videos.upload_url
     summary: Create Video Upload URL
-    description: Get a URL and instructions to upload an MP4 file.
+    description: |
+      Authorize a new isolated MP4 upload for CREATED or UPLOADING videos, with
+      a fifteen-minute URL. Declared size above the configured 100 MiB default
+      returns 413. Older upload attempts cannot replace the active source.
     x-required-role: admin
     requestBody:
       required: true
@@ -223,7 +231,11 @@
       - Uploads
     operationId: videos.complete_upload
     summary: Confirm Video Upload
-    description: Confirm an upload and start video and thumbnail processing.
+    description: |
+      Verify the current object and actual size, then record independent video
+      and thumbnail jobs before launching them directly. Rejection preserves
+      UPLOADING. Repeating accepted completion returns the existing job.
+      Confirmed objects are protected against later upload writes.
     x-required-role: admin
     requestBody:
       $ref: ../index.yaml#/components/requestBodies/upload_completion
@@ -305,7 +317,7 @@
       - Videos
     operationId: videos.retry_processing
     summary: Retry Video Processing
-    description: Retry failed video processing.
+    description: Retry FAILED video processing with a retained validated source using a new job.
     x-required-role: admin
     responses:
       '202':

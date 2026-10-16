@@ -11,9 +11,17 @@ from psycopg import AsyncConnection
 pytestmark = pytest.mark.integration
 
 
-async def test_yoyo_apply_and_rollback(test_database: tuple[str, str], tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "sources,table",
+    [
+        (Path(__file__).parent / "migrations", "migration_probe"),
+        (Path(__file__).parents[2] / "migrations", "videos"),
+    ],
+)
+async def test_yoyo_apply_and_rollback(
+    test_database: tuple[str, str], tmp_path: Path, sources: Path, table: str
+) -> None:
     url, schema = test_database
-    sources = Path(__file__).parent / "migrations"
     config = tmp_path / "yoyo.ini"
     config.write_text(
         f"[DEFAULT]\nsources = {sources}\ndatabase = %(YOYO_DATABASE_URL)s\nbatch_mode = on\n"
@@ -43,8 +51,8 @@ async def test_yoyo_apply_and_rollback(test_database: tuple[str, str], tmp_path:
     await run_yoyo("apply")
     await run_yoyo("apply")
     async with await AsyncConnection.connect(url, autocommit=True) as connection:
-        cursor = await connection.execute("SELECT to_regclass(%s)", (f"{schema}.migration_probe",))
+        cursor = await connection.execute("SELECT to_regclass(%s)", (f"{schema}.{table}",))
         assert (row := await cursor.fetchone()) is not None and row[0] is not None
         await run_yoyo("rollback")
-        cursor = await connection.execute("SELECT to_regclass(%s)", (f"{schema}.migration_probe",))
+        cursor = await connection.execute("SELECT to_regclass(%s)", (f"{schema}.{table}",))
         assert await cursor.fetchone() == (None,)

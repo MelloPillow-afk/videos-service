@@ -31,8 +31,8 @@ examples:
         description: An introductory lesson
         status: READY
         publication_status: PUBLISHED
-        size_bytes: 524288000
-        duration_seconds: 1475.5
+        size_bytes: 52428800
+        duration_seconds: 147.5
         thumbnail:
           status: READY
           source: CUSTOM

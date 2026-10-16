@@ -53,8 +53,8 @@ CUSTOM_THUMBNAIL = {
 READY: dict[str, object] = {
     **CREATED,
     "status": "READY",
-    "size_bytes": 524288000,
-    "duration_seconds": 1475.5,
+    "size_bytes": 52428800,
+    "duration_seconds": 147.5,
     "thumbnail": GENERATED_THUMBNAIL,
     "updated_at": "2026-10-13T14:05:00Z",
 }
@@ -73,18 +73,15 @@ SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
 THUMBNAIL_UPLOAD_ID = "50fd0382-794f-4c9b-9a12-60e92a89e008"
 
 
-async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
+async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
     cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
         ("GET", "/ping", None, 200, {"status": "ok"}),
         ("GET", "/v1/videos", None, 200, COLLECTION),
-        ("POST", "/v1/videos", {"title": "A new video"}, 201, CREATED),
-        ("GET", RESOURCE, None, 200, CREATED),
-        ("PATCH", RESOURCE, {"title": "Updated title"}, 200, CREATED),
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
             f"{RESOURCE}:upload-url",
-            {"file_name": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 524288000},
+            {"file_name": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 52428800},
             200,
             {
                 "video_id": VIDEO_ID,
@@ -219,7 +216,7 @@ async def test_invalid_requests_use_native_validation(
     assert "error" not in response.json()
 
 
-async def test_native_query_parsing_and_nullable_updates_are_accepted() -> None:
+async def test_native_query_parsing_and_exact_collection_path() -> None:
     app = create_app(Settings(db_pool_min_size=0))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(
@@ -227,10 +224,6 @@ async def test_native_query_parsing_and_nullable_updates_are_accepted() -> None:
         )
         assert response.status_code == 200
         assert response.json() == COLLECTION
-        for body in [{"description": None}, {"title": "Renamed"}]:
-            response = await client.patch(RESOURCE, json=body)
-            assert response.status_code == 200
-            assert response.json() == CREATED
         # The collection route preserves its exact contract spelling.
         response = await client.get("/v1/videos/")
         assert response.status_code == 307

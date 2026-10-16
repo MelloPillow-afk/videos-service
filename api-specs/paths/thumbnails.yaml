@@ -6,7 +6,9 @@
       - Thumbnails
     operationId: thumbnails.upload_url
     summary: Create Video Thumbnail Upload URL
-    description: Get a URL and instructions to upload a custom thumbnail.
+    description: |
+      Upload JPEG, PNG, or WebP up to 5 MiB, with exact 1280 by 720 dimensions.
+      The client crops the image. URLs expire after fifteen minutes.
     x-required-role: admin
     requestBody:
       required: true

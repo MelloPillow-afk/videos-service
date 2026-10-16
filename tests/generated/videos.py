@@ -16,7 +16,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoCreate",
             "required": True,
-            "source": "/Users/richardhuynh/Dev/personal/projects/pilgrims/videos-service/api-specs/schemas/videos/video_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel6/api-specs/schemas/videos/video_create.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -83,11 +83,11 @@ _CASES: dict[str, dict[str, Any]] = {
                 {
                     "created_at": "2026-10-13T14:00:00Z",
                     "description": "An introductory lesson",
-                    "duration_seconds": 1475.5,
+                    "duration_seconds": 147.5,
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "publication_status": "PUBLISHED",
                     "published_at": "2026-10-13T15:00:00Z",
-                    "size_bytes": 524288000,
+                    "size_bytes": 52428800,
                     "status": "READY",
                     "thumbnail": {
                         "source": "CUSTOM",
@@ -172,7 +172,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoUpdate",
             "required": True,
-            "source": "/Users/richardhuynh/Dev/personal/projects/pilgrims/videos-service/api-specs/schemas/videos/video_update.yaml#",
+            "source": "/private/tmp/videos-showcase-mel6/api-specs/schemas/videos/video_update.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -207,12 +207,12 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.videos.Video",
     },
     "videos.upload_url": {
-        "body": {"content_type": "video/mp4", "file_name": "introduction.mp4", "size_bytes": 524288000},
+        "body": {"content_type": "video/mp4", "file_name": "introduction.mp4", "size_bytes": 52428800},
         "body_model": {
             "attribute": "body",
             "model": "src.schemas.generated.uploads.SourceUploadCreate",
             "required": True,
-            "source": "/Users/richardhuynh/Dev/personal/projects/pilgrims/videos-service/api-specs/schemas/uploads/source_upload_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel6/api-specs/schemas/uploads/source_upload_create.yaml#",
         },
         "expected_body": {
             "status": "UPLOADING",
