@@ -26,5 +26,6 @@ Temporary cleanup failures keep DELETING and retry with increasing delays.
 Cleanup has a bounded execution runtime but no three-attempt media abandonment
 rule. An exhausted/interrupted execution is visible and explicitly recoverable.
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
-table, or full frontend is added. Real R2 conditional/guard races remain a
-separate live-provider evidence gate.
+table, or full frontend is added. The [cloud readiness record](../cloud-readiness.md)
+contains independent live R2 conditional/guard proof; full browser/CDN/deployed
+acceptance remains separate.

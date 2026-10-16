@@ -11,8 +11,9 @@ published videos anonymously. Documentation endpoints remain disabled.
 Deletion admission immediately hides content and records cleanup work. The
 explicit worker replaces media bytes with permanent zero-byte guards before
 removing application rows. A 202 response acknowledges admission; it does not
-certify removal. See the [approved guard policy](docs/specs/deletion-guard-policy.md). The reproducible showcase (MEL-15), configured
-cloud readiness (MEL-7), and live provider acceptance (MEL-16) are separate gates.
+certify removal. See the [approved guard policy](docs/specs/deletion-guard-policy.md).
+The reproducible showcase (MEL-15), configured cloud readiness (MEL-7), and live
+provider acceptance (MEL-16) are separate gates.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
 

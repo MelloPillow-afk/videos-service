@@ -48,13 +48,15 @@ inline operation example. Contract checks and regeneration remain authoritative.
 
 ## Outstanding gates
 
-- **MEL-7:** target accounts, credentials, provider token/schema configuration,
-  browser CORS/create-once protection, runtime identities, and readiness evidence.
+- **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
+  Neon/R2 data-plane and scoped IAM evidence; target Auth, browser CORS/CDN and
+  deployed execution gates remain open.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
   covered by [deletion acceptance](deletion-acceptance.md). Configured live
   provider evidence remains separately tracked under MEL-7/MEL-16.
-- **MEL-15:** the complete reproducible showcase depends on completed deletion.
+- **MEL-15:** the complete reproducible showcase remains separate; its deletion
+  dependency is now implemented locally.
 - **MEL-16:** real Neon/R2/Cloud Run/CDN end-to-end evidence remains unexecuted.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
@@ -78,3 +80,10 @@ byte-identical across all 26 owned files and the ownership record. Generated
 source-location metadata now points at the integration checkout. Both reviewers
 confirmed their findings resolved; no new actionable finding remained in the
 follow-up review. The outstanding gates above remain open.
+
+Approved deletion follow-up: after merging cloud readiness and the verified Neon
+pool compatibility fix, MEL-14 quality checks passed and all **217 unique local
+tests** were verified (215 in the full run plus the two migration subprocess
+cases rerun successfully through uv's PATH). See [deletion acceptance](deletion-acceptance.md)
+for exact evidence and the retained-guard exception. This does not supersede the
+remaining showcase or live deployment gates.

@@ -65,3 +65,21 @@ late conditional PUTs resume. The signed source upload race is also covered.
 R2 SDK request tests require one unconditional PUT with no delete gap and verify
 metadata mapping. Local checks do not establish complete deployed cloud behavior;
 R2/CDN/browser/IAM evidence belongs to MEL-7/MEL-16.
+
+## Executed evidence
+
+After merging integration `546c4c5`, `make check` passed 46 OpenAPI examples,
+Ruff/formatting and strict Pyright with zero errors. `ag` regenerated 13 operations
+and 23 generated HTTP cases before handwritten changes. All **217 unique local
+tests** are verified: the full combined run passed 215 cases; its two migration
+subprocess cases could not find `yoyo` because the direct pytest invocation lacked
+the virtual-environment PATH. Re-running those two through `uv run --locked pytest
+tests/integration/test_migrations.py -q` passed both. No source fix or broad rerun
+was needed. The full run measured 87% coverage; the read-only inventory CLI is
+exercised in a separate subprocess outside coverage collection.
+
+The merged [cloud readiness record](cloud-readiness.md) independently verifies
+actual R2 guards at existing and absent keys in both buckets, marker HEAD/GET,
+and rejection of previously issued signed conditional PUTs. Browser CORS, CDN,
+Auth and deployed end-to-end gates remain separate; local completion does not
+close MEL-7 or MEL-16.
