@@ -156,7 +156,9 @@ async def test_unconfirmed_manual_recovery_exits_failed(
         await asyncio.to_thread(main, ["recover", "--job-id", str(job_id)])
 
     assert exited.value.code == 1
-    assert json.loads(capsys.readouterr().out)["outcome"] == "failed"
+    output = capsys.readouterr()
+    assert json.loads(output.out)["outcome"] == "failed"
+    assert "Launch was not confirmed" in output.err
     assert (await cli_client.get(path)).json()["status"] == "QUEUED"
 
 

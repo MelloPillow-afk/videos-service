@@ -1,0 +1,14 @@
+# Allow only the production build inputs into Docker's context.
+**
+!Dockerfile
+!docker-entrypoint.sh
+!pyproject.toml
+!uv.lock
+!src/
+!src/**
+!migrations/
+!migrations/**
+!yoyo.ini
+**/__pycache__
+**/*.pyc
+**/._*

@@ -21,24 +21,28 @@ payload, signed URL, database password, or demonstration identity is recorded he
 | Registry / deployment | Existing Docker repository `videos`, `us-central1`. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
 | Runtime identities | Existing `videos-api@videos-service.iam.gserviceaccount.com` and `videos-worker@videos-service.iam.gserviceaccount.com`. Six secret-scoped accessor grants added, then only these two project Editor members removed; unrelated default-compute Editor membership preserved. Readback confirms grants. |
 | Secret metadata | Existing `videos-database-url`, `videos-r2-access-key-id`, `videos-r2-secret-access-key`, each version `1` ENABLED. Payloads were not printed or changed. Database secret must be checked/replaced with the separate runtime DSN at deployment. |
-| R2 target | Distinct existing buckets `videos-raw` (private intent) and `videos-processed` (delivery intent). Authenticated HEAD, GET, create-only PUT, prefix list and narrow delete succeed through supplied S3 credentials. Bucket exposure is **not yet verified**. |
+| R2 target | Distinct existing buckets `videos-raw` and `videos-processed`, WNAM/default jurisdiction. Authenticated HEAD, GET, create-only PUT, prefix list and narrow unsigned-probe deletion work. Config readback verifies private `r2.dev` disabled and no custom domains; delivery development URL also disabled, custom domains empty. Actual CDN positive/negative sentinel proof remains pending a delivery hostname. |
 | R2 upload protection | Both source/video and image signed PUT: first 200, replacement 412, original bytes unchanged. Missing/altered If-None-Match or altered Content-Type: 403. Two simultaneous PUTs: 200/412, stored bytes match one contender. URLs signed for 900 seconds. |
-| R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Seven markers retained; inventory below. |
-| Browser/CORS gate | OPTIONS for `http://localhost:8765` and an unapproved origin both return 403 without Access-Control-Allow-Origin. HTTP upload safety succeeds, but browser upload readiness is **blocked**, not passed. |
-| Configuration access | Cloudflare bucket metadata/domain/CORS REST reads return 403, code 10000. S3 GetBucketCors returns 403 AccessDenied on both buckets. No bucket configuration changed. |
+| R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Nine markers retained after the browser probe; inventory below. |
+| Browser/CORS | Approved `http://localhost:8765` private PUT preflight returns 204, exact origin, Content-Type/If-None-Match allowed. Public GET-with-Range preflight returns 204 and advertises GET/HEAD. Unapproved-origin PUT and GET-with-Range preflights return 403 without allowing headers; preserved wildcard owner rules still allow simple GET. Actual in-app browser uploads of MP4 and valid 1280×720 JPEG each return 200 then 412 for replacement bytes; authenticated GET digests remain unchanged. Both signed keys then sealed and verified. |
+| Configuration access | Updated owner-supplied administrative access now returns 200 for REST metadata/domain/CORS and S3 GetBucketCors. Preserved owner GET rules (localhost:3000 and wildcard); appended narrow localhost:8765 upload/player rules and read them back. Active account zone-name metadata returns an empty list. |
 
-These are direct provider/SDK/HTTP observations, not a live browser session or a
-completed application deployment. No scheduler, lifecycle rule, bucket-wide delete,
+These include direct provider/SDK/HTTP observations and an actual browser direct-PUT
+probe. They do not certify completed application deployment or CDN player playback. No scheduler, lifecycle rule, bucket-wide delete,
 service-account key, or unrelated resource was created.
+
+The [retained browser screenshot](evidence/r2-browser-put-2026-10-16.png) shows
+actual localhost MP4/JPEG upload and overwrite statuses without signed URLs.
 
 ## Remaining access and verification gates
 
 | Area | Specific remaining input or action |
 | --- | --- |
-| Auth | Dedicated demonstration login and permission for temporary provider-admin demotion/restoration; inspect real issuer/audience/subject/lifetime, verify admin access and immediate revocation using the same valid token. Confirm target Auth version. |
+| Auth | Explicit approval for an isolated synthetic demonstration account and temporary provider-admin assignment/demotion/restoration is pending. Read-only provider discovery confirms signup/signin/token endpoints, signups enabled and verification emails disabled; no account was created or identity changed. Then inspect actual issuer/audience/subject/lifetime and verify same-token immediate revocation. Confirm target Auth version. |
 | Database | Explicitly apply application migrations with owner connection, grant DML on the exact three tables, update runtime secret reference, and verify deployed API/worker TLS connectivity using the tested pooler-compatible configuration. |
-| R2 configuration | Correct Cloudflare API token with read/write configuration permissions for the two existing buckets, or owner-applied settings with readback. Verify private `r2.dev` and custom domains disabled; delivery development URL disabled. |
-| CDN / browser | Actual public delivery hostname and DNS/cache authorization. Connect only delivery bucket; prove public control succeeds and an existing private sentinel cannot be fetched there. Apply/read back CORS for the approved narrow demo origin `http://localhost:8765` and any separately approved player origins. Repeat actual browser preflight/PUT/player checks. |
+| R2 configuration | Configuration access and private exposure readback are verified. Retain the approved narrow browser rules and all permanent markers; preserve existing owner GET rules unless the owner requests a change. CORS does not authorize access to private objects. |
+| R2 runtime credentials | Current S3 credentials are the same account-owned administrative setup token (verified by ID/hash equality without recording either value). Bucket configuration access is broader than runtime needs. Account token detail and permission-group APIs return 403/code 9109. Owner must supply a separate Object Read & Write token scoped only to `videos-raw` and `videos-processed`, or grant setup `Account API Tokens Write` so that scoped token can be created through the API. Do not deploy the setup credential as runtime access. |
+| CDN / browser | Actual public delivery hostname and DNS/cache authorization. Connect only delivery bucket; prove public control succeeds and an existing private sentinel cannot be fetched there. CORS/direct browser PUT from `http://localhost:8765` is verified. Actual CDN player playback and any separately approved player origins remain pending. |
 | Cloud Run | Deploy completed image to existing registry, attach the two identities and secret references, create the worker job, grant API job-scoped execution-with-overrides, then verify benign authorized and denied launches independently of business flows. No job currently exists to receive that scoped grant. |
 | Resource budget | Measure representative media against explicit job CPU/memory/timeout and API/connection concurrency settings; no quota expansion is implied. |
 
@@ -78,7 +82,7 @@ connection, and verify public CREATE and Auth role UPDATE are denied.
 
 ## Permanent probe marker inventory
 
-Keep these seven zero-byte deletion guards indefinitely under the exact prefix
+Keep these initial seven zero-byte deletion guards indefinitely under the exact prefix
 `readiness/mel-7/7dc4f9b8-8e22-4ef1-a8e1-2989db635f51/`:
 
 | Bucket | Key suffixes |
@@ -86,9 +90,13 @@ Keep these seven zero-byte deletion guards indefinitely under the exact prefix
 | `videos-raw` | `source`, `image`, `concurrent`, `guard-existing`, `guard-absent` |
 | `videos-processed` | `guard-existing`, `guard-absent` |
 
+The browser proof additionally retained two guards in `videos-raw` under
+`readiness/mel-7/browser-8701e1f9-f225-43e2-b3a9-2fc2f9cdb1fa/`, suffixes
+`source` and `image`. These correspond to the actual MP4/JPEG browser uploads.
+
 They have content type `application/x-pilgrims-deletion-guard`, metadata
 `pilgrims-deletion-guard=1`, and `Cache-Control: no-store`. Never blanket-delete
-this prefix: removing a guard reopens its key to a delayed conditional writer.
+these prefixes: removing a guard reopens its key to a delayed conditional writer.
 Only the unsigned `delete-control` objects were removed, and subsequent HEAD
 returned 404. No user media was read, overwritten, or deleted.
 
@@ -174,6 +182,12 @@ Deletion uses permanent zero-byte guards: overwrite existing media and reserve
 known absent keys atomically, then verify exact marker HEAD metadata. Actual R2
 proof above covers this mechanism; complete application cleanup and CDN cache
 evidence remain separate live acceptance work.
+
+Account-owned token creation requires `Account API Tokens Write`; current setup
+access cannot read token details or permission groups (403/code 9109). R2 derives
+the S3 key ID from the token ID and its secret from SHA-256 of the token value.
+These were compared privately only; no credential was copied into evidence.
+[Account token creation](https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/methods/create/).
 
 Runtime R2 credentials require bucket-scoped object operations, not account-wide
 bucket administration. Confirm list/get/create-only PUT and privileged guard sealing, as well as upload
