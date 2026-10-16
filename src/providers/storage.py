@@ -1,15 +1,18 @@
 """Object-storage boundary; ordinary writers only create immutable objects."""
 
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 StorageArea = Literal["private", "public"]
+GUARD_CONTENT_TYPE = "application/x-pilgrims-deletion-guard"
+GUARD_METADATA_KEY = "pilgrims-deletion-guard"
 
 
 @dataclass(frozen=True)
 class StoredObject:
     size_bytes: int
     content_type: str
+    deletion_guard: bool = False
 
 
 @dataclass(frozen=True)
@@ -48,7 +51,13 @@ class Storage(Protocol):
         create_only: bool = True,
     ) -> None: ...
     async def list(self, area: StorageArea, prefix: str) -> list[str]: ...
-    async def delete(self, area: StorageArea, key: str) -> None: ...
     async def sign_upload(
         self, key: str, content_type: str, expires_seconds: int = 900
     ) -> UploadInstructions: ...
+
+
+@runtime_checkable
+class GuardStorage(Storage, Protocol):
+    """Privileged atomic overwrite; retained markers must never be expired or deleted."""
+
+    async def seal(self, area: StorageArea, key: str) -> None: ...

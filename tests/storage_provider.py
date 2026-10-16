@@ -4,6 +4,7 @@ import asyncio
 from urllib.parse import unquote, urlsplit
 
 from src.providers.storage import (
+    GUARD_CONTENT_TYPE,
     StorageArea,
     StorageConflictError,
     StorageLimitError,
@@ -15,6 +16,7 @@ from src.providers.storage import (
 
 class MemoryStorage:
     def __init__(self) -> None:
+        self.guards: set[tuple[StorageArea, str]] = set()
         self.head_started: asyncio.Event | None = None
         self.head_release: asyncio.Event | None = None
         self.size_overrides: dict[str, int] = {}
@@ -27,7 +29,11 @@ class MemoryStorage:
         item = self.objects.get((area, key))
         if item is not None and key in self.size_overrides:
             return StoredObject(self.size_overrides[key], item[1])
-        return StoredObject(len(item[0]), item[1]) if item is not None else None
+        return (
+            StoredObject(len(item[0]), item[1], (area, key) in self.guards)
+            if item is not None
+            else None
+        )
 
     async def read(self, area: StorageArea, key: str, max_bytes: int) -> bytes:
         item = self.objects.get((area, key))
@@ -50,15 +56,16 @@ class MemoryStorage:
             raise StorageConflictError
         self.objects[area, key] = data, content_type
 
+    async def seal(self, area: StorageArea, key: str) -> None:
+        self.objects[area, key] = b"", GUARD_CONTENT_TYPE
+        self.guards.add((area, key))
+
     async def list(self, area: StorageArea, prefix: str) -> list[str]:
         return [
             key
             for (stored_area, key) in self.objects
             if stored_area == area and key.startswith(prefix)
         ]
-
-    async def delete(self, area: StorageArea, key: str) -> None:
-        self.objects.pop((area, key), None)
 
     async def sign_upload(
         self, key: str, content_type: str, expires_seconds: int = 900

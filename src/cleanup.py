@@ -1,4 +1,4 @@
-"""Operator-only read-only cleanup inspection; no physical completion policy selected."""
+"""Operator-only read-only cleanup inventory; explicit workers own completion."""
 
 import argparse
 import asyncio

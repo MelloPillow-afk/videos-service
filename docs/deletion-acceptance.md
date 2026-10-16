@@ -1,59 +1,85 @@
-# Deletion admission and inventory (MEL-14, partial)
+# Guarded deletion (MEL-14)
 
-Status: **partial; cleanup completion is not implemented**. The owner decision
-between permanent zero-byte guards and verified writer drain is still pending.
-Neither policy is assumed by this change. No media or application rows are
-removed and no cleanup job is marked SUCCEEDED.
+The user approved permanent zero-byte deletion guards on 2026-10-16. See the
+[approved policy](specs/deletion-guard-policy.md); it supersedes the earlier
+pending writer-drain decision. Local deletion now completes through the real
+application and PostgreSQL. Live provider acceptance is tracked separately.
 
-DELETE through the real app now requires the current administrator role. In one
-transaction it locks the video, enters DELETING, records one current DELETION
-job, and records a safe CLEANUP_POLICY_REQUIRED diagnostic. Direct submission
-happens after commit. Concurrent/repeated deletion returns 202 using the retained
-work; it does not submit another execution. Missing records return 404. A launch
-failure remains LAUNCH_FAILED with an explicit unknown-outcome recovery message;
-202 acknowledges persisted acceptance rather than launch or cleanup success.
+DELETE requires the current administrator role. One transaction locks the video,
+enters DELETING, and records one current DELETION job; direct submission follows
+commit. Repeated/concurrent deletion returns 202 without another launch. Missing
+or fully removed records return 404. Launch failures retain LAUNCH_FAILED and
+safe unknown-outcome diagnostics. A 202 acknowledges persisted admission.
 
-DELETING immediately removes anonymous detail/list/playback discovery and blocks
-metadata edits, new source/image authorizations, upload acceptance, thumbnail
-completion/removal, and worker result publication. Administrators can still
-inspect the deleting video. Database fencing does not stop a provider write that
-was already in flight.
+DELETING immediately hides anonymous detail/list/playback discovery and blocks
+metadata edits, source/image authorization and acceptance, thumbnail removal,
+new worker manifests, and publication. The explicit cleanup worker independently
+claims the current DELETION job with a token; duplicate and stale executions
+cannot finalize application records.
 
-The read-only operator command uses configured DATABASE_URL and DB_SCHEMA:
+Cleanup inventories accepted/superseded/pending/removed private upload objects,
+accepted originals, registered custom-image copies, current playback and thumbnail
+keys, cumulative output keys from every historical worker attempt, and additional
+objects under recorded video/job prefixes. Every possible future media key is
+registered before its conditional PUT. Deletion fences further registrations.
+A single unconditional privileged PUT replaces each existing or absent key with
+zero bytes, guard content type and explicit marker metadata. HEAD must verify all
+three before deleting the video and its cascaded jobs/upload rows. Listings find
+legacy objects; empty listings and URL expiry never substitute for guarding the
+complete finite manifest. Ordinary application writers have no delete primitive.
+
+Guards remain indefinitely. Cleanup never deletes then recreates a key, never
+expires guards, and does not wait for signed URLs or known workers to drain.
+Late conditional PUTs either commit before the guard and are overwritten, or fail
+against it. Already cached public content can remain until cache expiry; this is
+not immediate CDN revocation.
+
+Provider/verification failures keep DELETING. Cleanup retries after 1, 4, 16 and
+then 30 seconds per attempt; delays and the default 900-second invocation runtime
+are configurable. There is no three-execution media cap for cleanup. Runtime
+exhaustion records FAILED/CLEANUP_RUNTIME_EXHAUSTED; no rows are removed. Inspect
+cloud execution termination before explicit recovery:
 
 ```sh
-uv run --locked python -m src.cleanup inspect --job-id UUID
+uv run --locked python -m src.cleanup inspect --job-id UUID --list-storage
+uv run --locked python -m src.worker recover --job-id UUID
+# A stranded RUNNING claim additionally requires confirmed prior termination:
+uv run --locked python -m src.worker recover --job-id UUID --previous-execution-terminated
 ```
 
-It enumerates the accepted source, every current/superseded/removed/pending
-upload object's private key, registered public custom-image copies, current
-playback/generated/custom keys, all historical job output manifests/prefixes,
-upload URL expiry times, and execution states/references. It retains the entire
-cumulative output manifest across attempts. Add `--list-storage` to enrich the
-inventory using the existing provider's private/public prefix listings; this
-requires actual storage configuration. Neither URL expiry nor an empty listing
-is treated as proof that old writes have drained. Output always explicitly
-reports `physical_cleanup_complete: false`.
+The inspection command exposes keys/history, not secrets or signed URLs. It is a
+read-only snapshot and always reports `physical_cleanup_complete: false`; after
+successful cleanup the application rows no longer exist. Cloud Run task timeout
+must exceed the cleanup runtime and database finalization allowance. A hard kill
+can leave RUNNING and requires explicit terminated-execution confirmation.
+No scheduler, reconciliation process, fourth table, or orphan cleanup is added.
 
-No signed URLs, authorization headers, or provider credentials belong in this
-inventory. Treat object keys and execution references as operator diagnostics,
-not public API resource fields. Inspect cloud executions before any manual
-relaunch; changing a database job state does not terminate an old execution.
-The media recovery command is maintained with MEL-10. Physical deletion worker
-dispatch, bounded-runtime retry/finalization behavior, and eventual row removal
-remain pending the owner decision and required provider evidence. No scheduler
-or periodic maintenance service is introduced.
+Acceptance covers repeated 202, immediate visibility and role fences, launch
+failure, read-only inspection, all registered/listed keys including absent ones,
+simultaneous claims, guard metadata verification, five temporary failures followed
+by success with increasing delays, runtime exhaustion and relaunch beyond the
+media budget, old-token rejection, and eventual 404/zero application rows. Real
+FFmpeg VIDEO and THUMBNAIL workers and decoded custom-image copies are paused at
+the provider write boundary; cleanup guards their persisted manifests before the
+late conditional PUTs resume. The signed source upload race is also covered.
+R2 SDK request tests require one unconditional PUT with no delete gap and verify
+metadata mapping. Local checks do not establish complete deployed cloud behavior;
+R2/CDN/browser/IAM evidence belongs to MEL-7/MEL-16.
 
-Local HTTP/PostgreSQL acceptance covers one durable cleanup job, repeated 202,
-immediate visibility fencing, role checks, launch failure history, blocked
-mutations, source verification racing deletion, and the read-only inventory CLI
-with historical manifests and attempts. Existing real-media tests cover worker
-publication fences. These checks do not establish eventual physical cleanup or
-production CDN revocation. MEL-14 must remain open.
+## Executed evidence
 
-Executed locally: `make check` (45 contract examples, Ruff, strict Pyright),
-`ag` regeneration (13 operations / 23 generated HTTP cases), and the complete
-PostgreSQL/real-media pytest suite: **163 passed**, including five deletion
-admission/inventory cases. The inspection CLI is exercised as a separate process;
-the coverage report does not collect that subprocess. No storage deletion or
-eventual-cleanup scenario has been run.
+After merging integration `546c4c5`, `make check` passed 46 OpenAPI examples,
+Ruff/formatting and strict Pyright with zero errors. `ag` regenerated 13 operations
+and 23 generated HTTP cases before handwritten changes. All **217 unique local
+tests** are verified: the full combined run passed 215 cases; its two migration
+subprocess cases could not find `yoyo` because the direct pytest invocation lacked
+the virtual-environment PATH. Re-running those two through `uv run --locked pytest
+tests/integration/test_migrations.py -q` passed both. No source fix or broad rerun
+was needed. The full run measured 87% coverage; the read-only inventory CLI is
+exercised in a separate subprocess outside coverage collection.
+
+The merged [cloud readiness record](cloud-readiness.md) independently verifies
+actual R2 guards at existing and absent keys in both buckets, marker HEAD/GET,
+and rejection of previously issued signed conditional PUTs. Browser CORS, CDN,
+Auth and deployed end-to-end gates remain separate; local completion does not
+close MEL-7 or MEL-16.

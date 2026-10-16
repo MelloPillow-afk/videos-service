@@ -612,7 +612,7 @@ async def test_deletion_during_backoff_prevents_another_media_execution(
     assert row == (1,)
 
 
-async def test_cleanup_relaunch_has_no_media_execution_cap_and_keeps_policy_diagnostic(
+async def test_cleanup_relaunch_has_no_media_execution_cap_and_keeps_failure_diagnostic(
     worker_client: AsyncClient,
     api_app: FastAPI,
     signing_keys: LocalSigningKeys,
@@ -626,7 +626,7 @@ async def test_cleanup_relaunch_has_no_media_execution_cap_and_keeps_policy_diag
     async with await AsyncConnection.connect(test_database[0], autocommit=True) as connection:
         cursor = await connection.execute(
             sql.SQL(
-                "UPDATE {}.jobs SET state='FAILED',execution_attempts=5 WHERE kind='DELETION' RETURNING id"
+                "UPDATE {}.jobs SET state='FAILED',execution_attempts=5,error_code='CLEANUP_RUNTIME_EXHAUSTED' WHERE kind='DELETION' RETURNING id"
             ).format(sql.Identifier(test_database[1]))
         )
         row = await cursor.fetchone()
@@ -643,4 +643,4 @@ async def test_cleanup_relaunch_has_no_media_execution_cap_and_keeps_policy_diag
                 (job_id,),
             )
         ).fetchone()
-    assert row == ("LAUNCHED", 5, "CLEANUP_POLICY_REQUIRED")
+    assert row == ("LAUNCHED", 5, "CLEANUP_RUNTIME_EXHAUSTED")

@@ -28,6 +28,7 @@ from src.repositories.workers import (
     next_attempt,
     register_outputs,
 )
+from src.services.cleanup import run_cleanup
 from src.services.media import InvalidMedia, MediaProcessingError, encode_hls, validate_source
 
 
@@ -39,9 +40,12 @@ async def run_job(
     *,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> bool:
-    """One claim owner performs at most three executions; duplicates cannot steal retries."""
+    """Dispatch one persisted job; media budgets and cleanup runtime are independent."""
     async with database.connection() as connection:
         kind = await job_kind(connection, job_id)
+    if kind == "DELETION":
+        return await run_cleanup(job_id, database, storage, settings, sleep=sleep)
+    async with database.connection() as connection:
         if kind not in ("VIDEO", "THUMBNAIL"):
             return False
         work = await claim(connection, job_id, uuid4(), kind=kind)

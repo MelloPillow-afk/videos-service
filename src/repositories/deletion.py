@@ -1,4 +1,4 @@
-"""Deletion acceptance SQL; physical cleanup policy is deliberately separate."""
+"""Deletion admission, finite inventory, and guarded cleanup transitions."""
 
 from datetime import datetime
 from uuid import UUID
@@ -23,15 +23,6 @@ async def enter_deleting(
 ) -> None:
     await connection.execute(
         "UPDATE videos SET status='DELETING',updated_at=%s WHERE id=%s", (now, video_id)
-    )
-
-
-async def mark_cleanup_policy_required(connection: AsyncConnection[TupleRow], job_id: UUID) -> None:
-    await connection.execute(
-        """UPDATE jobs SET error_code='CLEANUP_POLICY_REQUIRED',
-        error_message='Cleanup is pending the approved writer-protection policy; media is not removed.'
-        WHERE id=%s""",
-        (job_id,),
     )
 
 
