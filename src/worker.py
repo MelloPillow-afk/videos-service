@@ -3,10 +3,12 @@
 import argparse
 import asyncio
 import tempfile
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from src.config import Settings
+from src.domain.jobs import TemporaryWorkFailure
 from src.providers.storage import (
     Storage,
     StorageConflictError,
@@ -15,16 +17,71 @@ from src.providers.storage import (
     TemporaryStorageError,
 )
 from src.repositories.database import Database
-from src.repositories.workers import claim, complete, eligible, fail, register_outputs
+from src.repositories.workers import (
+    Work,
+    claim,
+    complete,
+    eligible,
+    fail,
+    next_attempt,
+    register_outputs,
+)
 from src.services.media import InvalidMedia, MediaProcessingError, encode_hls, validate_source
 
 
-async def run_job(job_id: UUID, database: Database, storage: Storage, settings: Settings) -> bool:
-    """Claim once, encode outside transactions, then conditionally publish verified assets."""
+async def run_job(
+    job_id: UUID,
+    database: Database,
+    storage: Storage,
+    settings: Settings,
+    *,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> bool:
+    """One claim owner performs at most three executions; duplicates cannot steal retries."""
     async with database.connection() as connection:
         work = await claim(connection, job_id, uuid4())
-    if work is None:
-        return False
+    while work is not None:
+        try:
+            return await process_video(work, database, storage, settings)
+        except (InvalidMedia, StorageLimitError) as error:
+            message = (
+                str(error)
+                if isinstance(error, InvalidMedia)
+                else "The source exceeds the configured byte limit."
+            )
+            async with database.connection() as connection:
+                await fail(connection, work, "INVALID_SOURCE", message, permanent=True)
+            return False
+        except (
+            TemporaryWorkFailure,
+            MediaProcessingError,
+            TemporaryStorageError,
+            StorageMissingError,
+            StorageConflictError,
+            TimeoutError,
+            OSError,
+        ) as error:
+            async with database.connection() as connection:
+                retry = await fail(
+                    connection,
+                    work,
+                    "PROCESSING_FAILED",
+                    "Media processing could not be completed.",
+                    source_validated=isinstance(error, TemporaryWorkFailure)
+                    and error.source_validated,
+                    permanent=False,
+                )
+            if not retry:
+                return False
+            await sleep(settings.media_retry_delays_seconds[work.attempt - 1])
+            async with database.connection() as connection:
+                work = await next_attempt(connection, work, uuid4())
+    return False
+
+
+async def process_video(
+    work: Work, database: Database, storage: Storage, settings: Settings
+) -> bool:
     validated = False
     try:
         async with asyncio.timeout(settings.media_provider_timeout_seconds):
@@ -71,14 +128,8 @@ async def run_job(job_id: UUID, database: Database, storage: Storage, settings: 
                     result.info.width,
                     result.info.height,
                 )
-    except (InvalidMedia, StorageLimitError) as error:
-        message = (
-            str(error)
-            if isinstance(error, InvalidMedia)
-            else "The source exceeds the configured byte limit."
-        )
-        async with database.connection() as connection:
-            await fail(connection, work, "INVALID_SOURCE", message)
+    except (InvalidMedia, StorageLimitError):
+        raise
     except (
         MediaProcessingError,
         TemporaryStorageError,
@@ -87,15 +138,7 @@ async def run_job(job_id: UUID, database: Database, storage: Storage, settings: 
         TimeoutError,
         OSError,
     ):
-        async with database.connection() as connection:
-            await fail(
-                connection,
-                work,
-                "PROCESSING_FAILED",
-                "Video processing could not be completed.",
-                source_validated=validated,
-            )
-    return False
+        raise TemporaryWorkFailure(source_validated=validated) from None
 
 
 async def main_async(job_id: UUID) -> bool:
