@@ -135,6 +135,10 @@ When those are added, run production migrations after validation passes as
 part of the release workflow, using production environment configuration.
 Development migrations remain manual through Make.
 
+The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
+Neon, R2/CDN, and Cloud Run inputs, setup permissions, and pending live evidence.
+Local acceptance does not require cloud credentials.
+
 ## API design targets
 
 The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
