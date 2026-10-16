@@ -138,3 +138,48 @@ async def arrange_videos_update_video(
         json={"title": "Introduction to Faith", "description": "An introductory lesson"},
     )
     assert response.status_code == 201
+
+
+async def arrange_ready_example(test_database: tuple[str, str]) -> None:
+    """Seed a completed peer state; real processing has its own acceptance seam."""
+    url, schema = test_database
+    async with await AsyncConnection.connect(url, autocommit=True) as connection:
+        await connection.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))
+        await connection.execute(
+            """INSERT INTO videos
+            (id,title,description,status,publication_status,size_bytes,duration_seconds,
+             playback_key,custom_thumbnail_key,published_at,created_at,updated_at)
+            VALUES (%s,%s,%s,'READY','PUBLISHED',52428800,147.5,%s,%s,
+                    '2026-10-13T15:00:00Z','2026-10-13T14:00:00Z','2026-10-13T15:00:00Z')""",
+            (
+                UUID("550e8400-e29b-41d4-a716-446655440000"),
+                "Introduction to Faith",
+                "An introductory lesson",
+                "videos/intro/hls/master.m3u8",
+                "videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+            ),
+        )
+
+
+@pytest_asyncio.fixture
+async def arrange_videos_list_videos(
+    api_case: APICase,
+    test_database: tuple[str, str],
+    api_app: FastAPI,
+    signing_keys: LocalSigningKeys,
+) -> None:
+    await arrange_ready_example(test_database)
+    api_case.headers["Authorization"] = "Bearer " + signing_keys.token()
+    # A seeded single-page result has no continuation token. Business pagination
+    # cases exercise real returned cursors in test_library.py.
+    api_case.query.pop("cursor", None)
+    api_case.query.update(status="READY", publication_status="PUBLISHED")
+    api_case.expected_body["pagination"] = {"has_more": False, "next_page_token": None}
+
+
+@pytest_asyncio.fixture
+async def arrange_playback_get_playback(
+    test_database: tuple[str, str],
+    api_app: FastAPI,
+) -> None:
+    await arrange_ready_example(test_database)
