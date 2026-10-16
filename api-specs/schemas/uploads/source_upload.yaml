@@ -24,4 +24,5 @@ examples:
       url: https://uploads.example.com/source.mp4?signature=example
       headers:
         Content-Type: video/mp4
+        If-None-Match: '*'
       expires_at: '2026-10-13T14:15:00Z'

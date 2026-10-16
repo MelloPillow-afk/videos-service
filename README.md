@@ -316,3 +316,18 @@ operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
 assertions. Persisted operations retain these generated HTTP cases through handwritten Arrange
 fixtures. Remaining operations serve examples until their implementation tickets land.
+
+## Source uploads and direct launch
+
+Source upload instructions and confirmation now persist attempts and independent
+VIDEO/THUMBNAIL jobs. Configure R2 and the Cloud Run Job resource from `.env.example`.
+The R2 signer binds create-once PUT headers; originals and delivery outputs use
+separate buckets. The Cloud Run service's runtime identity submits jobs directly.
+Missing provider configuration returns unavailable instead of serving an upload
+example. The [MEL-8 acceptance record](docs/mel-8-acceptance.md) describes local
+provider checks and the separate live-cloud evidence gates.
+
+Inspect `jobs.state`, `execution_reference`, and sanitized errors for recorded work.
+An interrupted or uncertain launch requires manual inspection and explicit recovery;
+repeating upload confirmation does not dispatch it again. No periodic dispatcher or
+cleanup scheduler is included.

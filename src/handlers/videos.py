@@ -4,10 +4,24 @@ from uuid import UUID
 
 from fastapi import HTTPException, Request, Response
 
+from src.domain.uploads import UploadRejected
 from src.domain.videos import VideoConflict, VideoNotFound, VideoRecord
 from src.handlers.dependencies import optional_admin, require_admin
-from src.schemas.generated.operations import VideosGetVideoIdParameter, VideosUpdateVideoIdParameter
+from src.providers.storage import TemporaryStorageError
+from src.schemas.generated.operations import (
+    VideosCompleteUploadIdParameter,
+    VideosGetVideoIdParameter,
+    VideosUpdateVideoIdParameter,
+    VideosUploadUrlIdParameter,
+)
+from src.schemas.generated.uploads import (
+    SourceUpload,
+    SourceUploadCreate,
+    SourceUploadProcessing,
+    UploadComplete,
+)
 from src.schemas.generated.videos import Video, VideoCreate, VideoUpdate
+from src.services.uploads import SourceUploads
 from src.services.videos import VideoService
 
 
@@ -64,3 +78,58 @@ async def update_video(
         raise HTTPException(404, "The video was not found.") from None
     except VideoConflict as error:
         raise HTTPException(409, str(error)) from None
+
+
+async def upload_url(
+    *, id: VideosUploadUrlIdParameter, body: SourceUploadCreate, request: Request
+) -> SourceUpload:
+    await require_admin(request)
+    service: SourceUploads = request.app.state.uploads
+    try:
+        result = await service.issue(UUID(id), body.content_type, body.size_bytes)
+    except VideoNotFound:
+        raise HTTPException(404, "The video was not found.") from None
+    except VideoConflict as error:
+        raise HTTPException(409, str(error)) from None
+    except UploadRejected as error:
+        raise HTTPException(error.status, error.message) from None
+    except TemporaryStorageError:
+        raise HTTPException(503, "Object storage is temporarily unavailable.") from None
+    return SourceUpload.model_validate(
+        {
+            "video_id": id,
+            "status": "UPLOADING",
+            "upload": {
+                "upload_id": str(result.attempt.id),
+                "method": result.upload.method,
+                "url": result.upload.url,
+                "headers": result.upload.headers,
+                "expires_at": result.attempt.expires_at.isoformat().replace("+00:00", "Z"),
+            },
+        }
+    )
+
+
+async def complete_upload(
+    *, id: VideosCompleteUploadIdParameter, body: UploadComplete, request: Request
+) -> SourceUploadProcessing:
+    await require_admin(request)
+    service: SourceUploads = request.app.state.uploads
+    try:
+        result = await service.confirm(UUID(id), UUID(body.upload_id))
+    except VideoNotFound:
+        raise HTTPException(404, "The video was not found.") from None
+    except VideoConflict as error:
+        raise HTTPException(409, str(error)) from None
+    except UploadRejected as error:
+        raise HTTPException(error.status, error.message) from None
+    except TemporaryStorageError:
+        raise HTTPException(503, "Object storage is temporarily unavailable.") from None
+    return SourceUploadProcessing.model_validate(
+        {
+            "video_id": str(result.video_id),
+            "status": result.status,
+            "processing_job_id": str(result.processing_job_id),
+            "thumbnail_status": result.thumbnail_status,
+        }
+    )

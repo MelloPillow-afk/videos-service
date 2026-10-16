@@ -299,7 +299,7 @@ async def upload_url(
             "status": "UPLOADING",
             "upload": {
                 "expires_at": "2026-10-13T14:15:00Z",
-                "headers": {"Content-Type": "video/mp4"},
+                "headers": {"Content-Type": "video/mp4", "If-None-Match": "*"},
                 "method": "PUT",
                 "upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394",
                 "url": "https://uploads.example.com/source.mp4?signature=example",

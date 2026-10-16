@@ -24,10 +24,16 @@ properties:
     type: object
     required:
       - Content-Type
-    description: Headers to include with the upload.
+      - If-None-Match
+    description: |
+      Required signed headers. If-None-Match prevents replacing an existing
+      object even while the upload URL remains valid.
     properties:
       Content-Type:
         type: string
+      If-None-Match:
+        type: string
+        const: '*'
     additionalProperties:
       type: string
   expires_at:
@@ -38,4 +44,5 @@ examples:
     url: https://uploads.example.com/source.mp4?signature=example
     headers:
       Content-Type: video/mp4
+      If-None-Match: '*'
     expires_at: '2026-10-13T14:15:00Z'
