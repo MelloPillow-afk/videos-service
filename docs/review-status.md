@@ -49,8 +49,8 @@ inline operation example. Contract checks and regeneration remain authoritative.
 ## Outstanding gates
 
 - **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
-  Neon/R2 data-plane and scoped IAM evidence; target Auth, browser CORS/CDN and
-  deployed execution gates remain open.
+  Neon/R2 data-plane, browser conditional uploads and scoped IAM evidence; target
+  Auth, delivery hostname/CDN and deployed execution gates remain open.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
   covered by [deletion acceptance](deletion-acceptance.md). Configured live
@@ -105,3 +105,16 @@ outcomes and CLI exit behavior. Existing real HTTP/PostgreSQL/media acceptance
 provides regression evidence; no tests of private calls or mechanical module
 placement were introduced. Targeted recovery, worker CLI and local-showcase
 checks pass **30 tests**.
+
+Final combined checkpoint `5c1cdb5` includes the local showcase, Linux runtime
+packaging, explicit bounded audio padding/trimming and sanitized CLI outcomes.
+`make check` passes all **46 examples**, Ruff/format checks and strict Pyright
+with zero errors. The complete native suite ran once through `uv run --locked
+pytest --cov --cov-report=term-missing -q --tb=short`: **228 passed in 35.55s**,
+including PostgreSQL migration subprocesses, real FFmpeg/Pillow processing,
+worker command outcomes, recovery, deletion races and both showcase journeys.
+Measured native coverage is **88%**. The image checks and remaining live gates
+are independently recorded in [container acceptance](container-local-acceptance.md)
+and [cloud readiness](cloud-readiness.md); native success does not close MEL-7
+or MEL-16. No additional HTTP change or generation was required for these
+responsibility fixes.
