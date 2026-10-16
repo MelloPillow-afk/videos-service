@@ -16,12 +16,12 @@ payload, signed URL, database password, or demonstration identity is recorded he
 | Neon Auth | Target management metadata confirms Neon-owned `better_auth` on the selected branch/database; schema has `neon_auth."user".id` UUID and `role` text. Auth `/ok` and Ed25519 JWKS return 200. Approved isolated signup/signin/token probe verified the real EdDSA signature, matching subject and 900-second lifetime. Actual issuer and audience both equal the Auth URL origin. The underlying managed build version is not exposed. |
 | Current administrator role | Using the least-privilege runtime database connection, existing Authorization/NeonRoles denied the ordinary synthetic user, allowed temporary admin, then denied the same still-valid JWT immediately after provider-admin demotion. Final demo role is `user`, session signed out; existing administrator untouched. This is provider readiness, not deployed HTTP evidence. |
 | Auth endpoint | `https://ep-wandering-art-b483xg29.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth`. Localhost allowed; trusted origins empty; password sign-in enabled. Discovery path returns 404. |
-| Runtime database role | Created `videos_runtime`; verified fresh TLS login and current-role SELECT. Public schema CREATE and Auth role UPDATE are denied. No application tables or migration bookkeeping exist yet. |
+| Runtime database role | Created `videos_runtime`; verified fresh TLS login and current-role SELECT. Public schema CREATE, Auth writes/private email reads and migration-bookkeeping writes are denied. Five explicit migrations ran through the verified direct owner connection; exactly three application tables and four Yoyo bookkeeping tables now exist. Runtime DML is granted only on the three application tables. |
 | Pooler compatibility | Target rejects startup `options`. The [transaction-local configuration fix](neon-pool-compatibility.md) now passes actual Neon pool acquisition, TLS, configured search path/timeouts, cancellation and reuse; no target application writes or migrations. |
 | Google target | Existing project `videos-service`, number `749098550492`, ACTIVE, billing enabled. No billing or quota changes. Cloud Run, Artifact Registry, IAM, and Secret Manager APIs already enabled. |
-| Registry / deployment | Existing Docker repository `videos`, `us-central1`. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
+| Registry / deployment | Existing Docker repository `videos`, `us-central1`. Verified AMD64 image published as `videos/videos-service:showcase-9b682d3`, digest `sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064`; no public registry IAM bindings. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
 | Runtime identities | Existing `videos-api@videos-service.iam.gserviceaccount.com` and `videos-worker@videos-service.iam.gserviceaccount.com`. Six secret-scoped accessor grants added, then only these two project Editor members removed; unrelated default-compute Editor membership preserved. Readback confirms grants. |
-| Secret metadata | Existing `videos-database-url`, `videos-r2-access-key-id`, `videos-r2-secret-access-key`, each version `1` ENABLED. Payloads were not printed or changed. Database secret must be checked/replaced with the separate runtime DSN at deployment. |
+| Secret metadata | `videos-database-url` version **2** holds the verified runtime DSN; prior owner version **1** is reversibly DISABLED. Pin runtime version 2. R2 pair remains version 1/setup-admin at the last check; matching object-scoped replacements remain required. Payloads were never printed. |
 | R2 target | Distinct existing buckets `videos-raw` and `videos-processed`, WNAM/default jurisdiction. Authenticated HEAD, GET, create-only PUT, prefix list and narrow unsigned-probe deletion work. Private `r2.dev` remains disabled and both custom-domain lists empty. Owner explicitly selected and enabled only the processed development origin below. A public control GET returned 200 with matching bytes; Range returned 206. An existing private sentinel was verified with authenticated GET, but its key through the public origin returned 404 and the disabled raw URL returned 401, without sentinel bytes. |
 | R2 upload protection | Both source/video and image signed PUT: first 200, replacement 412, original bytes unchanged. Missing/altered If-None-Match or altered Content-Type: 403. Two simultaneous PUTs: 200/412, stored bytes match one contender. URLs signed for 900 seconds. |
 | R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Eleven markers retained after browser and public-origin probes; inventory below. |
@@ -40,12 +40,17 @@ actual localhost MP4/JPEG upload and overwrite statuses without signed URLs.
 | Area | Specific remaining input or action |
 | --- | --- |
 | Auth | Provider token/current-role/demotion readiness is verified with approved isolated identity changes. Deployed HTTP token handling and same-token demotion remain MEL-16 checks. The provider exposes `better_auth` integration metadata, not its underlying build version. |
-| Database | Explicitly apply application migrations with owner connection, grant DML on the exact three tables, update runtime secret reference, and verify deployed API/worker TLS connectivity using the tested pooler-compatible configuration. |
+| Database | Explicit direct-connection production migrations, three-table DML grants and runtime secret version 2 are complete. Verify deployed API/worker TLS connectivity using that pinned secret and the tested pooler-compatible configuration. |
 | R2 configuration | Configuration access and private exposure readback are verified. Retain the approved narrow browser rules and all permanent markers; preserve existing owner GET rules unless the owner requests a change. CORS does not authorize access to private objects. Keep raw bucket public access disabled. |
 | R2 runtime credentials | Current S3 credentials are the same account-owned administrative setup token (verified by ID/hash equality without recording either value). Bucket configuration access is broader than runtime needs. Account token detail and permission-group APIs return 403/code 9109. Owner must supply a separate Object Read & Write token scoped only to `videos-raw` and `videos-processed`, or grant setup `Account API Tokens Write` so that scoped token can be created through the API. Do not deploy the setup credential as runtime access. |
 | Public delivery / browser | Owner chose `https://pub-1296a4df37cd4d52aacd2941d8b36687.r2.dev`; processed-only exposure, public/private sentinel separation, Range, CORS and direct browser PUT are verified. This development endpoint is rate-limited and lacks custom-domain caching features. Actual deployed HLS player playback and any separately approved player origins remain MEL-16 checks; no new zone or DNS record was created. |
 | Cloud Run | Deploy completed image to existing registry, attach the two identities and secret references, create the worker job, grant API job-scoped execution-with-overrides, then verify benign authorized and denied launches independently of business flows. No job currently exists to receive that scoped grant. |
 | Resource budget | Measure representative media against explicit job CPU/memory/timeout and API/connection concurrency settings; no quota expansion is implied. |
+
+The [deployment preparation record](cloud-deployment.md) pins the published image,
+records production migrations/runtime secret version 2, and stages the exact
+identity/resource/environment commands. Its published checkpoint needs the
+reviewed local operator-recovery image update before deployment.
 
 MEL-7 remains open. Local application work and ordinary CI need no cloud credentials.
 Completed application deployment and end-to-end live evidence belong to MEL-16.
@@ -57,6 +62,10 @@ now have resource-level `roles/secretmanager.secretAccessor`. Neither identity h
 project Editor or a project-wide job execution grant. The existing deployer has
 sufficient project-level ownership for deployment and service-account attachment;
 no new deployer grant was necessary. Preserve unrelated project IAM members.
+Lifecycle readback finds only the existing default seven-day incomplete multipart
+abort rule on each bucket; no object-expiration action can erase guards. No rule
+was added or changed.
+
 When the worker job exists, bind `roles/run.jobsExecutorWithOverrides` to the API
 identity on that job only. Its verified predefined permissions are
 `run.jobs.run`, `run.jobs.runWithOverrides`, and `run.executions.cancel`.

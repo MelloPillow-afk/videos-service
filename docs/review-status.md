@@ -49,15 +49,18 @@ inline operation example. Contract checks and regeneration remain authoritative.
 ## Outstanding gates
 
 - **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
-  Neon/R2 data-plane, browser conditional uploads and scoped IAM evidence; target
-  Auth, delivery hostname/CDN and deployed execution gates remain open.
+  Neon JWT/current-role demotion, runtime grants, R2 browser/privacy/public-origin
+  and scoped Google IAM evidence. Matching object-scoped R2 runtime credentials
+  and deployed identity/direct-launch verification remain open.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
   covered by [deletion acceptance](deletion-acceptance.md). Configured live
   provider evidence remains separately tracked under MEL-7/MEL-16.
 - **MEL-15:** the [local showcase](showcase.md) now exercises the complete journey;
   its controlled provider boundaries do not constitute deployed cloud evidence.
-- **MEL-16:** real Neon/R2/Cloud Run/CDN end-to-end evidence remains unexecuted.
+- **MEL-16:** the [deployment record](cloud-deployment.md) records the private image
+  publication checkpoint and explicit production migrations. Deployed API/job,
+  player, recovery and guarded-deletion end-to-end evidence remains pending.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
 table, full frontend, billing expansion, or cloud completion claim was added.

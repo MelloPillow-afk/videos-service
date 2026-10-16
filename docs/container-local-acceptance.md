@@ -1,8 +1,10 @@
 # Local container preparation (MEL-16)
 
 Verified 2026-10-16. **MEL-16 remains incomplete:** this is local Linux image and
-operator-CLI evidence, plus the separately recorded actual R2 browser proof. No
-image was pushed, application deployed, or production migration applied.
+operator-CLI evidence, plus the separately recorded actual R2 browser proof.
+Subsequent image publication and explicit owner-run production migrations are
+recorded in [deployment preparation](cloud-deployment.md); service/job deployment
+remains gated.
 [Cloud readiness](cloud-readiness.md) tracks the remaining target gates.
 
 ## Build and entry points
@@ -128,7 +130,7 @@ Cloud Run result alone never substitutes for persisted state and media evidence.
 
 Remaining live work includes deployed HTTP Neon token/admin demotion, separate
 scoped R2 runtime credentials,
-image push/deployment, explicit production migrations/grants, independent Run job
+final operator-recovery image publication/deployment, independent Run job
 executions, native resource/signal limits, and public HLS player playback/deletion. Provider token/demotion and the owner-selected
 processed `r2.dev` origin’s public/private sentinel and Range checks have passed;
 see the readiness record for their exact scope and development limits.
