@@ -19,7 +19,7 @@ payload, signed URL, database password, or demonstration identity is recorded he
 | Runtime database role | Created `videos_runtime`; verified fresh TLS login and current-role SELECT. Public schema CREATE, Auth writes/private email reads and migration-bookkeeping writes are denied. Five explicit migrations ran through the verified direct owner connection; exactly three application tables and four Yoyo bookkeeping tables now exist. Runtime DML is granted only on the three application tables. |
 | Pooler compatibility | Target rejects startup `options`. The [transaction-local configuration fix](neon-pool-compatibility.md) now passes actual Neon pool acquisition, TLS, configured search path/timeouts, cancellation and reuse; no target application writes or migrations. |
 | Google target | Existing project `videos-service`, number `749098550492`, ACTIVE, billing enabled. No billing or quota changes. Cloud Run, Artifact Registry, IAM, and Secret Manager APIs already enabled. |
-| Registry / deployment | Existing Docker repository `videos`, `us-central1`. Verified AMD64 image published as `videos/videos-service:showcase-9b682d3`, digest `sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064`; no public registry IAM bindings. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
+| Registry / deployment | Existing Docker repository `videos`, `us-central1`. Verified AMD64 image published as `videos/videos-service:showcase-ccb6f66`, digest `sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82`; no public registry IAM bindings. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
 | Runtime identities | Existing `videos-api@videos-service.iam.gserviceaccount.com` and `videos-worker@videos-service.iam.gserviceaccount.com`. Six secret-scoped accessor grants added, then only these two project Editor members removed; unrelated default-compute Editor membership preserved. Readback confirms grants. |
 | Secret metadata | `videos-database-url` version **2** holds the verified runtime DSN; prior owner version **1** is reversibly DISABLED. Pin runtime version 2. R2 pair remains version 1/setup-admin at the last check; matching object-scoped replacements remain required. Payloads were never printed. |
 | R2 target | Distinct existing buckets `videos-raw` and `videos-processed`, WNAM/default jurisdiction. Authenticated HEAD, GET, create-only PUT, prefix list and narrow unsigned-probe deletion work. Private `r2.dev` remains disabled and both custom-domain lists empty. Owner explicitly selected and enabled only the processed development origin below. A public control GET returned 200 with matching bytes; Range returned 206. An existing private sentinel was verified with authenticated GET, but its key through the public origin returned 404 and the disabled raw URL returned 401, without sentinel bytes. |
@@ -49,8 +49,11 @@ actual localhost MP4/JPEG upload and overwrite statuses without signed URLs.
 
 The [deployment preparation record](cloud-deployment.md) pins the published image,
 records production migrations/runtime secret version 2, and stages the exact
-identity/resource/environment commands. Its published checkpoint needs the
-reviewed local operator-recovery image update before deployment.
+identity/resource/environment commands. The final published image includes the
+reviewed local operator-recovery boundary.
+Deployment still requires the privately verified scoped R2 pair and disabling
+both old administrative R2 Secret Manager version-1 payloads; setup access is
+retained privately.
 
 MEL-7 remains open. Local application work and ordinary CI need no cloud credentials.
 Completed application deployment and end-to-end live evidence belong to MEL-16.

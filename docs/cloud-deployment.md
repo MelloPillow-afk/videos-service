@@ -3,20 +3,20 @@
 The verified Linux AMD64 image is published in the existing private repository:
 
 ```text
-us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064
+us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82
 ```
 
-Tag: `showcase-9b682d3`. The published manifest digest matches the actual locally
-verified image. Integration `9b682d3` has identical runtime/build inputs to that
-image; its later changes normalize generated test metadata and record reviews.
-[Image and media evidence](container-local-acceptance.md) includes 34 representative
-Linux checks and the final nine CLI checks. Final native validation passed all
-228 tests, quality checks, the showcase, and deterministic generation.
+Tag: `showcase-ccb6f66`, built from reviewed integration `ccb6f66`. The final
+published manifest digest matches the verified local Linux/AMD64 image:
+273,957,832 reported image bytes, Python 3.13.16 and FFmpeg/FFprobe
+`7.1.5-0+deb13u1`. [Container acceptance](container-local-acceptance.md) distinguishes
+the earlier 34 real-media checks from the final image's affected CLI/operator
+checks. Native integration validation passed **238 tests in 36.77s**, 88% coverage,
+and quality checks. Both operator-fix review axes have zero actionable findings.
 
-This is a published checkpoint. The local operator `recover --gcloud-auth` change
-is being verified separately; rebuild and publish its reviewed source before
-calling an image final or deploying it. Update the pinned digest below at that
-point. Service/job deployment remains gated on the scoped R2 pair.
+Service/job deployment remains gated on the scoped R2 pair. Image publication,
+local image acceptance and production migrations do not establish deployed
+application evidence.
 
 Artifact Registry credential configuration added only the
 `us-central1-docker.pkg.dev` gcloud helper; all unrelated Docker settings were
@@ -42,7 +42,13 @@ last observed versions of `videos-r2-access-key-id` and
 `videos-r2-secret-access-key` were version 1, containing the administrative setup
 pair. Both replacements must form a matching Object Read & Write pair scoped to
 `videos-raw` and `videos-processed`, with bucket administration denied. Preserve
-setup access for configuration; do not deploy it as the runtime pair.
+setup access for configuration; do not deploy it as the runtime pair. Resource-scoped
+Secret Accessor grants cover every enabled version, so pinning new versions alone
+does not remove access to the old administrative payloads. After privately
+verifying the replacement pair, reversibly disable version 1 of **both** R2
+secrets before deploying either identity. Keep the setup credential privately in
+`cloud.json`; disabling these Secret Manager versions does not revoke the actual
+Cloudflare setup token.
 
 No API service or worker job has been deployed at this checkpoint. Record their
 actual revisions, secret versions, identities and executions when that gate clears.
@@ -87,8 +93,10 @@ rule was added or changed.
 Execute only after confirming the matching scoped R2 pair and recording its exact
 **numeric** versions in `R2_KEY_VERSION` and `R2_SECRET_VERSION`. Current version 1
 is unsuitable. These commands stage the service privately so the operator can
-finish its independent identity/configuration checks before public invocation. The commands currently reference the published checkpoint;
-replace its digest with the reviewed operator-recovery image before execution.
+finish its independent identity/configuration checks before public invocation.
+The version checks below supplement the required private credential-scope proof;
+they do not themselves verify scope. Do not disable version 1 while the matching
+replacement pair is still missing.
 
 ```sh
 (
@@ -97,8 +105,14 @@ set -eu
 : "${R2_SECRET_VERSION:?Set the verified matching object-secret version}"
 test "$R2_KEY_VERSION" -gt 1
 test "$R2_SECRET_VERSION" -gt 1
-image='us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064'
+image='us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82'
 secrets="DATABASE_URL=videos-database-url:2,R2_ACCESS_KEY_ID=videos-r2-access-key-id:$R2_KEY_VERSION,R2_SECRET_ACCESS_KEY=videos-r2-secret-access-key:$R2_SECRET_VERSION"
+
+# Only after the matching object-scoped pair has passed private verification.
+gcloud secrets versions disable 1 --secret videos-r2-access-key-id \
+  --project videos-service --quiet --verbosity error
+gcloud secrets versions disable 1 --secret videos-r2-secret-access-key \
+  --project videos-service --quiet --verbosity error
 
 gcloud run jobs deploy videos-worker --project videos-service --region us-central1 \
   --image "$image" \

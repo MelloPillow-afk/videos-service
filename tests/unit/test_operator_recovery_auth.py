@@ -70,7 +70,9 @@ async def test_operator_auth_errors_are_redacted_and_timeout_reaps_child(
         Settings(cloud_run_job_resource="projects/target/locations/region/jobs/media"),
         transport=httpx.MockTransport(forbidden),
         gcloud_auth=True,
-        auth_timeout_seconds=0.25,
+        # Allow the real helper interpreter to start under AMD64 emulation;
+        # its ten-second delay still requires timeout termination and reaping.
+        auth_timeout_seconds=2,
     )
     with pytest.raises(JobLaunchError, match="Operator authentication was unavailable") as error:
         await launcher.launch(uuid4())

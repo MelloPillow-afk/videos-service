@@ -49,9 +49,9 @@ credential. Do not deploy until the scoped credentials and target checks are rea
 
 ## Actual image results
 
-The verified local tag `videos-showcase:mel16-local` identifies image
-`sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064`.
-It is Linux/AMD64, 273,957,243 reported image bytes, Python 3.13.16, and Debian
+The final verified local tag `videos-showcase:showcase-ccb6f66` identifies image
+`sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82`.
+It is Linux/AMD64, 273,957,832 reported image bytes, Python 3.13.16, and Debian
 FFmpeg/FFprobe `7.1.5-0+deb13u1`. Python and uv base manifests are pinned in the
 Dockerfile; Python dependencies come from `uv.lock`. Apt packages come from Debian's
 configured repositories, so future rebuilds must record/reverify their versions;
@@ -69,7 +69,7 @@ this is not a claim of bit-identical future apt resolution.
 - The actual runtime image's explicit migration command exited 0 against a fresh,
   randomly named **local** PostgreSQL database. It created exactly `videos`,
   `upload_attempts`, and `jobs` plus Yoyo bookkeeping. That database was removed.
-- Combined reviewed image `sha256:4e520f133e95d5af997fc85661ec5fe26ff6dcd501590b8992025bf60a9f786a` passed 34 representative checks in 78.18 seconds: real HTTP/PostgreSQL, migrations, CLI, HLS/audio, SAR/rotation, fitted thumbnails, custom images and both complete showcase journeys. The final image changes only the safe CLI recovery diagnostic; all nine affected CLI/redaction checks passed in 8.88 seconds after rebuilding.
+- Combined reviewed image `sha256:4e520f133e95d5af997fc85661ec5fe26ff6dcd501590b8992025bf60a9f786a` passed 34 representative checks in 78.18 seconds: real HTTP/PostgreSQL, migrations, CLI, HLS/audio, SAR/rotation, fitted thumbnails, custom images and both complete showcase journeys. The subsequent checkpoint image `sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064` changed only the safe CLI recovery diagnostic; all nine affected CLI/redaction checks passed in 8.88 seconds after rebuilding.
 
 The initial image run exposed an FFmpeg 7 compatibility defect: unbounded `apad`
 with `-shortest` muxed excess buffered AAC although HLS video durations were right.
@@ -79,6 +79,23 @@ video-only. After rebuilding, all seven affected image cases passed, including
 long audio, padded short audio with decoded silence, silent video, AAC packet/PCM
 length, long-audio admission rejection, and migration apply/reapply/rollback.
 No assertion was weakened for the Linux version.
+
+The final image was rebuilt from reviewed integration `ccb6f66`, including the
+explicit local `recover --gcloud-auth` provider boundary. All **19 affected
+CLI/operator checks passed in 16.23s** using that actual image and real disposable
+PostgreSQL. These cover successful, failed and no-op CLI outcomes, command-array
+behavior, explicit token acquisition, redaction, timeout kill/reaping, and the
+runtime metadata default with no gcloud fallback. The first emulated run exposed
+a test startup assumption: a 0.25-second timeout killed the fake Python helper
+before it recorded its PID. Giving that helper two seconds before timeout while
+it deliberately sleeps ten preserves the termination assertion; the production
+ten-second authentication timeout is unchanged. All eight operator checks also
+passed natively in 2.77s. Only test timing changed after the image build; tests
+are excluded from its context.
+
+Final runtime readback reconfirmed UID/GID `10001:10001`, the API entrypoint and
+`CMD ["api"]`, migration assets, absent pytest/gcloud, and absent environment,
+Git, tests and user-reference files. No unaffected media suite was repeated.
 
 ## Reproduce representative image acceptance
 
@@ -130,7 +147,7 @@ Cloud Run result alone never substitutes for persisted state and media evidence.
 
 Remaining live work includes deployed HTTP Neon token/admin demotion, separate
 scoped R2 runtime credentials,
-final operator-recovery image publication/deployment, independent Run job
+deployment of the published final operator-recovery image, independent Run job
 executions, native resource/signal limits, and public HLS player playback/deletion. Provider token/demotion and the owner-selected
 processed `r2.dev` origin’s public/private sentinel and Range checks have passed;
 see the readiness record for their exact scope and development limits.
