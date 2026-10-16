@@ -159,9 +159,10 @@ remain manual through Make.
 The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
 Neon, R2/CDN, and Cloud Run inputs, applied least-privilege setup, actual R2
 conditional-upload/deletion-guard, Auth/demotion and public-origin evidence.
-Matching object-scoped R2 runtime credentials and deployed execution remain gates.
-[Deployment preparation](docs/cloud-deployment.md) records the published image
-checkpoint, explicit production migrations and pinned runtime database secret.
+The owner-restricted R2 pair and independent deployed launch/denial checks now
+pass. [Deployment evidence](docs/cloud-deployment.md) records the final published
+image, explicit production migrations, numeric secret references and bounded
+API/worker deployment. The full live media/player/recovery journey remains separate.
 Local acceptance does not require cloud credentials.
 
 The [local HLS worker acceptance record](docs/mel-9-acceptance.md) documents

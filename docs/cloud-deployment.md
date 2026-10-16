@@ -3,20 +3,24 @@
 The verified Linux AMD64 image is published in the existing private repository:
 
 ```text
-us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064
+us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82
 ```
 
-Tag: `showcase-9b682d3`. The published manifest digest matches the actual locally
-verified image. Integration `9b682d3` has identical runtime/build inputs to that
-image; its later changes normalize generated test metadata and record reviews.
-[Image and media evidence](container-local-acceptance.md) includes 34 representative
-Linux checks and the final nine CLI checks. Final native validation passed all
-228 tests, quality checks, the showcase, and deterministic generation.
+Tag: `showcase-ccb6f66`, built from reviewed integration `ccb6f66`. The final
+published manifest digest matches the verified local Linux/AMD64 image:
+273,957,832 reported image bytes, Python 3.13.16 and FFmpeg/FFprobe
+`7.1.5-0+deb13u1`. [Container acceptance](container-local-acceptance.md) distinguishes
+the earlier 34 real-media checks from the final image's affected CLI/operator
+checks. Native integration validation passed **238 tests in 36.77s**, 88% coverage,
+and quality checks. Both operator-fix review axes have zero actionable findings.
+The pinned digest is the OCI image index. Its verified Linux/AMD64 child manifest
+is `sha256:8418715c917bcb8b0bc99d6ccc512d559d1132f3270835d04bebdeb3bf84be3f`;
+Cloud Run correctly records that child as its resolved runtime image digest.
+The remaining index member is the build attestation, not another runtime.
 
-This is a published checkpoint. The local operator `recover --gcloud-auth` change
-is being verified separately; rebuild and publish its reviewed source before
-calling an image final or deploying it. Update the pinned digest below at that
-point. Service/job deployment remains gated on the scoped R2 pair.
+The existing R2 pair has now passed private object-scope verification after the
+owner reduced its permissions in place. Image publication, local image acceptance
+and production migrations do not establish deployed application evidence.
 
 Artifact Registry credential configuration added only the
 `us-central1-docker.pkg.dev` gcloud helper; all unrelated Docker settings were
@@ -37,15 +41,79 @@ Owner-credential version **1** was reversibly disabled. Pin version 2 in both
 runtime definitions; never use `latest` or the migration owner for runtime access.
 The migration connection stays separate and private.
 
-**Deployment gate:** R2 runtime credentials still need private verification. The
-last observed versions of `videos-r2-access-key-id` and
-`videos-r2-secret-access-key` were version 1, containing the administrative setup
-pair. Both replacements must form a matching Object Read & Write pair scoped to
-`videos-raw` and `videos-processed`, with bucket administration denied. Preserve
-setup access for configuration; do not deploy it as the runtime pair.
+The owner reduced the existing R2 credential permissions in place. Secret versions
+**1** of both `videos-r2-access-key-id` and `videos-r2-secret-access-key` now form
+the verified object-access pair: both buckets pass HEAD, PUT/GET/LIST,
+conditional-overwrite rejection and permanent guard sealing; GetBucketCors is
+403 on both. **Keep both version-1 entries enabled and pin them.** There is no
+separate old administrative payload to disable after this permission change.
+If credentials are rotated later, remember that resource-scoped Secret Accessor
+grants cover every enabled version; disable superseded overbroad versions only
+after verifying the replacement pair. Never revoke or disable the active pair
+merely because its numeric version is 1.
 
-No API service or worker job has been deployed at this checkpoint. Record their
-actual revisions, secret versions, identities and executions when that gate clears.
+## Actual bounded deployment
+
+Both resources now use the pinned final image above. Worker `videos-worker` is
+Ready with `videos-worker@videos-service.iam.gserviceaccount.com`, the explicit
+Python module command, 2 CPU/4 GiB, 1200-second timeout, one task/parallelism one
+and zero platform retries. API revision `videos-api-00001-v2x` is Ready at
+`https://videos-api-z2kxcj7fsa-uc.a.run.app`, using
+`videos-api@videos-service.iam.gserviceaccount.com`, 1 CPU/512 MiB, concurrency 4,
+max instances 1 and 300-second request timeout. Actual numeric secret references
+are database **2**, R2 key ID **1** and R2 secret **1** for both resources.
+
+The API identity has job-scoped `roles/run.jobsExecutorWithOverrides` on this
+worker only; the worker identity has no launch grant. After private-stage
+configuration readback and an anonymous 403, the API received only the required
+`allUsers` `roles/run.invoker` binding for the approved anonymous viewer contract.
+Anonymous `/ping` and `/v1/videos` both return 200. The latter exercises the real
+runtime database connection. Worker invocation remains IAM protected.
+
+Initial automatic approval review rejected public invocation for insufficiently
+explicit authorization. The single retry cited the approved specification's
+anonymous viewer requirements and was accepted; no other IAM grant was widened.
+Deployed media, same-token demotion, playback, recovery and deletion evidence
+remain independent acceptance work.
+
+### Independent identity and benign-execution evidence
+
+A temporary same-image job used no application secrets and ran one task with
+1 CPU/512 MiB, a 60-second task timeout and zero retries. Under the API identity,
+execution `videos-readiness-launch-qzfw6` invoked the actual metadata-authenticated
+`CloudRunJobLauncher`, returning operation
+`projects/videos-service/locations/us-central1/operations/802569c2-0ea2-4cd3-b7d0-240d34280e1f`.
+The resulting `videos-worker-bmf2h` used the worker identity and real runtime
+secret references. Its arguments were `run --job-id` followed by the all-zero UUID.
+It read the real runtime database, emitted sanitized `outcome: no_op`, exited 0
+and finished with `Completed=True`, `succeededCount=1` at
+`2026-10-16T15:00:41.639236Z`. The pinned Neon DSN requires TLS; no application job
+or video was inserted for this probe.
+
+The same helper under the worker identity, execution
+`videos-readiness-launch-74glm`, confirmed adapter rejection and independently
+recorded HTTP **403** for the run-with-overrides request. Both helper executions
+completed successfully; `videos-readiness-launch` was then deleted. No
+impersonation, Token Creator, worker launch grant or service-account key was added.
+
+For manual recovery, correlate the actual execution before cancelling it:
+
+```sh
+gcloud run jobs executions list --job videos-worker \
+  --project videos-service --region us-central1 --format=json --verbosity error
+# Match spec.template.spec.containers[0].args to [run, --job-id, UUID].
+gcloud run jobs executions describe EXECUTION \
+  --project videos-service --region us-central1 --format=json --verbosity error
+gcloud run jobs executions cancel EXECUTION \
+  --project videos-service --region us-central1 --quiet --verbosity error
+```
+
+The actual CLI JSON exposes `metadata.name`, `status.startTime`,
+`status.completionTime`, and `status.conditions[]` with `type: Completed` and its
+status/reason. A cancellation request alone does not prove worker termination;
+confirm the terminal execution/task state before
+`recover --previous-execution-terminated`. No cancelled outcome is claimed by the
+benign no-op probe.
 
 ## Exact runtime configuration
 
@@ -84,21 +152,16 @@ rule was added or changed.
 
 ## Guarded deployment commands
 
-Execute only after confirming the matching scoped R2 pair and recording its exact
-**numeric** versions in `R2_KEY_VERSION` and `R2_SECRET_VERSION`. Current version 1
-is unsuitable. These commands stage the service privately so the operator can
-finish its independent identity/configuration checks before public invocation. The commands currently reference the published checkpoint;
-replace its digest with the reviewed operator-recovery image before execution.
+The current pinned references are database version **2** and both R2 versions
+**1**, privately verified after the owner reduced the R2 permissions. These commands
+stage the service privately so the operator can finish its independent
+identity/configuration checks before public invocation.
 
 ```sh
 (
 set -eu
-: "${R2_KEY_VERSION:?Set the verified object-scoped key-ID version}"
-: "${R2_SECRET_VERSION:?Set the verified matching object-secret version}"
-test "$R2_KEY_VERSION" -gt 1
-test "$R2_SECRET_VERSION" -gt 1
-image='us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:36a70c7ed98f4c983f9a29725cb50ed329e269a177911f2bbe759f11c0793064'
-secrets="DATABASE_URL=videos-database-url:2,R2_ACCESS_KEY_ID=videos-r2-access-key-id:$R2_KEY_VERSION,R2_SECRET_ACCESS_KEY=videos-r2-secret-access-key:$R2_SECRET_VERSION"
+image='us-central1-docker.pkg.dev/videos-service/videos/videos-service@sha256:f5ccffb6702f6998bb5ef931bcf0d6dd82a283ea120e1908dcf0d0c44a8b1f82'
+secrets="DATABASE_URL=videos-database-url:2,R2_ACCESS_KEY_ID=videos-r2-access-key-id:1,R2_SECRET_ACCESS_KEY=videos-r2-secret-access-key:1"
 
 gcloud run jobs deploy videos-worker --project videos-service --region us-central1 \
   --image "$image" \

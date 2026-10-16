@@ -50,8 +50,9 @@ inline operation example. Contract checks and regeneration remain authoritative.
 
 - **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
   Neon JWT/current-role demotion, runtime grants, R2 browser/privacy/public-origin
-  and scoped Google IAM evidence. Matching object-scoped R2 runtime credentials
-  and deployed identity/direct-launch verification remain open.
+  and scoped Google IAM evidence. The existing R2 pair now passes object-scope verification after an owner in-place
+  permission reduction. Deployed identity/direct-launch verification remains
+  independently recorded.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
   covered by [deletion acceptance](deletion-acceptance.md). Configured live
@@ -59,8 +60,8 @@ inline operation example. Contract checks and regeneration remain authoritative.
 - **MEL-15:** the [local showcase](showcase.md) now exercises the complete journey;
   its controlled provider boundaries do not constitute deployed cloud evidence.
 - **MEL-16:** the [deployment record](cloud-deployment.md) records the private image
-  publication checkpoint and explicit production migrations. Deployed API/job,
-  player, recovery and guarded-deletion end-to-end evidence remains pending.
+  publication, explicit production migrations and initial API/job deployment.
+  Deployed player, recovery and guarded-deletion end-to-end evidence remains pending.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
 table, full frontend, billing expansion, or cloud completion claim was added.
@@ -131,3 +132,27 @@ journeys pass in the integration checkout. The final Standards and Spec delta
 reviews have **zero open actionable findings**; the two Standards findings above
 are resolved. Real Auth/provider demotion and browser R2 privacy/upload checks
 are recorded separately from the still-required deployed application sequence.
+
+
+## Operator recovery and final image checkpoint
+
+The `32a08bf...76ef342` operator delta passed separate Standards and Spec reviews
+with **zero actionable findings**. Local `recover --gcloud-auth` explicitly uses
+the authenticated host CLI; ordinary runtime launch still uses metadata identity
+without fallback. Token subprocess output stays private, and failed/invalid
+credentials and timeout termination produce sanitized errors. Existing recovery
+transaction locks and eligibility rules are unchanged.
+
+Final integration `ccb6f66` passed `make check` (**46 examples**, Ruff/format,
+strict Pyright zero errors) and the complete native suite: **238 passed in
+36.77s**, **88% coverage**, including both showcase journeys. All 26 generated
+files plus their ownership record remain byte-identical to the deterministic
+`9b682d3` checkpoint. All seven original user-owned files remain unchanged.
+
+The final Linux/AMD64 runtime image built from that reviewed source separately
+passed **19 affected CLI/operator checks in 16.23s** through real PostgreSQL.
+An emulation-sensitive test helper timeout was raised from 0.25 to two seconds
+while retaining its ten-second delay and child-reaping assertion; production
+behavior is unchanged. The eight operator checks passed natively in 2.77s.
+These local and image checkpoints do not close the remaining deployed-cloud
+gates in the [deployment record](cloud-deployment.md).
