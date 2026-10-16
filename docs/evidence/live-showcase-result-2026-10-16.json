@@ -1,0 +1,345 @@
+{
+  "checkpoint_at": "2026-10-16T16:57:27.570328+00:00",
+  "completion_status": "MEL-16 live acceptance criteria verified",
+  "api_url": "https://videos-api-z2kxcj7fsa-uc.a.run.app",
+  "retained_happy_video_id": "ceb8f659-9090-4f5a-9be1-f3c8fb5864be",
+  "completed_checks": {
+    "renewal_stale_confirmation_idempotency_and_accepted_overwrite_protection": {
+      "source_bytes": 2238866,
+      "job_id": "f53d4873-8d1b-487c-8ea9-c5b210bbad58"
+    },
+    "independent_video_thumbnail_jobs_and_valid_custom_generated_fallback": {
+      "jobs": [
+        {
+          "id": "5820c28f-5852-4fc8-8c33-784ca16f43fc",
+          "kind": "THUMBNAIL",
+          "state": "SUCCEEDED",
+          "attempts": "1",
+          "operation": "projects/videos-service/locations/us-central1/operations/64320729-d4dc-4b1f-a8a2-766295c2e59f"
+        },
+        {
+          "id": "f53d4873-8d1b-487c-8ea9-c5b210bbad58",
+          "kind": "VIDEO",
+          "state": "SUCCEEDED",
+          "attempts": "1",
+          "operation": "projects/videos-service/locations/us-central1/operations/b87823f3-c6bd-4415-94b5-12fcf700b9ab"
+        }
+      ]
+    },
+    "public_hls_assets_and_real_decode": {
+      "playlists": 3,
+      "segments": 10,
+      "real_remote_decode": true
+    },
+    "retained_private_original_positive_control_and_public_isolation": true,
+    "same_valid_neon_jwt_immediate_demotion_through_deployed_http": true,
+    "publication_visibility_and_idempotent_publication_time": true,
+    "actual_cloud_execution_cancelled_before_manual_recovery": {
+      "execution": "videos-worker-gltdb",
+      "terminal_condition": {
+        "lastTransitionTime": "2026-10-16T15:09:09.337335Z",
+        "message": "Cancelled by user.",
+        "reason": "Cancelled",
+        "status": "False",
+        "type": "Completed"
+      },
+      "persisted_claim": "RUNNING",
+      "attempts": 1
+    },
+    "actual_search_parameter_positive_and_negative": true,
+    "inflight_worker_manifest_before_deletion": {
+      "execution": "videos-worker-mmhpz",
+      "registered_keys": 153,
+      "written_keys_before_delete": 2,
+      "state": "RUNNING"
+    },
+    "guarded_deletion_inflight": {
+      "private_guards": 4,
+      "public_guards": 155,
+      "eventual_404": true
+    },
+    "late_cloud_worker_fenced_after_deletion": {
+      "execution": "videos-worker-mmhpz",
+      "terminal_condition": {
+        "lastTransitionTime": "2026-10-16T16:24:40.736014Z",
+        "message": "Execution completed successfully in 3m4.07s.",
+        "status": "True",
+        "type": "Completed"
+      },
+      "all_remaining_public_objects_zero_bytes": true
+    },
+    "browser_uploaded_source_real_workers_and_decoded_custom_image": {
+      "source_status": "READY",
+      "source_bytes": 2238866,
+      "independent_jobs": 2,
+      "custom_then_generated_fallback": true,
+      "removed_image_duplicate_completion": 409
+    },
+    "real_corrupt_source_rejected_without_automatic_retries": {
+      "source_bytes": 47
+    },
+    "real_overduration_source_rejected_without_automatic_retries": {
+      "source_bytes": 97084
+    },
+    "actual_100_mib_plus_one_admission_rejection": {
+      "declared_bytes": 1,
+      "actual_r2_bytes": 104857601,
+      "confirmation": 413,
+      "status_preserved": "UPLOADING",
+      "jobs": 0
+    },
+    "guarded_deletion_sizeadmission": {
+      "private_guards": 1,
+      "public_guards": 0,
+      "eventual_404": true
+    },
+    "guarded_deletion_corrupt": {
+      "private_guards": 1,
+      "public_guards": 0,
+      "eventual_404": true
+    },
+    "guarded_deletion_overduration": {
+      "private_guards": 1,
+      "public_guards": 0,
+      "eventual_404": true
+    },
+    "guarded_deletion_recovery": {
+      "private_guards": 1,
+      "public_guards": 307,
+      "eventual_404": true
+    },
+    "guarded_deletion_browser": {
+      "private_guards": 1,
+      "public_guards": 14,
+      "eventual_404": true
+    },
+    "actual_900_second_authorization_expiry_and_same_record_renewal": {
+      "expired_put": 403,
+      "renewed_put": 200,
+      "expires_at": "2026-10-16T15:13:10.486156Z"
+    },
+    "guarded_deletion_expiry": {
+      "private_guards": 2,
+      "public_guards": 0,
+      "eventual_404": true
+    },
+    "retained_small_published_interview_fixture": {
+      "id": "ceb8f659-9090-4f5a-9be1-f3c8fb5864be",
+      "duration_seconds": 18.0,
+      "thumbnail": "GENERATED"
+    },
+    "all_disposable_application_fixtures_deleted": true,
+    "final_database_and_demo_role_restoration": {
+      "demo_role": "user",
+      "other_administrators": 1,
+      "application_rows": {
+        "videos": 1,
+        "upload_attempts": 5,
+        "jobs": 2
+      }
+    }
+  },
+  "manual_recovery": {
+    "cancelled_execution": "videos-worker-gltdb",
+    "replacement_execution": "videos-worker-krd85",
+    "attempts": 2,
+    "duration_seconds": 300.0,
+    "source_bytes": 25070681,
+    "history": [
+      {
+        "at": "2026-10-16T15:05:28.142691+00:00",
+        "state": "RUNNING",
+        "attempt": 1,
+        "error_code": null
+      },
+      {
+        "at": "2026-10-16T15:09:20.437886+00:00",
+        "state": "INTERRUPTED",
+        "attempt": 1
+      },
+      {
+        "at": "2026-10-16T15:10:34.869779+00:00",
+        "state": "RUNNING",
+        "attempt": 2,
+        "error_code": null
+      },
+      {
+        "at": "2026-10-16T15:14:18.436365+00:00",
+        "state": "SUCCEEDED",
+        "attempt": 2,
+        "error_code": null
+      }
+    ],
+    "hls": {
+      "playlists": 3,
+      "segments": 150,
+      "real_remote_decode": true
+    }
+  },
+  "inflight_guard_details": {
+    "source": "Completed parent probe observations",
+    "private_guards": 4,
+    "public_guards": 155,
+    "size_bytes": 0,
+    "content_type": "application/x-pilgrims-deletion-guard",
+    "metadata": {
+      "pilgrims-deletion-guard": "1"
+    },
+    "cache_control": "no-store",
+    "eventual_video_404": true,
+    "jobs_removed_by_cascade": true,
+    "still_valid_old_source_url_late_put_status": 412,
+    "public_objects_still_zero_bytes_after_worker_terminal": true,
+    "fenced_video_cli_outcome": {
+      "outcome": "no_op",
+      "timestamp": "2026-10-16T16:24:36.080760Z"
+    }
+  },
+  "remaining_live_checks": [],
+  "inflight_native_tasks": [
+    {
+      "execution": "videos-worker-2mrpz",
+      "job_id": [
+        "run",
+        "--job-id",
+        "7838bc51-e276-4916-ab70-b0d6300dc7c7"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-2mrpz/tasks/videos-worker-2mrpz-task0",
+      "scheduledTime": "2026-10-16T16:24:46.657879Z",
+      "startTime": "2026-10-16T16:25:35.116422Z",
+      "completionTime": "2026-10-16T16:26:58.824264Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-gb9m4",
+      "job_id": [
+        "run",
+        "--job-id",
+        "833976db-a8a6-4378-8322-c0be952666db"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-gb9m4/tasks/videos-worker-gb9m4-task0",
+      "scheduledTime": "2026-10-16T16:21:36.665824Z",
+      "startTime": "2026-10-16T16:22:12.233738Z",
+      "completionTime": "2026-10-16T16:22:29.368357Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-mmhpz",
+      "job_id": [
+        "run",
+        "--job-id",
+        "e217fc7b-23c1-455f-b7d0-bbafdb7cfe49"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-mmhpz/tasks/videos-worker-mmhpz-task0",
+      "scheduledTime": "2026-10-16T16:21:36.665847Z",
+      "startTime": "2026-10-16T16:22:12.217938Z",
+      "completionTime": "2026-10-16T16:24:39.853930Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    }
+  ],
+  "corrupt_source_details": {
+    "source_bytes": 47,
+    "video_and_thumbnail_jobs": {
+      "state": "FAILED",
+      "error_code": "INVALID_SOURCE",
+      "attempts": 1
+    },
+    "explicit_retry_http_status": 409
+  },
+  "identity_availability_observation": {
+    "confirmation_http_status": 503,
+    "safe_detail": "Identity verification is temporarily unavailable.",
+    "same_confirmation_retry_http_status": 202,
+    "diagnostic_limit": "HTTP identity-unavailability response observed; lower-level transport cause and latency were not measured."
+  },
+  "overduration_source_details": {
+    "duration_seconds": 301,
+    "source_bytes": 97084,
+    "video_and_thumbnail_jobs": {
+      "state": "FAILED",
+      "error_code": "INVALID_SOURCE",
+      "attempts": 1
+    }
+  },
+  "oversized_source_details": {
+    "actual_uploaded_bytes": 104857601,
+    "declared_bytes": 1,
+    "confirmation_http_status": 413,
+    "video_status": "UPLOADING",
+    "created_jobs": 0
+  },
+  "authorization_expiry_detail": {
+    "expires_at": "2026-10-16T15:13:10.486156Z",
+    "expired_put_http_status": 403,
+    "same_record_renewed_put_http_status": 200,
+    "stale_confirmation_http_status": 409
+  },
+  "final_cleanup_details": {
+    "expiry_private_guards": 2,
+    "expiry_public_guards": 0,
+    "expiry_eventual_404": true,
+    "all_nonhappy_get_404": true,
+    "all_nonhappy_jobs": 0,
+    "retained_happy": {
+      "status": "READY",
+      "publication_status": "PUBLISHED",
+      "duration_seconds": 18.0,
+      "thumbnail_source": "GENERATED"
+    },
+    "demo_role": "user",
+    "other_administrators": 1,
+    "application_rows": {
+      "videos": 1,
+      "upload_attempts": 5,
+      "jobs": 2
+    }
+  },
+  "normal_jwt_expiry_during_acceptance": {
+    "lifetime_seconds": 900,
+    "expired_token_http_status": 401,
+    "fresh_sign_in_used": true,
+    "product_change": false
+  }
+}

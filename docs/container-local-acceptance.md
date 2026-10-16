@@ -1,11 +1,10 @@
 # Local container preparation (MEL-16)
 
-Verified 2026-10-16. **MEL-16 remains incomplete:** this is local Linux image and
-operator-CLI evidence, plus the separately recorded actual R2 browser proof.
-Subsequent image publication and explicit owner-run production migrations are
-recorded in [deployment preparation](cloud-deployment.md); service/job deployment
-is now separately recorded; local evidence alone does not certify deployed behavior.
-[Cloud readiness](cloud-readiness.md) tracks the remaining target gates.
+Verified 2026-10-16. This records local Linux image and operator-CLI evidence.
+[Completed live acceptance](live-showcase-acceptance.md) separately records actual
+Neon/R2/Cloud Run/browser results, final cleanup and restored demo role.
+[Deployment evidence](cloud-deployment.md) pins the published image and runtime
+configuration; [cloud readiness](cloud-readiness.md) records verified prerequisites.
 
 ## Build and entry points
 
@@ -145,10 +144,11 @@ three total attempts with the persisted history; cleanup retains its independent
 bounded runtime and manual recovery. Platform retries must remain zero. A terminal
 Cloud Run result alone never substitutes for persisted state and media evidence.
 
-Remaining live work includes deployed HTTP Neon token/admin demotion, independent Run job
-executions, native resource/signal limits, and public HLS player playback/deletion. Provider token/demotion and the owner-selected
-processed `r2.dev` origin’s public/private sentinel and Range checks have passed;
-see the readiness record for their exact scope and development limits.
+The [final live acceptance record](live-showcase-acceptance.md) now verifies
+deployed identity/demotion, independent jobs, browser HLS, actual expiry and
+renewal, operator recovery and guarded deletion/cleanup. Native measurements
+remain representative observations rather than worst-case guarantees; the local
+QEMU signal limitation above is not evidence of native Cloud Run behavior.
 
 References: [uv image guidance](https://docs.astral.sh/uv/guides/integration/docker/),
 [Cloud Run runtime contract](https://docs.cloud.google.com/run/docs/container-contract),

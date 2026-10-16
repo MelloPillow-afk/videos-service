@@ -77,11 +77,11 @@ runtime database connection. Worker invocation remains IAM protected.
 Initial automatic approval review rejected public invocation for insufficiently
 explicit authorization. The single retry cited the approved specification's
 anonymous viewer requirements and was accepted; no other IAM grant was widened.
-MEL-7 cloud readiness is complete. MEL-16 remains in progress: browser HLS player
-and application CORS, invalid source rejection, actual signed-URL expiry, and
-guarded deletion during in-flight processing still need their live acceptance
-evidence. Completed independent probes and native resource measurements do not
-close those application checks.
+MEL-7 cloud readiness and MEL-16 live acceptance criteria are verified. The
+[final live record](live-showcase-acceptance.md) covers browser playback/uploads,
+invalid/oversized sources, actual expiry and renewal, operator recovery,
+in-flight guarded deletion and final disposable-fixture cleanup. Only the
+18-second READY/PUBLISHED interview fixture remains; the demo role is restored.
 
 ### Independent identity and benign-execution evidence
 
@@ -248,11 +248,10 @@ without logging it and is valid only for recovery. Without it, the launcher
 continues to use runtime metadata identity, with no local-account fallback.
 Running recovery under the normal worker identity does not grant launch access.
 
-MEL-16 remains open for browser HLS playback/application CORS, invalid-source
-rejection, actual signed-URL expiry and guarded deletion during in-flight work.
-Record the complete live journey separately from these readiness probes and
-native recovery/resource measurements. No scheduler, periodic reconciliation,
-automatic migration or lifecycle cleanup is introduced.
+[MEL-16 live acceptance](live-showcase-acceptance.md) is complete with final
+cleanup and restored demo-role evidence. These provider results supplement the
+independent readiness probes and native measurements above. No scheduler,
+periodic reconciliation, automatic migration or lifecycle cleanup was added.
 
 References: [Cloud Run job service identity](https://docs.cloud.google.com/run/docs/configuring/jobs/service-identity),
 [Cloud Run runtime contract](https://docs.cloud.google.com/run/docs/container-contract),
