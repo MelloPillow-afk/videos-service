@@ -13,7 +13,8 @@ payload, signed URL, database password, or demonstration identity is recorded he
 | Check | Observed result |
 | --- | --- |
 | Neon target | Project `flat-dawn-07469526`, branch `br-polished-feather-b4mxbb1f`, endpoint `ep-wandering-art-b483xg29`; PostgreSQL 18, AWS `us-east-2`, database `neondb`. TLS connection succeeds. |
-| Neon Auth | Managed Better Auth schema: `neon_auth."user".id` UUID, `role` text. One user and one exact admin membership counted without recording identity. Auth `/ok` returns 200; JWKS returns OKP/EdDSA/Ed25519. Target server version and actual token claims remain unverified. |
+| Neon Auth | Target management metadata confirms Neon-owned `better_auth` on the selected branch/database; schema has `neon_auth."user".id` UUID and `role` text. Auth `/ok` and Ed25519 JWKS return 200. Approved isolated signup/signin/token probe verified the real EdDSA signature, matching subject and 900-second lifetime. Actual issuer and audience both equal the Auth URL origin. The underlying managed build version is not exposed. |
+| Current administrator role | Using the least-privilege runtime database connection, existing Authorization/NeonRoles denied the ordinary synthetic user, allowed temporary admin, then denied the same still-valid JWT immediately after provider-admin demotion. Final demo role is `user`, session signed out; existing administrator untouched. This is provider readiness, not deployed HTTP evidence. |
 | Auth endpoint | `https://ep-wandering-art-b483xg29.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth`. Localhost allowed; trusted origins empty; password sign-in enabled. Discovery path returns 404. |
 | Runtime database role | Created `videos_runtime`; verified fresh TLS login and current-role SELECT. Public schema CREATE and Auth role UPDATE are denied. No application tables or migration bookkeeping exist yet. |
 | Pooler compatibility | Target rejects startup `options`. The [transaction-local configuration fix](neon-pool-compatibility.md) now passes actual Neon pool acquisition, TLS, configured search path/timeouts, cancellation and reuse; no target application writes or migrations. |
@@ -21,9 +22,9 @@ payload, signed URL, database password, or demonstration identity is recorded he
 | Registry / deployment | Existing Docker repository `videos`, `us-central1`. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
 | Runtime identities | Existing `videos-api@videos-service.iam.gserviceaccount.com` and `videos-worker@videos-service.iam.gserviceaccount.com`. Six secret-scoped accessor grants added, then only these two project Editor members removed; unrelated default-compute Editor membership preserved. Readback confirms grants. |
 | Secret metadata | Existing `videos-database-url`, `videos-r2-access-key-id`, `videos-r2-secret-access-key`, each version `1` ENABLED. Payloads were not printed or changed. Database secret must be checked/replaced with the separate runtime DSN at deployment. |
-| R2 target | Distinct existing buckets `videos-raw` and `videos-processed`, WNAM/default jurisdiction. Authenticated HEAD, GET, create-only PUT, prefix list and narrow unsigned-probe deletion work. Config readback verifies private `r2.dev` disabled and no custom domains; delivery development URL also disabled, custom domains empty. Actual CDN positive/negative sentinel proof remains pending a delivery hostname. |
+| R2 target | Distinct existing buckets `videos-raw` and `videos-processed`, WNAM/default jurisdiction. Authenticated HEAD, GET, create-only PUT, prefix list and narrow unsigned-probe deletion work. Private `r2.dev` remains disabled and both custom-domain lists empty. Owner explicitly selected and enabled only the processed development origin below. A public control GET returned 200 with matching bytes; Range returned 206. An existing private sentinel was verified with authenticated GET, but its key through the public origin returned 404 and the disabled raw URL returned 401, without sentinel bytes. |
 | R2 upload protection | Both source/video and image signed PUT: first 200, replacement 412, original bytes unchanged. Missing/altered If-None-Match or altered Content-Type: 403. Two simultaneous PUTs: 200/412, stored bytes match one contender. URLs signed for 900 seconds. |
-| R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Nine markers retained after the browser probe; inventory below. |
+| R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Eleven markers retained after browser and public-origin probes; inventory below. |
 | Browser/CORS | Approved `http://localhost:8765` private PUT preflight returns 204, exact origin, Content-Type/If-None-Match allowed. Public GET-with-Range preflight returns 204 and advertises GET/HEAD. Unapproved-origin PUT and GET-with-Range preflights return 403 without allowing headers; preserved wildcard owner rules still allow simple GET. Actual in-app browser uploads of MP4 and valid 1280×720 JPEG each return 200 then 412 for replacement bytes; authenticated GET digests remain unchanged. Both signed keys then sealed and verified. |
 | Configuration access | Updated owner-supplied administrative access now returns 200 for REST metadata/domain/CORS and S3 GetBucketCors. Preserved owner GET rules (localhost:3000 and wildcard); appended narrow localhost:8765 upload/player rules and read them back. Active account zone-name metadata returns an empty list. |
 
@@ -38,11 +39,11 @@ actual localhost MP4/JPEG upload and overwrite statuses without signed URLs.
 
 | Area | Specific remaining input or action |
 | --- | --- |
-| Auth | Explicit approval for an isolated synthetic demonstration account and temporary provider-admin assignment/demotion/restoration is pending. Read-only provider discovery confirms signup/signin/token endpoints, signups enabled and verification emails disabled; no account was created or identity changed. Then inspect actual issuer/audience/subject/lifetime and verify same-token immediate revocation. Confirm target Auth version. |
+| Auth | Provider token/current-role/demotion readiness is verified with approved isolated identity changes. Deployed HTTP token handling and same-token demotion remain MEL-16 checks. The provider exposes `better_auth` integration metadata, not its underlying build version. |
 | Database | Explicitly apply application migrations with owner connection, grant DML on the exact three tables, update runtime secret reference, and verify deployed API/worker TLS connectivity using the tested pooler-compatible configuration. |
-| R2 configuration | Configuration access and private exposure readback are verified. Retain the approved narrow browser rules and all permanent markers; preserve existing owner GET rules unless the owner requests a change. CORS does not authorize access to private objects. |
+| R2 configuration | Configuration access and private exposure readback are verified. Retain the approved narrow browser rules and all permanent markers; preserve existing owner GET rules unless the owner requests a change. CORS does not authorize access to private objects. Keep raw bucket public access disabled. |
 | R2 runtime credentials | Current S3 credentials are the same account-owned administrative setup token (verified by ID/hash equality without recording either value). Bucket configuration access is broader than runtime needs. Account token detail and permission-group APIs return 403/code 9109. Owner must supply a separate Object Read & Write token scoped only to `videos-raw` and `videos-processed`, or grant setup `Account API Tokens Write` so that scoped token can be created through the API. Do not deploy the setup credential as runtime access. |
-| CDN / browser | Actual public delivery hostname and DNS/cache authorization. Connect only delivery bucket; prove public control succeeds and an existing private sentinel cannot be fetched there. CORS/direct browser PUT from `http://localhost:8765` is verified. Actual CDN player playback and any separately approved player origins remain pending. |
+| Public delivery / browser | Owner chose `https://pub-1296a4df37cd4d52aacd2941d8b36687.r2.dev`; processed-only exposure, public/private sentinel separation, Range, CORS and direct browser PUT are verified. This development endpoint is rate-limited and lacks custom-domain caching features. Actual deployed HLS player playback and any separately approved player origins remain MEL-16 checks; no new zone or DNS record was created. |
 | Cloud Run | Deploy completed image to existing registry, attach the two identities and secret references, create the worker job, grant API job-scoped execution-with-overrides, then verify benign authorized and denied launches independently of business flows. No job currently exists to receive that scoped grant. |
 | Resource budget | Measure representative media against explicit job CPU/memory/timeout and API/connection concurrency settings; no quota expansion is implied. |
 
@@ -94,11 +95,21 @@ The browser proof additionally retained two guards in `videos-raw` under
 `readiness/mel-7/browser-8701e1f9-f225-43e2-b3a9-2fc2f9cdb1fa/`, suffixes
 `source` and `image`. These correspond to the actual MP4/JPEG browser uploads.
 
+The public-origin probe retained two more under
+`readiness/mel-7/public-origin-485a3288-336e-40df-b2a7-65afdc82b340/`:
+`videos-raw/private-only` and `videos-processed/public-control`, where each suffix
+is appended to that shared prefix in its respective bucket. Both were verified
+zero-byte guards after successful positive/negative sentinel checks.
+
 They have content type `application/x-pilgrims-deletion-guard`, metadata
 `pilgrims-deletion-guard=1`, and `Cache-Control: no-store`. Never blanket-delete
 these prefixes: removing a guard reopens its key to a delayed conditional writer.
 Only the unsigned `delete-control` objects were removed, and subsequent HEAD
-returned 404. No user media was read, overwritten, or deleted.
+returned 404. No user media was read, overwritten, or deleted. GCP R2 secret discovery found
+only the two existing R2-named resources, each with one enabled version: key ID
+created `2026-10-16T13:51:29.048348Z`, secret created
+`2026-10-16T13:51:42.313010Z`. Their privately read values still match the setup
+admin pair; a scoped replacement has not been observed in those versions.
 
 ## Neon identity gate
 
@@ -139,8 +150,12 @@ Restore the demonstration role through provider controls afterward.
 Use separate private and public buckets. Private holds temporary source/image
 uploads and retained originals; disable both `r2.dev` and custom-domain exposure.
 Only processed HLS and validated/generated thumbnails reach public delivery.
-Connect the CDN hostname only to the delivery bucket; keep its development URL
-disabled to avoid an additional delivery route.
+The owner selected the processed bucket’s `r2.dev` development URL for this
+bounded showcase; it is now enabled. This differs from a production custom-domain
+configuration: the development endpoint is rate-limited and lacks custom-domain
+cache/access-management features. Private exposure stays disabled. If a custom
+domain is configured later, connect it only to delivery and disable the alternate
+development route when appropriate.
 [Public bucket controls](https://developers.cloudflare.com/r2/buckets/public-buckets/).
 
 Browser PUTs use the S3 API endpoint, not the CDN hostname. Sign and return
