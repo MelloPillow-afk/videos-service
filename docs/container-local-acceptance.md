@@ -126,10 +126,12 @@ three total attempts with the persisted history; cleanup retains its independent
 bounded runtime and manual recovery. Platform retries must remain zero. A terminal
 Cloud Run result alone never substitutes for persisted state and media evidence.
 
-Remaining live work includes the actual Neon token/admin demotion, separate scoped
-R2 runtime credentials, approved delivery hostname and private/CDN sentinel proof,
+Remaining live work includes deployed HTTP Neon token/admin demotion, separate
+scoped R2 runtime credentials,
 image push/deployment, explicit production migrations/grants, independent Run job
-executions, native resource/signal limits, and CDN HLS player playback/deletion.
+executions, native resource/signal limits, and public HLS player playback/deletion. Provider token/demotion and the owner-selected
+processed `r2.dev` origin’s public/private sentinel and Range checks have passed;
+see the readiness record for their exact scope and development limits.
 
 References: [uv image guidance](https://docs.astral.sh/uv/guides/integration/docker/),
 [Cloud Run runtime contract](https://docs.cloud.google.com/run/docs/container-contract),
