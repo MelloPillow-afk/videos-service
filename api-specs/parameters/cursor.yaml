@@ -1,6 +1,8 @@
 name: cursor
 in: query
-description: Token from the previous page.
+description: |
+  Opaque continuation token bound to the original filters, search, page size,
+  and visibility.
 schema:
   type: string
   examples:
