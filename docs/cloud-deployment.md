@@ -165,8 +165,18 @@ Verify deployment metadata and secret versions without reading payloads. Then
 record API-identity launch with arguments, operation/execution reference, worker
 identity, TLS database connectivity, terminal outcome and persisted state; also
 verify denied launch. Explicit CLI `recover` needs a launch-capable API/operator
-identity context because its launcher uses metadata identity. Running recovery
-under the normal worker identity does not grant launch access.
+identity context. On a local operator machine with the intended gcloud account
+authenticated and `run.jobs.runWithOverrides` granted on this job, use:
+
+```sh
+uv run --locked python -m src.worker recover --job-id UUID --gcloud-auth
+```
+
+Add `--previous-execution-terminated` only after verifying termination of a
+stranded RUNNING execution. `--gcloud-auth` captures the installed CLI token
+without logging it and is valid only for recovery. Without it, the launcher
+continues to use runtime metadata identity, with no local-account fallback.
+Running recovery under the normal worker identity does not grant launch access.
 
 Live MEL-16 still requires deployed HTTP token/demotion, independent real media
 jobs, HLS player playback through public delivery, retained originals, manual

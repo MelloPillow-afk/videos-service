@@ -290,3 +290,26 @@ async def arrange_thumbnails_delete_thumbnail(
             ).format(sql.Identifier(schema)),
             ("videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",),
         )
+
+
+@pytest.fixture
+def gcloud_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """An actual external executable with controlled credentials, errors and latency."""
+    import os
+    import sys
+
+    executable = tmp_path / "gcloud"
+    invocation = tmp_path / "gcloud-invocation.json"
+    executable.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys, time\n"
+        "from pathlib import Path\n"
+        f"Path({str(invocation)!r}).write_text(json.dumps({{'args':sys.argv[1:],'pid':os.getpid()}}))\n"
+        "time.sleep(float(os.environ.get('TEST_GCLOUD_DELAY', '0')))\n"
+        "print('controlled-gcloud-private-error', file=sys.stderr)\n"
+        "print('' if os.environ.get('TEST_GCLOUD_EMPTY') else 'controlled-operator-access-token')\n"
+        "sys.exit(int(os.environ.get('TEST_GCLOUD_EXIT', '0')))\n"
+    )
+    executable.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path) + os.pathsep + os.environ.get("PATH", ""))
+    return invocation
