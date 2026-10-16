@@ -32,6 +32,16 @@ def video_response(video: VideoRecord) -> Video:
             "created_at": video.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": video.updated_at.isoformat().replace("+00:00", "Z"),
         }
+        | (
+            {
+                "processing_error": {
+                    "code": video.processing_error_code,
+                    "message": video.processing_error_message,
+                }
+            }
+            if video.processing_error_code
+            else {}
+        )
     )
 
 

@@ -35,6 +35,17 @@ class Settings(BaseSettings):
         default=None, pattern=r"^projects/[^/]+/locations/[^/]+/jobs/[^/]+$"
     )
 
+    ffmpeg_binary: str = "ffmpeg"
+    ffprobe_binary: str = "ffprobe"
+    media_threads: int = Field(default=2, ge=1, le=8)
+    media_probe_timeout_seconds: float = Field(default=30, gt=0)
+    media_decode_timeout_seconds: float = Field(default=300, gt=0)
+    media_encode_timeout_seconds: float = Field(default=900, gt=0)
+    media_provider_timeout_seconds: float = Field(default=60, gt=0)
+    media_output_max_bytes: int = Field(default=1073741824, ge=1)
+    media_max_dimension: int = Field(default=8192, ge=2)
+    media_max_pixels: int = Field(default=8294400, ge=4)
+
     @model_validator(mode="after")
     def validate_database_settings(self) -> Self:
         if self.db_pool_min_size > self.db_pool_max_size:
