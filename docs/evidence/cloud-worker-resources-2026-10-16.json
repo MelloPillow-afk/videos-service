@@ -1,0 +1,1110 @@
+{
+  "captured_at": "2026-10-16T15:42:22.984920+00:00",
+  "source": "Cloud Monitoring v3 timeSeries API",
+  "filter": "resource.type=cloud_run_job AND resource.labels.job_name=videos-worker",
+  "sample_period_seconds": 60,
+  "documented_ingest_delay_seconds": 120,
+  "limits": {
+    "cpu": 2,
+    "memory_bytes": 4294967296,
+    "timeout_seconds": 1200,
+    "platform_max_retries": 0
+  },
+  "limitations": [
+    "Job-level distributions have no execution identifier; overlapping tasks cannot be attributed individually.",
+    "Sixty-second samples are not continuous maxima or per-execution peak memory.",
+    "Single-observation distributions report the observed value; multiple-observation means are not maxima."
+  ],
+  "series": [
+    {
+      "metric": {
+        "type": "run.googleapis.com/container/cpu/utilizations"
+      },
+      "resource": {
+        "type": "cloud_run_job",
+        "labels": {
+          "project_id": "videos-service",
+          "location": "us-central1",
+          "job_name": "videos-worker"
+        }
+      },
+      "points": [
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:13:00.001Z",
+            "endTime": "2026-10-16T15:14:00Z"
+          },
+          "count": 1,
+          "mean": 0.08440075329952679,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            9
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:12:00.001Z",
+            "endTime": "2026-10-16T15:13:00Z"
+          },
+          "count": 1,
+          "mean": 0.9580203641201073,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            96
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:11:00.001Z",
+            "endTime": "2026-10-16T15:12:00Z"
+          },
+          "count": 1,
+          "mean": 0.9885324670959379,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            99
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:10:00.001Z",
+            "endTime": "2026-10-16T15:11:00Z"
+          },
+          "count": 1,
+          "mean": 0.5016995711005412,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            51
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:08:00.001Z",
+            "endTime": "2026-10-16T15:09:00Z"
+          },
+          "count": 1,
+          "mean": 0.5851540375700397,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            59
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:07:00.001Z",
+            "endTime": "2026-10-16T15:08:00Z"
+          },
+          "count": 1,
+          "mean": 1.0316346286693008,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            101
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:06:00.001Z",
+            "endTime": "2026-10-16T15:07:00Z"
+          },
+          "count": 1,
+          "mean": 0.8108786664340892,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            82
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:02:00.001Z",
+            "endTime": "2026-10-16T15:03:00Z"
+          },
+          "count": 1,
+          "mean": 0.392420881957181,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            40
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:00:00.001Z",
+            "endTime": "2026-10-16T15:01:00Z"
+          },
+          "count": 1,
+          "mean": 0.3730302882913007,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "metric": {
+        "type": "run.googleapis.com/container/memory/utilizations"
+      },
+      "resource": {
+        "type": "cloud_run_job",
+        "labels": {
+          "location": "us-central1",
+          "project_id": "videos-service",
+          "job_name": "videos-worker"
+        }
+      },
+      "points": [
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:13:00.001Z",
+            "endTime": "2026-10-16T15:14:00Z"
+          },
+          "count": 1,
+          "mean": 0.03896141052246094,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            4
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:12:00.001Z",
+            "endTime": "2026-10-16T15:13:00Z"
+          },
+          "count": 1,
+          "mean": 0.053050994873046875,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            6
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:11:00.001Z",
+            "endTime": "2026-10-16T15:12:00Z"
+          },
+          "count": 1,
+          "mean": 0.0672006607055664,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            7
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:10:00.001Z",
+            "endTime": "2026-10-16T15:11:00Z"
+          },
+          "count": 1,
+          "mean": 0.027088165283203125,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            3
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:08:00.001Z",
+            "endTime": "2026-10-16T15:09:00Z"
+          },
+          "count": 1,
+          "mean": 0.03895759582519531,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            4
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:07:00.001Z",
+            "endTime": "2026-10-16T15:08:00Z"
+          },
+          "count": 1,
+          "mean": 0.07155132293701172,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            8
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:06:00.001Z",
+            "endTime": "2026-10-16T15:07:00Z"
+          },
+          "count": 1,
+          "mean": 0.047265052795410156,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            5
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:02:00.001Z",
+            "endTime": "2026-10-16T15:03:00Z"
+          },
+          "count": 1,
+          "mean": 0.0149688720703125,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            2
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:00:00.001Z",
+            "endTime": "2026-10-16T15:01:00Z"
+          },
+          "count": 1,
+          "mean": 0.004070281982421875,
+          "bucket_options": {
+            "linearBuckets": {
+              "numFiniteBuckets": 100,
+              "width": 0.01
+            }
+          },
+          "occupied_buckets": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "metric": {
+        "labels": {
+          "container_name": "worker"
+        },
+        "type": "run.googleapis.com/container/cpu/usage"
+      },
+      "resource": {
+        "type": "cloud_run_job",
+        "labels": {
+          "project_id": "videos-service",
+          "job_name": "videos-worker",
+          "location": "us-central1"
+        }
+      },
+      "points": [
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:21:00Z",
+            "endTime": "2026-10-16T15:21:00Z"
+          },
+          "count": 1,
+          "mean": 10.92230368449998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:20:00Z",
+            "endTime": "2026-10-16T15:20:00Z"
+          },
+          "count": 1,
+          "mean": 10.92230368449998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:19:00Z",
+            "endTime": "2026-10-16T15:19:00Z"
+          },
+          "count": 1,
+          "mean": 10.92230368449998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:18:00Z",
+            "endTime": "2026-10-16T15:18:00Z"
+          },
+          "count": 1,
+          "mean": 10.92230368449998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:17:00Z",
+            "endTime": "2026-10-16T15:17:00Z"
+          },
+          "count": 1,
+          "mean": 10.92230368449998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:16:00Z",
+            "endTime": "2026-10-16T15:16:00Z"
+          },
+          "count": 2,
+          "mean": 41.89826431475001,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304,
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:15:00Z",
+            "endTime": "2026-10-16T15:15:00Z"
+          },
+          "count": 2,
+          "mean": 41.89826431475001,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304,
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:14:00Z",
+            "endTime": "2026-10-16T15:14:00Z"
+          },
+          "count": 2,
+          "mean": 41.89826431475001,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            304,
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:13:00Z",
+            "endTime": "2026-10-16T15:13:00Z"
+          },
+          "count": 2,
+          "mean": 98.74247874725002,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            386,
+            409
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:12:00Z",
+            "endTime": "2026-10-16T15:12:00Z"
+          },
+          "count": 2,
+          "mean": 100.68942986075002,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            386,
+            411
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:11:00Z",
+            "endTime": "2026-10-16T15:11:00Z"
+          },
+          "count": 2,
+          "mean": 40.57209333150002,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            292,
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:10:00Z",
+            "endTime": "2026-10-16T15:10:00Z"
+          },
+          "count": 1,
+          "mean": 72.87422494500004,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:09:00Z",
+            "endTime": "2026-10-16T15:09:00Z"
+          },
+          "count": 1,
+          "mean": 72.87422494500004,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            386
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:08:00Z",
+            "endTime": "2026-10-16T15:08:00Z"
+          },
+          "count": 1,
+          "mean": 126.72061478499998,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            410
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:07:00Z",
+            "endTime": "2026-10-16T15:07:00Z"
+          },
+          "count": 1,
+          "mean": 86.6880043495,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 601,
+              "growthFactor": 1.023387262524755,
+              "scale": 0.009771472018646614
+            }
+          },
+          "occupied_buckets": [
+            394
+          ]
+        }
+      ]
+    },
+    {
+      "metric": {
+        "labels": {
+          "container_name": "worker"
+        },
+        "type": "run.googleapis.com/container/memory/usage"
+      },
+      "resource": {
+        "type": "cloud_run_job",
+        "labels": {
+          "project_id": "videos-service",
+          "location": "us-central1",
+          "job_name": "videos-worker"
+        }
+      },
+      "points": [
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:21:00Z",
+            "endTime": "2026-10-16T15:21:00Z"
+          },
+          "count": 1,
+          "mean": 167337984,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:20:00Z",
+            "endTime": "2026-10-16T15:20:00Z"
+          },
+          "count": 1,
+          "mean": 167337984,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:19:00Z",
+            "endTime": "2026-10-16T15:19:00Z"
+          },
+          "count": 1,
+          "mean": 167337984,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:18:00Z",
+            "endTime": "2026-10-16T15:18:00Z"
+          },
+          "count": 1,
+          "mean": 167337984,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:17:00Z",
+            "endTime": "2026-10-16T15:17:00Z"
+          },
+          "count": 1,
+          "mean": 167337984,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:16:00Z",
+            "endTime": "2026-10-16T15:16:00Z"
+          },
+          "count": 2,
+          "mean": 167329792,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:15:00Z",
+            "endTime": "2026-10-16T15:15:00Z"
+          },
+          "count": 2,
+          "mean": 167329792,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:14:00Z",
+            "endTime": "2026-10-16T15:14:00Z"
+          },
+          "count": 2,
+          "mean": 167329792,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:13:00Z",
+            "endTime": "2026-10-16T15:13:00Z"
+          },
+          "count": 2,
+          "mean": 197586944,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145,
+            148
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:12:00Z",
+            "endTime": "2026-10-16T15:12:00Z"
+          },
+          "count": 2,
+          "mean": 227973120,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145,
+            150
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:11:00Z",
+            "endTime": "2026-10-16T15:11:00Z"
+          },
+          "count": 2,
+          "mean": 141762560,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            143,
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:10:00Z",
+            "endTime": "2026-10-16T15:10:00Z"
+          },
+          "count": 1,
+          "mean": 167321600,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:09:00Z",
+            "endTime": "2026-10-16T15:09:00Z"
+          },
+          "count": 1,
+          "mean": 167321600,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            145
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:08:00Z",
+            "endTime": "2026-10-16T15:08:00Z"
+          },
+          "count": 1,
+          "mean": 307310592,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            150
+          ]
+        },
+        {
+          "interval": {
+            "startTime": "2026-10-16T15:07:00Z",
+            "endTime": "2026-10-16T15:07:00Z"
+          },
+          "count": 1,
+          "mean": 203001856,
+          "bucket_options": {
+            "exponentialBuckets": {
+              "numFiniteBuckets": 200,
+              "growthFactor": 1.141665830315409,
+              "scale": 0.767223671908572
+            }
+          },
+          "occupied_buckets": [
+            147
+          ]
+        }
+      ]
+    }
+  ],
+  "task_timings": [
+    {
+      "execution": "videos-worker-krd85",
+      "job_id": [
+        "run",
+        "--job-id",
+        "2ad9a3ad-060a-423c-8242-22644482558d"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-krd85/tasks/videos-worker-krd85-task0",
+      "scheduledTime": "2026-10-16T15:09:30.608670Z",
+      "startTime": "2026-10-16T15:10:30.836582Z",
+      "completionTime": "2026-10-16T15:14:21.291160Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-gltdb",
+      "job_id": [
+        "run",
+        "--job-id",
+        "2ad9a3ad-060a-423c-8242-22644482558d"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-gltdb/tasks/videos-worker-gltdb-task0",
+      "scheduledTime": "2026-10-16T15:03:48.584794Z",
+      "startTime": "2026-10-16T15:05:21.690343Z",
+      "completionTime": null,
+      "lastAttemptResult": {
+        "status": {
+          "code": 1,
+          "message": "Cancelled by user."
+        }
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_FAILED",
+          "message": "Cancelled by user.",
+          "executionReason": "CANCELLED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-82kdx",
+      "job_id": [
+        "run",
+        "--job-id",
+        "d04b8a8d-1a98-4b21-9545-c36539120b09"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-82kdx/tasks/videos-worker-82kdx-task0",
+      "scheduledTime": "2026-10-16T15:03:48.584763Z",
+      "startTime": "2026-10-16T15:05:21.660414Z",
+      "completionTime": "2026-10-16T15:05:38.024981Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-wsh55",
+      "job_id": [
+        "run",
+        "--job-id",
+        "5820c28f-5852-4fc8-8c33-784ca16f43fc"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-wsh55/tasks/videos-worker-wsh55-task0",
+      "scheduledTime": "2026-10-16T15:00:38.586405Z",
+      "startTime": "2026-10-16T15:02:19.283176Z",
+      "completionTime": "2026-10-16T15:02:29.560057Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-tvvvf",
+      "job_id": [
+        "run",
+        "--job-id",
+        "f53d4873-8d1b-487c-8ea9-c5b210bbad58"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-tvvvf/tasks/videos-worker-tvvvf-task0",
+      "scheduledTime": "2026-10-16T15:00:38.586428Z",
+      "startTime": "2026-10-16T15:02:19.279228Z",
+      "completionTime": "2026-10-16T15:02:49.662096Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    },
+    {
+      "execution": "videos-worker-bmf2h",
+      "job_id": [
+        "run",
+        "--job-id",
+        "00000000-0000-0000-0000-000000000000"
+      ],
+      "name": "projects/videos-service/locations/us-central1/jobs/videos-worker/executions/videos-worker-bmf2h/tasks/videos-worker-bmf2h-task0",
+      "scheduledTime": "2026-10-16T14:58:48.596819Z",
+      "startTime": "2026-10-16T15:00:29.443198Z",
+      "completionTime": "2026-10-16T15:00:39.474449Z",
+      "lastAttemptResult": {
+        "status": {}
+      },
+      "conditions": [
+        {
+          "type": "Started",
+          "state": "CONDITION_SUCCEEDED"
+        },
+        {
+          "type": "Completed",
+          "state": "CONDITION_SUCCEEDED"
+        }
+      ],
+      "retried": 0,
+      "timeout": "1200s"
+    }
+  ]
+}

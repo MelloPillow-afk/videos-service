@@ -213,10 +213,10 @@ Use metadata/ADC service identity; service-account keys are unnecessary.
 Worker allocation is the initial explicit **2 CPU / 4 GiB / 1200 seconds**, one task,
 parallelism one and **zero platform retries**. The launcher also sends a 1200-second
 override. Application media retries own the persisted three-attempt budget;
-cleanup has its separate 900-second bounded execution. Representative local
-fixtures do not establish worst-case native Cloud Run memory or duration. Record
-actual native measurements before describing that allocation as sufficient for
-all accepted media.
+cleanup has its separate 900-second bounded execution. [Native worker measurements](cloud-worker-resources.md) now record actual task
+timings and sampled CPU/memory for representative deployed fixtures, including a
+230.455-second recovered task. Samples do not establish continuous peak memory or
+a worst-case native budget for all accepted media.
 
 One task/parallelism one does not cap separate simultaneous job executions. For
 the bounded demonstration, admit one source upload at a time and wait for both
