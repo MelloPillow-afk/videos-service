@@ -43,6 +43,8 @@ async def record_launch(
     if reference is not None:
         await connection.execute(
             """UPDATE jobs SET execution_reference=%s,
+            error_code=CASE WHEN error_code='LAUNCH_UNCONFIRMED' THEN NULL ELSE error_code END,
+            error_message=CASE WHEN error_code='LAUNCH_UNCONFIRMED' THEN NULL ELSE error_message END,
             state=CASE WHEN state IN ('RECORDED','LAUNCH_FAILED') THEN 'LAUNCHED' ELSE state END,
             updated_at=%s WHERE id=%s""",
             (reference, now, id),
@@ -59,7 +61,9 @@ async def record_launch(
 async def may_launch(connection: AsyncConnection[TupleRow], id: UUID) -> bool:
     cursor = await connection.execute(
         """SELECT 1 FROM jobs JOIN videos ON videos.id=jobs.video_id
-        WHERE jobs.id=%s AND jobs.is_current AND videos.status <> 'DELETING'
+        WHERE jobs.id=%s AND jobs.is_current
+        AND ((jobs.kind='DELETION' AND videos.status='DELETING')
+        OR (jobs.kind<>'DELETION' AND videos.status<>'DELETING'))
         AND jobs.state IN ('RECORDED','LAUNCH_FAILED')""",
         (id,),
     )

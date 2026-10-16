@@ -17,6 +17,7 @@ from src.providers.storage import Storage
 from src.repositories import Database
 from src.repositories.identity import NeonRoles
 from src.services.authorization import Authorization
+from src.services.processing_recovery import ProcessingRecovery
 from src.services.uploads import SourceUploads
 from src.services.videos import VideoService, utc_now
 
@@ -53,6 +54,9 @@ def create_app(
     app.state.settings = settings
     app.state.storage = storage or R2Storage(settings)
     app.state.launcher = launcher or CloudRunJobLauncher(settings)
+    app.state.processing_recovery = ProcessingRecovery(
+        database, app.state.storage, app.state.launcher, clock=clock, new_id=new_id
+    )
     app.state.uploads = SourceUploads(
         database, app.state.storage, app.state.launcher, settings, clock=clock, new_id=new_id
     )

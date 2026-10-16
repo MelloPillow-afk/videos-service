@@ -42,18 +42,6 @@ async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
-            f"{RESOURCE}:retry",
-            None,
-            202,
-            {
-                "video_id": VIDEO_ID,
-                "status": "QUEUED",
-                "attempt": 2,
-                "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
-            },
-        ),
-        (
-            "POST",
             f"{RESOURCE}/thumbnails:upload-url",
             {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 183420},
             200,

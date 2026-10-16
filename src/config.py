@@ -1,5 +1,6 @@
 """Environment configuration for local development and deployed processes."""
 
+import math
 from typing import Self
 
 from pydantic import Field, SecretStr, model_validator
@@ -49,7 +50,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_database_settings(self) -> Self:
-        if not 0 <= self.media_retry_delays_seconds[0] < self.media_retry_delays_seconds[1]:
+        if (
+            not all(math.isfinite(delay) for delay in self.media_retry_delays_seconds)
+            or not 0 <= self.media_retry_delays_seconds[0] < self.media_retry_delays_seconds[1]
+        ):
             raise ValueError("Media retry delays must be nonnegative and increasing.")
         if self.db_pool_min_size > self.db_pool_max_size:
             raise ValueError("DB_POOL_MIN_SIZE must not exceed DB_POOL_MAX_SIZE")
