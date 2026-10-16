@@ -57,3 +57,8 @@ validation, Ruff/format and strict Pyright. `uv run --locked pytest -q` passes
 The extraction and worker policy follow the approved canonical specification and
 [FFmpeg scale/pad documentation](https://ffmpeg.org/ffmpeg-filters.html#scale).
 Resource sizing and live provider behavior still require deployed evidence.
+
+Final merged verification includes MEL-12 custom thumbnails and MEL-14 deletion
+admission at integration `9b182b3`: `make check` passes with zero Pyright diagnostics
+and 45 contract examples; the complete HTTP/PostgreSQL/FFmpeg suite passes
+184 tests in 25.35 seconds. `git diff --check` is clean.
