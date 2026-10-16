@@ -12,6 +12,7 @@ from src.handlers.video_projection import video_response
 from src.providers.storage import TemporaryStorageError
 from src.schemas.generated.operations import (
     VideosCompleteUploadIdParameter,
+    VideosDeleteVideoIdParameter,
     VideosGetVideoIdParameter,
     VideosListVideosCursorParameter,
     VideosListVideosLimitParameter,
@@ -29,10 +30,12 @@ from src.schemas.generated.videos import (
     PublicationStatus,
     Video,
     VideoCreate,
+    VideoDeletion,
     Videos,
     VideoStatus,
     VideoUpdate,
 )
+from src.services.deletion import Deletions
 from src.services.library import LibraryService
 from src.services.uploads import SourceUploads
 from src.services.videos import VideoService
@@ -104,6 +107,16 @@ async def list_videos(
             "pagination": {"has_more": token is not None, "next_page_token": token},
         }
     )
+
+
+async def delete_video(*, id: VideosDeleteVideoIdParameter, request: Request) -> VideoDeletion:
+    await require_admin(request)
+    service: Deletions = request.app.state.deletions
+    try:
+        await service.request(UUID(id))
+    except VideoNotFound:
+        raise HTTPException(404, "The video was not found.") from None
+    return VideoDeletion(video_id=id, status="DELETING")
 
 
 async def upload_url(

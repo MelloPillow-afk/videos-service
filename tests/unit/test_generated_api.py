@@ -33,7 +33,6 @@ SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
 async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
     cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
         ("GET", "/ping", None, 200, {"status": "ok"}),
-        ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
             f"{RESOURCE}:retry",
