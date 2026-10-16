@@ -8,7 +8,9 @@
     summary: Create Video Thumbnail Upload URL
     description: |
       Upload JPEG, PNG, or WebP up to 5 MiB, with exact 1280 by 720 dimensions.
-      The client crops the image. URLs expire after fifteen minutes.
+      The client crops the image. URLs expire after fifteen minutes. Each
+      authorization supersedes prior thumbnail attempts, uses an isolated key,
+      and requires a signed create-once PUT. DELETING videos reject mutations.
     x-required-role: admin
     requestBody:
       required: true
@@ -52,7 +54,11 @@
       - Thumbnails
     operationId: thumbnails.complete_upload
     summary: Confirm Video Thumbnail Upload
-    description: Confirm an upload and use it as the custom thumbnail.
+    description: |
+      Decode the current uploaded image and verify actual format, declared type,
+      byte count, and exact dimensions before activating the custom thumbnail.
+      Rejections preserve the active image. Repeated accepted completion is
+      idempotent; superseded or removed attempts cannot reactivate images.
     x-required-role: admin
     requestBody:
       $ref: ../index.yaml#/components/requestBodies/upload_completion
@@ -96,7 +102,11 @@
       - Thumbnails
     operationId: thumbnails.delete_thumbnail
     summary: Delete Video Thumbnail
-    description: Remove the custom thumbnail and use the generated image.
+    description: |
+      Idempotently remove the custom selection and invalidate pending thumbnail
+      attempts. A ready generated image becomes active; otherwise return
+      PENDING/NONE/null or FAILED/NONE/null for the generated state. DELETING
+      videos reject mutations. Generated image bytes are retained.
     x-required-role: admin
     responses:
       '200':

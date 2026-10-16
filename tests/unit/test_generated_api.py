@@ -27,13 +27,7 @@ async def test_invalid_video_id_uses_native_request_validation() -> None:
 # Literal expectations follow the authoritative schema examples.
 VIDEO_ID = "550e8400-e29b-41d4-a716-446655440000"
 RESOURCE = f"/v1/videos/{VIDEO_ID}"
-CUSTOM_THUMBNAIL = {
-    "status": "READY",
-    "source": "CUSTOM",
-    "url": f"https://media.example.com/videos/{VIDEO_ID}/thumbnails/custom-v2.jpg",
-}
 SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
-THUMBNAIL_UPLOAD_ID = "50fd0382-794f-4c9b-9a12-60e92a89e008"
 
 
 async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
@@ -51,36 +45,6 @@ async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
                 "attempt": 2,
                 "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
             },
-        ),
-        (
-            "POST",
-            f"{RESOURCE}/thumbnails:upload-url",
-            {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 183420},
-            200,
-            {
-                "video_id": VIDEO_ID,
-                "upload": {
-                    "upload_id": THUMBNAIL_UPLOAD_ID,
-                    "method": "PUT",
-                    "url": "https://uploads.example.com/thumbnail.jpg?signature=example",
-                    "headers": {"Content-Type": "image/jpeg", "If-None-Match": "*"},
-                    "expires_at": "2026-10-13T14:15:00Z",
-                },
-            },
-        ),
-        (
-            "POST",
-            f"{RESOURCE}/thumbnails:complete-upload",
-            {"upload_id": THUMBNAIL_UPLOAD_ID},
-            200,
-            {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
-        ),
-        (
-            "DELETE",
-            f"{RESOURCE}/thumbnails",
-            None,
-            200,
-            {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
         ),
     ]
     app = create_app(Settings(db_pool_min_size=0))
