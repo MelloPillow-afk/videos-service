@@ -64,10 +64,11 @@ each had a failing behavior test before implementation. Existing Yoyo rollback
 acceptance now explicitly selects all migrations as this feature adds a second
 migration dependency. CI installs FFmpeg/FFprobe for the real-media suite.
 
-Before integration refresh, `make check` passed contract validation, 45 examples,
-Ruff/format and strict Pyright; the full suite passed 102 tests (17 new
-processing cases), with 78% overall measured coverage. Coverage includes shared
-cloud adapters whose provider-request tests are owned by MEL-8.
+After merging the shared library/publication integration, `make check` passed
+contract validation, 45 examples, Ruff/format and strict Pyright; the full suite
+passed 120 tests (17 new processing cases), with 81% overall measured coverage.
+Coverage includes shared cloud adapters whose provider-request tests are owned
+by MEL-8. The suite includes migration apply/reapply/full rollback.
 
 Primary references used for the bounded implementation choices:
 
