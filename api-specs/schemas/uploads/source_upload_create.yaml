@@ -23,4 +23,4 @@ description: Details of the MP4 file to upload.
 examples:
   - file_name: introduction.mp4
     content_type: video/mp4
-    size_bytes: 524288000
+    size_bytes: 52428800

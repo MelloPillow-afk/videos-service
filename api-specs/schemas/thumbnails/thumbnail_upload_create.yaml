@@ -5,7 +5,7 @@ required:
   - file_name
   - content_type
   - size_bytes
-description: Details of the thumbnail image to upload.
+description: JPEG, PNG, or WebP up to 5 MiB, exactly 1280 by 720 pixels.
 properties:
   file_name:
     type: string

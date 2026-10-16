@@ -1,17 +1,30 @@
 """ASGI application factory and shared-resource lifecycle."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 
 from src.config import Settings
 from src.core.generated.routers import register_routers
+from src.providers.identity import NeonIdentity, SigningKeys
 from src.repositories import Database
+from src.repositories.identity import NeonRoles
+from src.services.authorization import Authorization
+from src.services.videos import VideoService, utc_now
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    database = Database(settings or Settings())
+def create_app(
+    settings: Settings | None = None,
+    *,
+    signing_keys: SigningKeys | None = None,
+    clock: Callable[[], datetime] = utc_now,
+    new_id: Callable[[], UUID] = uuid4,
+) -> FastAPI:
+    settings = settings or Settings()
+    database = Database(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
@@ -29,5 +42,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     app.state.database = database
+    app.state.videos = VideoService(database, clock=clock, new_id=new_id)
+    app.state.settings = settings
+    app.state.authorization = Authorization(
+        NeonIdentity(settings, signing_keys), NeonRoles(database, settings.auth_schema)
+    )
     register_routers(app)
     return app

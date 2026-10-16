@@ -5,7 +5,14 @@ info:
   description: |
     Manage videos, upload media, publish videos, and find playback links.
     All changes require admin access; viewers see ready, published videos.
-    Viewer access may require authentication, depending on the service settings.
+    Viewer reads are anonymous; hidden and nonexistent resources return 404.
+    Administrators authenticate through Neon Auth; current roles are checked for
+    every privileged request, including draft previews and full-state reads.
+    Sources are MP4, at most 100 MiB and five minutes by default.
+    Thumbnail processing is independent and never gates publication.
+    Upload-size admission is checked before authorization and confirmation; it
+    does not guarantee a transfer ceiling. Recorded jobs launch directly, with
+    manual recovery and no periodic reconciliation or scheduled cleanup.
     JSON fields use snake_case. IDs are UUIDs and timestamps use UTC.
     Unavailable values are null. Previously shared playback links may remain
     accessible for a time after a video is unpublished or deleted.
@@ -25,12 +32,6 @@ tags:
     description: Get video playback links.
   - name: Thumbnails
     description: Upload custom thumbnails or use generated thumbnails.
-x-unresolved-decisions:
-  - Identity provider, admin role mapping, and whether viewer reads require authentication.
-  - Maximum source upload bytes, effective size enforcement, and confirmed-source finalization.
-  - Approved thumbnail formats, dimensions, aspect ratio, byte limit, and cropping policy.
-  - State retention following a rejected source confirmation.
-  - Active thumbnail representation after removing custom when generation has failed.
 paths:
   /ping:
     $ref: paths/health.yaml#/~1ping
@@ -57,7 +58,9 @@ components:
     bearer_auth:
       type: http
       scheme: bearer
-      description: Bearer token for authentication. Managing videos requires administrator access.
+      description: |
+        Neon Auth JWT verified against trusted issuer and JWKS.
+        Privileged access requires a current administrator role.
   parameters:
     id:
       $ref: parameters/id.yaml

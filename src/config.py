@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     db_connect_timeout_seconds: int = Field(default=5, ge=2)
     db_statement_timeout_ms: int = Field(default=5000, ge=1)
 
+    auth_issuer: str | None = None
+    auth_jwks_url: str | None = None
+    auth_audience: str | None = None
+    auth_schema: str = Field(default="neon_auth", pattern=r"^[a-z_][a-z0-9_]{0,62}$")
+    source_max_bytes: int = Field(default=104857600, ge=1)
+    source_max_duration_seconds: float = Field(default=300, gt=0)
+    thumbnail_max_bytes: int = Field(default=5242880, ge=1)
+    cdn_origin: str = "https://media.example.com"
+
     @model_validator(mode="after")
     def validate_database_settings(self) -> Self:
         if self.db_pool_min_size > self.db_pool_max_size:

@@ -98,11 +98,11 @@ async def list_videos(
                 {
                     "created_at": "2026-10-13T14:00:00Z",
                     "description": "An introductory lesson",
-                    "duration_seconds": 1475.5,
+                    "duration_seconds": 147.5,
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "publication_status": "PUBLISHED",
                     "published_at": "2026-10-13T15:00:00Z",
-                    "size_bytes": 524288000,
+                    "size_bytes": 52428800,
                     "status": "READY",
                     "thumbnail": {
                         "source": "CUSTOM",

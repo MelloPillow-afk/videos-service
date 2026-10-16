@@ -1,10 +1,10 @@
 # Videos service
 
 The Python backend for the videos domain. Its prepared OpenAPI contract generates
-all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Generated
-handlers serve fixed, validated contract examples until a matching handwritten
-async implementation is added. Video business behavior and processing remain to
-be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
+all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Draft creation, detail, and metadata updates use handwritten services and PostgreSQL.
+Privileged draft operations verify Neon Auth JWTs and the current provider-owned
+administrator role. Other operations still serve generated examples while their
+approved implementation tickets are in progress. Documentation endpoints remain disabled. The application owns lifecycle and
 documentation settings and may add handwritten routes or mounts.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
@@ -112,8 +112,8 @@ overrides, dependency injection, regeneration, and generation failures.
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
 schema per test. They exercise commits, rollbacks, statement timeouts, and
-Yoyo migration apply/reapply/rollback with a test-only table. There are no video
-tables or application migrations yet. `make migrate` initializes Yoyo's
+Yoyo migration apply/reapply/rollback with a test-only table. The application migration creates `videos`, `upload_attempts`, and `jobs`;
+Yoyo bookkeeping is separate from those three application tables. `make migrate` initializes Yoyo's
 bookkeeping in dev and will apply migrations added to `migrations/`;
 `make migrations` lists their status. These are explicit commands, separate
 from server startup.
@@ -216,8 +216,8 @@ Use the generated function's contract argument names, types, defaults, and retur
 annotation. Compatible signature-preserving decorators and additional native
 `Request`, `Response`, or `Depends` parameters are supported. FastAPI executes the
 selected function's dependency graph, including dependencies that raise HTTP errors.
-Security declarations document the contract; implementing authentication and
-administrator policy remains handwritten work.
+Security declarations document the contract. Handwritten administrator policy
+verifies the signed identity and reads the current role for each privileged request.
 
 Return the generated Pydantic model directly. For example, a creation handler
 accepts `response: Response` and assigns `response.headers["Location"]` to the new
@@ -262,20 +262,22 @@ its [consolidated specification](../.scratch/video-backend/spec.md), and the
 [approved API examples](../docs/pilgrims-progress-video-api-spec.md).
 `AGENTS.md` records the essential contract and generated-output conventions.
 
-The contract keeps the existing handoff gaps visible:
+The approved showcase scope is MP4 up to 100 MiB and 300 seconds by default,
+three application tables, independent thumbnails, direct job launch, and manual
+recovery. Viewer discovery is anonymous and restricted to READY/PUBLISHED media.
+No periodic reconciliation, cron, or scheduled orphan cleanup is included.
+The canonical implementation specification and current contract resolve the older
+prose's media limits and authorization alternatives.
 
-- Viewer reads model authenticated and anonymous deployment alternatives.
-  Anonymous access requires an explicit deployment choice. Before implementing
-  authorization, select the identity provider, admin role mapping, and viewer
-  policy; narrow the security requirements if viewer authentication is mandatory.
-- Thumbnail format and size allowlists, dimensions, aspect ratio, and cropping
-  policy await the missing approved thumbnail specification. JPEG examples do
-  not establish the full allowlist. Source byte limits are configurable too.
-- Finalize accepted-source protection and effective upload-size enforcement;
-  decide state retention after failed source verification and the thumbnail
-  response when custom removal reveals a failed generated fallback.
-- Database layout, job dispatch/reconciliation, encoding, resource limits,
-  retention, CDN configuration, and cache policy remain implementation decisions.
+Neon Auth configuration uses `AUTH_ISSUER` (the origin of the Auth endpoint),
+`AUTH_JWKS_URL` (the complete provider JWKS endpoint), and `AUTH_AUDIENCE` when
+the deployed token uses an audience. Ed25519 signatures, issuer, required expiry,
+issued-at time, and subject are checked. `AUTH_SCHEMA` defaults to `neon_auth`;
+the provider-owned `"user"` table supplies current comma-separated roles.
+Only exact `admin` membership permits management; JWT role claims are ignored.
+Missing provider configuration or role lookup failures deny privileged access.
+The application does not create or migrate provider tables. Deployed token
+settings and schema compatibility remain a separate live-cloud acceptance gate.
 
 Invalid path, query, and body values use FastAPI's native HTTP 422 JSON response,
 with validation errors in `detail`. Deliberate application errors use standard
@@ -308,4 +310,5 @@ Schema examples are authoritative for success assertions. Parameter validation k
 FastAPI's native 422 responses. The current generated suite has 23 cases; 202
 operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
-assertions. The service currently serves generated mocks for its 13 operations.
+assertions. Persisted operations retain these generated HTTP cases through handwritten Arrange
+fixtures. Remaining operations serve examples until their implementation tickets land.
