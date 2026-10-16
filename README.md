@@ -139,6 +139,12 @@ The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
 Neon, R2/CDN, and Cloud Run inputs, setup permissions, and pending live evidence.
 Local acceptance does not require cloud credentials.
 
+The [local HLS worker acceptance record](docs/mel-9-acceptance.md) documents
+encoding, media limits and resource defaults. Install FFmpeg and FFprobe for real
+processing and the acceptance suite. Run accepted work with
+`uv run --locked python -m src.worker run --job-id UUID`; the worker reads the
+job and source from PostgreSQL and uses configured private/public R2 storage.
+
 ## API design targets
 
 The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).

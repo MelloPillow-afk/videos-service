@@ -54,7 +54,7 @@ Primary references checked:
 
 Final integration verification: `make check` passed (45 contract examples,
 Ruff/format, strict Pyright with zero diagnostics); `uv run --locked pytest -q`
-passed 118 tests after combining MEL-13, including 15 upload acceptance cases.
+passed 135 tests after combining MEL-13 and MEL-9, including 15 upload acceptance cases.
 Combined owned output was regenerated from the merged contract.
 
 Accepted source attempts store their original `processing_job_id` (migration
