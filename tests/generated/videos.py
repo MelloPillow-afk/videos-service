@@ -16,7 +16,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/videos/video_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel8/api-specs/schemas/videos/video_create.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -172,7 +172,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoUpdate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/videos/video_update.yaml#",
+            "source": "/private/tmp/videos-showcase-mel8/api-specs/schemas/videos/video_update.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -212,13 +212,13 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.uploads.SourceUploadCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/uploads/source_upload_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel8/api-specs/schemas/uploads/source_upload_create.yaml#",
         },
         "expected_body": {
             "status": "UPLOADING",
             "upload": {
                 "expires_at": "2026-10-13T14:15:00Z",
-                "headers": {"Content-Type": "video/mp4"},
+                "headers": {"Content-Type": "video/mp4", "If-None-Match": "*"},
                 "method": "PUT",
                 "upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394",
                 "url": "https://uploads.example.com/source.mp4?signature=example",
