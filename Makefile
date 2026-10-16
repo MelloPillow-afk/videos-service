@@ -1,4 +1,4 @@
-.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration test-all
+.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration test-all showcase
 
 install:
 	uv sync --locked
@@ -51,3 +51,7 @@ lint-api:
 	uv run --locked yamllint api-specs
 	uv run --locked openapi-spec-validator --schema 3.2 api-specs/index.yaml
 	uv run --locked python scripts/check_examples.py
+
+# Real HTTP/PostgreSQL/media journey; provider boundaries stay local and controlled.
+showcase:
+	uv run --locked pytest -q -s tests/integration/test_showcase.py
