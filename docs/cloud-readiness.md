@@ -5,37 +5,92 @@ provider facts, and the evidence needed to finish MEL-7. It does not certify a
 deployment or the live showcase. Local application tickets can proceed with real
 PostgreSQL and FFmpeg and controlled external provider boundaries.
 
-## Actual evidence
+## Actual target evidence — 2026-10-16
+
+Credentials were supplied privately and used without logging values. No secret
+payload, signed URL, database password, or demonstration identity is recorded here.
 
 | Check | Observed result |
 | --- | --- |
-| Process configuration | No Neon, Cloudflare/R2, Google Cloud, or database credential variable names found. Values were not printed. |
-| Main checkout environment files | `.env`, `.env.local`, `.env.production`, and `.env.production.local` absent. The ticket worktree also has no `.env`. |
-| Provider tools | `gcloud`, `wrangler`, `neonctl`, and `psql` absent from PATH. Node/npm and Docker present. |
-| Standard credential locations | `~/.config/gcloud`, `~/.config/neonctl`, `~/.config/.wrangler`, `~/.wrangler`, and `~/.aws/credentials` absent. Other credential stores were not searched. |
-| Local artifacts | CORS examples parse as JSON. Read-only inspection SQL executes against local PostgreSQL 17; no `neon_auth` tables there, so this validates syntax only. `git diff --check` passes. |
-| Remote configuration changes | None; no target account IDs, endpoints, existing billing confirmation, or usable credentials supplied. |
-| Target verification | Neon schema/token/admin, R2 privacy/CORS/overwrite protection, and Cloud Run identities/launch all **unexecuted**. |
+| Neon target | Project `flat-dawn-07469526`, branch `br-polished-feather-b4mxbb1f`, endpoint `ep-wandering-art-b483xg29`; PostgreSQL 18, AWS `us-east-2`, database `neondb`. TLS connection succeeds. |
+| Neon Auth | Managed Better Auth schema: `neon_auth."user".id` UUID, `role` text. One user and one exact admin membership counted without recording identity. Auth `/ok` returns 200; JWKS returns OKP/EdDSA/Ed25519. Target server version and actual token claims remain unverified. |
+| Auth endpoint | `https://ep-wandering-art-b483xg29.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth`. Localhost allowed; trusted origins empty; password sign-in enabled. Discovery path returns 404. |
+| Runtime database role | Created `videos_runtime`; verified fresh TLS login and current-role SELECT. Public schema CREATE and Auth role UPDATE are denied. No application tables or migration bookkeeping exist yet. |
+| Pooler compatibility | Target rejects startup `options`. The [transaction-local configuration fix](neon-pool-compatibility.md) now passes actual Neon pool acquisition, TLS, configured search path/timeouts, cancellation and reuse; no target application writes or migrations. |
+| Google target | Existing project `videos-service`, number `749098550492`, ACTIVE, billing enabled. No billing or quota changes. Cloud Run, Artifact Registry, IAM, and Secret Manager APIs already enabled. |
+| Registry / deployment | Existing Docker repository `videos`, `us-central1`. No Cloud Run services or jobs deployed. Existing authenticated deployer has project Owner; its identity is omitted. |
+| Runtime identities | Existing `videos-api@videos-service.iam.gserviceaccount.com` and `videos-worker@videos-service.iam.gserviceaccount.com`. Six secret-scoped accessor grants added, then only these two project Editor members removed; unrelated default-compute Editor membership preserved. Readback confirms grants. |
+| Secret metadata | Existing `videos-database-url`, `videos-r2-access-key-id`, `videos-r2-secret-access-key`, each version `1` ENABLED. Payloads were not printed or changed. Database secret must be checked/replaced with the separate runtime DSN at deployment. |
+| R2 target | Distinct existing buckets `videos-raw` (private intent) and `videos-processed` (delivery intent). Authenticated HEAD, GET, create-only PUT, prefix list and narrow delete succeed through supplied S3 credentials. Bucket exposure is **not yet verified**. |
+| R2 upload protection | Both source/video and image signed PUT: first 200, replacement 412, original bytes unchanged. Missing/altered If-None-Match or altered Content-Type: 403. Two simultaneous PUTs: 200/412, stored bytes match one contender. URLs signed for 900 seconds. |
+| R2 deletion guards | Existing and previously absent keys in both buckets were sealed to permanent zero-byte objects. Every late signed conditional PUT returned 412; HEAD/GET verified size 0, exact marker type and metadata, and `Cache-Control: no-store`. Seven markers retained; inventory below. |
+| Browser/CORS gate | OPTIONS for `http://localhost:8765` and an unapproved origin both return 403 without Access-Control-Allow-Origin. HTTP upload safety succeeds, but browser upload readiness is **blocked**, not passed. |
+| Configuration access | Cloudflare bucket metadata/domain/CORS REST reads return 403, code 10000. S3 GetBucketCors returns 403 AccessDenied on both buckets. No bucket configuration changed. |
 
-No provider setup can be verified from provider documentation alone. Keep MEL-7
-open until the target checks below have dated, sanitized evidence.
+These are direct provider/SDK/HTTP observations, not a live browser session or a
+completed application deployment. No scheduler, lifecycle rule, bucket-wide delete,
+service-account key, or unrelated resource was created.
 
-## Required inputs and owner actions
+## Remaining access and verification gates
 
-Record non-secret IDs here when supplied. Deliver credentials through a local
-ignored environment file or secret manager; never paste passwords, tokens,
-signed upload URLs, or authorization headers into tickets, logs, or this file.
+| Area | Specific remaining input or action |
+| --- | --- |
+| Auth | Dedicated demonstration login and permission for temporary provider-admin demotion/restoration; inspect real issuer/audience/subject/lifetime, verify admin access and immediate revocation using the same valid token. Confirm target Auth version. |
+| Database | Explicitly apply application migrations with owner connection, grant DML on the exact three tables, update runtime secret reference, and verify deployed API/worker TLS connectivity using the tested pooler-compatible configuration. |
+| R2 configuration | Correct Cloudflare API token with read/write configuration permissions for the two existing buckets, or owner-applied settings with readback. Verify private `r2.dev` and custom domains disabled; delivery development URL disabled. |
+| CDN / browser | Actual public delivery hostname and DNS/cache authorization. Connect only delivery bucket; prove public control succeeds and an existing private sentinel cannot be fetched there. Apply/read back CORS for the approved narrow demo origin `http://localhost:8765` and any separately approved player origins. Repeat actual browser preflight/PUT/player checks. |
+| Cloud Run | Deploy completed image to existing registry, attach the two identities and secret references, create the worker job, grant API job-scoped execution-with-overrides, then verify benign authorized and denied launches independently of business flows. No job currently exists to receive that scoped grant. |
+| Resource budget | Measure representative media against explicit job CPU/memory/timeout and API/connection concurrency settings; no quota expansion is implied. |
 
-| Area | Exact inputs still missing | Access / owner action |
-| --- | --- | --- |
-| Neon account | Organization/account, project ID, branch ID, database name, provider region, existing plan/billing confirmation | Owner selects an existing showcase target; enables Auth on that branch if needed. Do not migrate a legacy provider implicitly. |
-| Neon connection | TLS PostgreSQL runtime connection and separate migration connection; runtime database role; allowed network path from Cloud Run | Runtime role needs application DML and current-role reads; migration role needs application schema DDL. Neither role needs Auth user-write privileges. Owner supplies scoped access. |
-| Neon identity | Auth provider/version, exact Auth base URL, trusted issuer, JWKS URL, audience, algorithm, token lifetime; demonstration user ID | Owner assigns first admin in Auth → Users → Make admin. API runtime must never assign itself admin. |
-| Cloudflare account | Account ID, existing R2 activation/billing confirmation, bucket jurisdiction/location | Owner enables R2 if absent; purchasing/plan expansion is owner-only. |
-| R2 storage | Two distinct bucket names: private uploads/source and public delivery; S3 endpoint for the selected jurisdiction | Scoped Object Read & Write credentials for these buckets; separate bucket-configuration permission only for setup. Owner can apply configuration instead of providing account-wide credentials. |
-| CDN / browser | Cloudflare zone ID, delivery hostname/origin, DNS control, exact uploader/player origins including localhost ports | Owner connects delivery custom domain in the bucket's account and authorizes DNS/cache changes. Never connect the private bucket. |
-| Google account | Project ID and number, region, existing billing-enabled confirmation, quota/resource budget | Owner enables Cloud Run, Artifact Registry, and Secret Manager APIs if needed. No billing-account linking or quota expansion performed automatically. |
-| Deployment / runtime | Deployer principal, registry repository, API service name, worker job name(s), API and worker service-account emails, secret resource names and versions | Owner grants the scoped bindings below or provides a deployer that can apply them. No service-account key files are required. |
+MEL-7 remains open. Local application work and ordinary CI need no cloud credentials.
+Completed application deployment and end-to-end live evidence belong to MEL-16.
+
+## Applied least-privilege setup
+
+For each of the three existing secrets above, both dedicated runtime identities
+now have resource-level `roles/secretmanager.secretAccessor`. Neither identity has
+project Editor or a project-wide job execution grant. The existing deployer has
+sufficient project-level ownership for deployment and service-account attachment;
+no new deployer grant was necessary. Preserve unrelated project IAM members.
+When the worker job exists, bind `roles/run.jobsExecutorWithOverrides` to the API
+identity on that job only. Its verified predefined permissions are
+`run.jobs.run`, `run.jobs.runWithOverrides`, and `run.executions.cancel`.
+
+Database owner setup uses the following non-secret SQL. Supply a generated password
+privately through a secure parameterized administration path; never put it in SQL
+history, evidence, or git. Create the role once; the owner then applies grants.
+
+```sql
+CREATE ROLE videos_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+    NOREPLICATION NOBYPASSRLS;
+GRANT CONNECT ON DATABASE neondb TO videos_runtime;
+GRANT USAGE ON SCHEMA public, neon_auth TO videos_runtime;
+GRANT SELECT (id, role) ON neon_auth."user" TO videos_runtime;
+-- Run only after the explicit application migrations create these tables:
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+    public.videos, public.upload_attempts, public.jobs TO videos_runtime;
+```
+
+Do not grant runtime access to Auth sessions, secrets, JWKS tables, Auth writes,
+Yoyo bookkeeping, schema CREATE, or blanket future tables. Keep migration-owner and
+runtime connections separate. Verify the login and column SELECT using the runtime
+connection, and verify public CREATE and Auth role UPDATE are denied.
+
+## Permanent probe marker inventory
+
+Keep these seven zero-byte deletion guards indefinitely under the exact prefix
+`readiness/mel-7/7dc4f9b8-8e22-4ef1-a8e1-2989db635f51/`:
+
+| Bucket | Key suffixes |
+| --- | --- |
+| `videos-raw` | `source`, `image`, `concurrent`, `guard-existing`, `guard-absent` |
+| `videos-processed` | `guard-existing`, `guard-absent` |
+
+They have content type `application/x-pilgrims-deletion-guard`, metadata
+`pilgrims-deletion-guard=1`, and `Cache-Control: no-store`. Never blanket-delete
+this prefix: removing a guard reopens its key to a delayed conditional writer.
+Only the unsigned `delete-control` objects were removed, and subsequent HEAD
+returned 404. No user media was read, overwritten, or deleted.
 
 ## Neon identity gate
 
@@ -110,16 +165,20 @@ Capture these live results, using a unique disposable test prefix:
    simultaneous PUTs: at most one succeeds. Repeat for custom-image uploads.
 4. Check an unapproved Origin receives no allowing CORS response. Record status,
    sanitized headers, object digests and browser outcome; never the signed URL.
-5. Delete disposable objects through authenticated access. Do not infer deletion
-   completion while a still-valid PUT or in-flight writer can recreate a key.
+5. Delete only unsigned disposable controls. Seal every signed/in-flight probe
+   key with the approved permanent zero-byte guard, verify its marker, and retain
+   it indefinitely; test a late conditional PUT returns 412.
 
 URL expiry alone does not establish that an already started PUT has drained.
-The deletion implementation must resolve its writer-fencing strategy before
-claiming complete physical cleanup; live evidence must cover that strategy.
+Deletion uses permanent zero-byte guards: overwrite existing media and reserve
+known absent keys atomically, then verify exact marker HEAD metadata. Actual R2
+proof above covers this mechanism; complete application cleanup and CDN cache
+evidence remain separate live acceptance work.
 
 Runtime R2 credentials require bucket-scoped object operations, not account-wide
-bucket administration. Confirm list/get/put/delete for cleanup as well as upload
-signing. [R2 credential scope](https://developers.cloudflare.com/r2/api/tokens/).
+bucket administration. Confirm list/get/create-only PUT and privileged guard sealing, as well as upload
+signing. Production cleanup seals objects and retains markers; the ordinary
+storage interface does not expose marker deletion. [R2 credential scope](https://developers.cloudflare.com/r2/api/tokens/).
 
 ## Cloud Run identity and direct-launch gate
 
