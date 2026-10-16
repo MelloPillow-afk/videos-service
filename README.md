@@ -12,8 +12,9 @@ Deletion admission immediately hides content and records cleanup work. The
 explicit worker replaces media bytes with permanent zero-byte guards before
 removing application rows. A 202 response acknowledges admission; it does not
 certify removal. See the [approved guard policy](docs/specs/deletion-guard-policy.md).
-The reproducible showcase (MEL-15), configured cloud readiness (MEL-7), and live
-provider acceptance (MEL-16) are separate gates.
+The [local showcase](docs/showcase.md) is reproducible with `make showcase`.
+Configured cloud readiness (MEL-7) and live provider acceptance (MEL-16) remain
+separate gates.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
 
@@ -31,6 +32,12 @@ Generated decorators contain runtime settings only; API documentation stays in
 Generation preserves configuration, lifecycle, domain/service/repository code,
 and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
 do not edit files under generated packages.
+
+## Local showcase
+
+Run `make showcase` after installing dependencies, PostgreSQL, FFmpeg and FFprobe.
+The [showcase guide](docs/showcase.md) explains setup, the printed acceptance
+journey, controlled provider boundaries and separate live-cloud gates.
 
 ## Local development
 
@@ -70,7 +77,7 @@ src/
   config.py            # pydantic-settings configuration
   handlers/            # HTTP input, service calls, response shaping
     generated/         # Renewable contract handlers
-    ping.py            # Preserved old handler; no direct HTTP registration
+    health.py          # Database-independent process reachability
   schemas/             # Pydantic HTTP models
     generated/         # Renewable wire models
     ping.py            # Preserved handwritten schema
@@ -115,8 +122,10 @@ make test-integration   # Real PostgreSQL transaction, timeout, and migration ch
 make test-all           # Entire suite, with terminal and XML coverage reports
 ```
 
-The HTTP suite covers all 13 generated operations, exact paths, deterministic
-example bodies, creation headers, native validation, and application-owned routes.
+The HTTP suite covers all 13 generated operations, exact paths, contract
+responses, creation headers, native validation, and application-owned routes.
+The showcase observes every selected HTTP endpoint and rejects any generated
+example fallback, including the independent health handler.
 The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
 executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
 overrides, dependency injection, regeneration, and generation failures.
