@@ -19,4 +19,5 @@ examples:
       url: https://uploads.example.com/thumbnail.jpg?signature=example
       headers:
         Content-Type: image/jpeg
+        If-None-Match: '*'
       expires_at: '2026-10-13T14:15:00Z'
