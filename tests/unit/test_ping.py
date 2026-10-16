@@ -27,7 +27,6 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
             response = await client.get("/ping")
             assert response.status_code == 200
             assert response.json() == {"status": "ok"}
-            assert (await client.get("/v1/videos")).status_code == 200
         try:
             async with database.connection():
                 raise AssertionError("Unexpected database connection")

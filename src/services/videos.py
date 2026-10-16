@@ -63,3 +63,11 @@ class VideoService:
                     video.publication_status = publication
             video.updated_at = self.clock()
             return await save_metadata(connection, video)
+
+    async def playback(self, id: UUID, *, administrator: bool) -> VideoRecord:
+        video = await self.get(id, administrator=administrator)
+        if video.status == "DELETING":
+            raise VideoNotFound
+        if video.status != "READY" or video.playback_key is None:
+            raise VideoConflict("Playback is available only for ready videos.")
+        return video

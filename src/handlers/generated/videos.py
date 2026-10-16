@@ -70,7 +70,10 @@ async def list_videos(
     *,
     cursor: _generator_Annotated[
         _ListVideosCursorParameter | None,
-        _generator_Query(alias="cursor", description="Token from the previous page."),
+        _generator_Query(
+            alias="cursor",
+            description="Opaque continuation token bound to the original filters, search, page size,\nand visibility.\n",
+        ),
     ] = None,
     limit: _generator_Annotated[
         _ListVideosLimitParameter,

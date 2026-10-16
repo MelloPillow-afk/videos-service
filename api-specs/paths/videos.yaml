@@ -41,7 +41,12 @@
       - Videos
     operationId: videos.list_videos
     summary: Get Videos Collection
-    description: Browse videos with search, filters, and pagination.
+    description: |
+      Anonymous viewers see only READY and PUBLISHED videos. Lifecycle and
+      publication filters require administrator access. Search matches title
+      substrings case-insensitively. Pages use descending creation time and ID;
+      continuation cursors are bound to the original search, filters, page size,
+      and visibility. Invalid or mismatched cursors return 400.
     security:
       - bearer_auth: []
       - {}
@@ -279,7 +284,12 @@
       - Playback
     operationId: playback.get_playback
     summary: Get Video Playback
-    description: Get the HLS playback link for a video.
+    description: |
+      Return the configured public delivery URL for a READY video's stored HLS
+      master key. Administrators can preview drafts; anonymous viewers require
+      PUBLISHED. Hidden and nonexistent videos return 404. An administrator
+      requesting playback before readiness receives 409. Publication controls
+      API discovery; previously obtained CDN links may outlive unpublication.
     security:
       - bearer_auth: []
       - {}
