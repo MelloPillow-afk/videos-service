@@ -12,6 +12,8 @@ dependencies = [
   "uvicorn>=0.34,<1",
   "yoyo-migrations>=9,<10",
   "pyjwt[crypto]>=2.10,<3",
+  "boto3>=1.40,<2",
+  "httpx>=0.28,<1",
 ]
 
 [dependency-groups]
@@ -28,6 +30,7 @@ dev = [
   "pytest-cov>=6,<8",
   "ruff>=0.12,<1",
   "yamllint>=1.37,<2",
+  "boto3-stubs[s3]>=1.40,<2",
 ]
 generated-runtime = [
   "fastapi>=0.115,<1",
