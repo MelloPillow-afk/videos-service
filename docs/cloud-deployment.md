@@ -19,8 +19,10 @@ Cloud Run correctly records that child as its resolved runtime image digest.
 The remaining index member is the build attestation, not another runtime.
 
 The existing R2 pair has now passed private object-scope verification after the
-owner reduced its permissions in place. Image publication, local image acceptance
-and production migrations do not establish deployed application evidence.
+owner reduced its permissions in place and explicitly confirmed selection of
+only `videos-raw` and `videos-processed`. Cloud prerequisites are verified.
+Image publication, local image acceptance and production migrations do not
+establish deployed application evidence.
 
 Artifact Registry credential configuration added only the
 `us-central1-docker.pkg.dev` gcloud helper; all unrelated Docker settings were
@@ -41,8 +43,10 @@ Owner-credential version **1** was reversibly disabled. Pin version 2 in both
 runtime definitions; never use `latest` or the migration owner for runtime access.
 The migration connection stays separate and private.
 
-The owner reduced the existing R2 credential permissions in place. Secret versions
-**1** of both `videos-r2-access-key-id` and `videos-r2-secret-access-key` now form
+The owner reduced the existing R2 credential permissions in place and confirmed
+its bucket selection contains **only `videos-raw` and `videos-processed`**.
+Secret versions **1** of both `videos-r2-access-key-id` and
+`videos-r2-secret-access-key` now form
 the verified object-access pair: both buckets pass HEAD, PUT/GET/LIST,
 conditional-overwrite rejection and permanent guard sealing; GetBucketCors is
 403 on both. **Keep both version-1 entries enabled and pin them.** There is no
@@ -73,8 +77,11 @@ runtime database connection. Worker invocation remains IAM protected.
 Initial automatic approval review rejected public invocation for insufficiently
 explicit authorization. The single retry cited the approved specification's
 anonymous viewer requirements and was accepted; no other IAM grant was widened.
-Deployed media, same-token demotion, playback, recovery and deletion evidence
-remain independent acceptance work.
+MEL-7 cloud readiness is complete. MEL-16 remains in progress: browser HLS player
+and application CORS, invalid source rejection, actual signed-URL expiry, and
+guarded deletion during in-flight processing still need their live acceptance
+evidence. Completed independent probes and native resource measurements do not
+close those application checks.
 
 ### Independent identity and benign-execution evidence
 
@@ -241,10 +248,11 @@ without logging it and is valid only for recovery. Without it, the launcher
 continues to use runtime metadata identity, with no local-account fallback.
 Running recovery under the normal worker identity does not grant launch access.
 
-Live MEL-16 still requires deployed HTTP token/demotion, independent real media
-jobs, HLS player playback through public delivery, retained originals, manual
-recovery, guarded deletion and native termination/resource evidence. No scheduler,
-periodic reconciliation, automatic migration or lifecycle cleanup is introduced.
+MEL-16 remains open for browser HLS playback/application CORS, invalid-source
+rejection, actual signed-URL expiry and guarded deletion during in-flight work.
+Record the complete live journey separately from these readiness probes and
+native recovery/resource measurements. No scheduler, periodic reconciliation,
+automatic migration or lifecycle cleanup is introduced.
 
 References: [Cloud Run job service identity](https://docs.cloud.google.com/run/docs/configuring/jobs/service-identity),
 [Cloud Run runtime contract](https://docs.cloud.google.com/run/docs/container-contract),

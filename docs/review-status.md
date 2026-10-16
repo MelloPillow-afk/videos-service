@@ -46,22 +46,24 @@ the canonical generated image and no longer overrides the expected response.
 The schema supplies the single canonical removal example without a duplicated
 inline operation example. Contract checks and regeneration remain authoritative.
 
-## Outstanding gates
+## Readiness and remaining acceptance
 
-- **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
-  Neon JWT/current-role demotion, runtime grants, R2 browser/privacy/public-origin
-  and scoped Google IAM evidence. The existing R2 pair now passes object-scope verification after an owner in-place
-  permission reduction. Deployed identity/direct-launch verification remains
-  independently recorded.
+- **MEL-7:** [cloud prerequisites are verified](cloud-readiness.md): real Neon
+  identity/current-role demotion, runtime grants, browser/storage boundaries,
+  deployment and independent authorized/denied launch checks. The owner confirmed
+  the R2 credential selects **only `videos-raw` and `videos-processed`**; actual
+  Object Read & Write operations succeed and bucket administration returns 403.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
-  covered by [deletion acceptance](deletion-acceptance.md). Configured live
-  provider evidence remains separately tracked under MEL-7/MEL-16.
+  covered by [deletion acceptance](deletion-acceptance.md). Live application
+  deletion evidence remains separately tracked under MEL-16.
 - **MEL-15:** the [local showcase](showcase.md) now exercises the complete journey;
   its controlled provider boundaries do not constitute deployed cloud evidence.
 - **MEL-16:** the [deployment record](cloud-deployment.md) records the private image
   publication, explicit production migrations and initial API/job deployment.
-  Deployed player, recovery and guarded-deletion end-to-end evidence remains pending.
+  MEL-16 remains in progress while browser HLS playback/application CORS, invalid
+  source rejection, actual signed-URL expiry and in-flight guarded deletion
+  receive live acceptance evidence.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
 table, full frontend, billing expansion, or cloud completion claim was added.

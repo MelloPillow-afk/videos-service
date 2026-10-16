@@ -1,9 +1,11 @@
 # Showcase cloud readiness (MEL-7)
 
-Checked 2026-10-16. **Live readiness is incomplete.** This records setup inputs,
-provider facts, and the evidence needed to finish MEL-7. It does not certify a
-deployment or the live showcase. Local application tickets can proceed with real
-PostgreSQL and FFmpeg and controlled external provider boundaries.
+Checked 2026-10-16. **MEL-7 cloud prerequisites are verified.** This records
+actual provider compatibility, least-privilege credentials, private/public
+storage boundaries, deployed identities and independent launch/denial evidence.
+MEL-16 live application acceptance remains in progress; readiness completion
+does not certify the full showcase. Ordinary local checks use real PostgreSQL
+and media processing with controlled external provider boundaries.
 
 ## Actual target evidence — 2026-10-16
 
@@ -35,17 +37,17 @@ service-account key, or unrelated resource was created.
 The [retained browser screenshot](evidence/r2-browser-put-2026-10-16.png) shows
 actual localhost MP4/JPEG upload and overwrite statuses without signed URLs.
 
-## Remaining access and verification gates
+## Verified prerequisites and live acceptance
 
-| Area | Specific remaining input or action |
+| Area | Current state |
 | --- | --- |
-| Auth | Provider token/current-role/demotion readiness is verified with approved isolated identity changes. Deployed HTTP token handling and same-token demotion remain MEL-16 checks. The provider exposes `better_auth` integration metadata, not its underlying build version. |
-| Database | Explicit direct-connection production migrations, three-table DML grants and runtime secret version 2 are complete. Verify deployed API/worker TLS connectivity using that pinned secret and the tested pooler-compatible configuration. |
+| Auth | Provider token/current-role/demotion readiness is verified with approved isolated identity changes. Deployed application identity acceptance is recorded separately under MEL-16. The provider exposes `better_auth` integration metadata, not its underlying build version. |
+| Database | Explicit direct-connection production migrations, three-table DML grants and runtime secret version 2 are complete. The deployed API database-backed list and real worker database lookup succeed using that pinned TLS-required connection and the tested pooler-compatible configuration. |
 | R2 configuration | Configuration access and private exposure readback are verified. Retain the approved narrow browser rules and all permanent markers; preserve existing owner GET rules unless the owner requests a change. CORS does not authorize access to private objects. Keep raw bucket public access disabled. |
-| R2 runtime credentials | Owner reduced the existing pair's permissions in place. Both version-1 secret payloads match the privately verified runtime pair. Both buckets pass HEAD, object PUT/GET/LIST, conditional replacement 412 and permanent guard sealing; GetBucketCors now returns 403 on both. Keep both version-1 entries enabled and pinned. Provider tokens were not printed. |
+| R2 runtime credentials | Owner reduced the existing pair's permissions in place and explicitly confirmed its bucket selection contains **only `videos-raw` and `videos-processed`**. Both version-1 secret payloads match the privately verified runtime pair. Both buckets pass HEAD, object PUT/GET/LIST, conditional replacement 412 and permanent guard sealing; GetBucketCors now returns 403 on both. Keep both version-1 entries enabled and pinned. Provider tokens were not printed. |
 | Public delivery / browser | Owner chose `https://pub-1296a4df37cd4d52aacd2941d8b36687.r2.dev`; processed-only exposure, public/private sentinel separation, Range, CORS and direct browser PUT are verified. This development endpoint is rate-limited and lacks custom-domain caching features. Actual deployed HLS player playback and any separately approved player origins remain MEL-16 checks; no new zone or DNS record was created. |
 | Cloud Run | API and worker deployed with distinct identities, final digest, database secret 2 and R2 secrets 1. API job-scoped execution-with-overrides is bound; approved anonymous API invocation is enabled. Anonymous health and real database-backed list return 200. API-identity helper launch produced operation `802569c2-0ea2-4cd3-b7d0-240d34280e1f` and successful zero-ID worker execution `videos-worker-bmf2h` (`no_op`, exit 0). Worker-identity launch is denied with HTTP 403. Temporary helper job removed. Full business acceptance remains separately tracked. |
-| Resource budget | Measure representative media against explicit job CPU/memory/timeout and API/connection concurrency settings; no quota expansion is implied. |
+| Resource budget | [Native measurements](cloud-worker-resources.md) record actual task duration and sampled CPU/memory, including the recovered 300-second source completing in 230.455 seconds under the configured 2 CPU/4 GiB/1200-second allocation. Samples do not establish continuous peaks or a worst-case guarantee; no quota was expanded. |
 
 The [deployment preparation record](cloud-deployment.md) pins the published image,
 records production migrations/runtime secret version 2, and stages the exact
@@ -55,8 +57,15 @@ The R2 permission gate is resolved by the verified in-place scope reduction.
 Both R2 version-1 secret entries stay enabled. Independent deployed launch
 and denial checks now pass; full live application acceptance remains separate.
 
-MEL-7 remains open. Local application work and ordinary CI need no cloud credentials.
-Completed application deployment and end-to-end live evidence belong to MEL-16.
+All MEL-7 readiness prerequisites now have target evidence. The final R2 scope
+confirmation is owner-provided; actual object operations and denied bucket
+administration independently verify the runtime permission boundary. Local
+application work and ordinary CI need no cloud credentials.
+
+MEL-16 remains in progress. Remaining live acceptance covers browser HLS playback
+and application CORS, invalid source rejection, actual signed-URL expiry, and
+guarded deletion while media work is in flight. Record those results in the
+live application acceptance record before declaring the full showcase complete.
 
 ## Applied least-privilege setup
 
@@ -69,7 +78,7 @@ Lifecycle readback finds only the existing default seven-day incomplete multipar
 abort rule on each bucket; no object-expiration action can erase guards. No rule
 was added or changed.
 
-When the worker job exists, bind `roles/run.jobsExecutorWithOverrides` to the API
+The deployed worker job binds `roles/run.jobsExecutorWithOverrides` to the API
 identity on that job only. Its verified predefined permissions are
 `run.jobs.run`, `run.jobs.runWithOverrides`, and `run.executions.cancel`.
 
@@ -267,6 +276,6 @@ log read permissions for this evidence; the runtime launcher does not need broad
 viewer access merely to submit work. Test denied
 launch with an unprivileged identity. The independent identity checks above are
 now recorded in [deployment evidence](cloud-deployment.md). The
-completed live end-to-end showcase has separate
-acceptance evidence. No scheduler, periodic reconciliation, lifecycle cleanup
+full live end-to-end showcase acceptance remains under MEL-16. No scheduler,
+periodic reconciliation, lifecycle cleanup
 rule, or credential-dependent ordinary CI job is part of this setup.
