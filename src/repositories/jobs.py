@@ -68,3 +68,9 @@ async def may_launch(connection: AsyncConnection[TupleRow], id: UUID) -> bool:
         (id,),
     )
     return await cursor.fetchone() is not None
+
+
+async def job_kind(connection: AsyncConnection[TupleRow], id: UUID) -> str | None:
+    cursor = await connection.execute("SELECT kind FROM jobs WHERE id=%s", (id,))
+    row = await cursor.fetchone()
+    return row[0] if row is not None else None
