@@ -1,16 +1,22 @@
 # Videos service
 
-The Python backend for the videos domain. Its prepared OpenAPI contract generates
-all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Draft creation, detail, and metadata updates use handwritten services and PostgreSQL.
-Privileged draft operations verify Neon Auth JWTs and the current provider-owned
-administrator role. Other operations still serve generated examples while their
-approved implementation tickets are in progress. Documentation endpoints remain disabled. The application owns lifecycle and
-documentation settings and may add handwritten routes or mounts.
+The Python backend for a shared video library. The OpenAPI contract generates
+13 routes: `/ping` and 12 video operations under `/v1`. Handwritten handlers and
+PostgreSQL implement draft management, direct uploads, publication/discovery,
+playback, custom thumbnails, and asynchronous deletion admission. FFmpeg workers
+produce media independently of requests. Privileged requests verify Neon Auth
+JWTs and the current provider-owned administrator role; viewers browse ready,
+published videos anonymously. Documentation endpoints remain disabled.
+
+Deletion admission immediately hides content and records cleanup work. Physical
+cleanup remains pending the writer-protection decision and its evidence; a 202
+response does not certify removal. The reproducible showcase (MEL-15), configured
+cloud readiness (MEL-7), and live provider acceptance (MEL-16) are separate gates.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
 
 ```sh
-cargo run --locked --manifest-path ../api-code-generator/Cargo.toml -- .
+ag .
 uv lock
 uv sync
 ```
@@ -37,11 +43,11 @@ make migrate
 make run
 ```
 
-Visit `http://127.0.0.1:8000/ping` or `/v1/videos`. To run contract mocks without
-background PostgreSQL connection attempts, use `DB_POOL_MIN_SIZE=0 make run`.
-The preserved database lifecycle opens and closes its pool, while mock handlers
-do not query it. The default pool still fills in the background when PostgreSQL
-is configured.
+Visit `http://127.0.0.1:8000/ping` for database-independent health. Video operations
+use PostgreSQL; configure Neon Auth, R2, and job submission for provider-dependent
+requests. Missing provider configuration fails closed. `DB_POOL_MIN_SIZE=0`
+disables background pool filling but does not make video operations independent
+of the database. The application lifecycle opens and closes its pool.
 Settings are read from `.env` and environment variables, with environment
 variables taking precedence. `.env` is ignored by Git.
 
@@ -68,15 +74,18 @@ src/
     ping.py            # Preserved handwritten schema
   core/
     generated/         # Renewable router composition and override selection
-  services/            # Business operations and orchestration (empty initially)
-  repositories/        # SQL, storage mapping, pooling, migration tooling
+  services/            # Business operations, media processing, orchestration
+  repositories/        # SQL, data mapping, pooling, migration tooling
     database.py
     migrate.py
-  domain/              # Shared domain models (empty initially)
-migrations/            # Future Yoyo SQL migrations
+  domain/              # Shared persisted state, cursors, cleanup inventory
+  providers/           # Neon identity, R2 objects, Cloud Run launch boundaries
+  worker.py            # One persisted media job per invocation
+  cleanup.py           # Read-only deletion inventory for operators
+migrations/            # Explicit Yoyo application migrations
 tests/
   unit/                # Reachability and settings checks
-  integration/         # Real PostgreSQL and migration checks
+  integration/         # Real HTTP/PostgreSQL, media, and migration acceptance
 ```
 
 The [Service & Repository Layering Standard](https://app.notion.com/p/3c3f1f2d1b9280e19e06cf88d0ddcc02)
@@ -88,8 +97,9 @@ Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
 The app factory retains the repository resource lifecycle and registers the
-generated routers once. `/ping` and all fixed examples need no database
-query. Add handwritten business models and operations when implementing features.
+generated routers once. `/ping` needs no database query. Renewable schemas and
+routers adapt the authoritative contract; business services and repositories
+remain handwritten.
 The generated and service-runtime dependency groups join the existing project
 and dev dependencies in normal `uv sync` and a single `uv.lock`.
 
@@ -130,10 +140,10 @@ uses one Python version and cancels superseded validation runs. Coverage is
 reported without a percentage gate. Ruff and Pyright cover the scaffold and
 its new tests; existing contract-validation code keeps its current tooling.
 
-Production provisioning, deployment, and production migrations are deferred.
-When those are added, run production migrations after validation passes as
-part of the release workflow, using production environment configuration.
-Development migrations remain manual through Make.
+Run production migrations explicitly after validation with the target environment
+configuration; they never run automatically at server startup. Deployment and
+provider readiness require their own target evidence. Development migrations
+remain manual through Make.
 
 The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
 Neon, R2/CDN, and Cloud Run inputs, setup permissions, and pending live evidence.
@@ -146,6 +156,13 @@ processing and the acceptance suite. Run accepted work with
 job and source from PostgreSQL and uses configured private/public R2 storage.
 The [processing recovery guide](docs/mel-10-acceptance.md) describes bounded
 media retries, explicit administrator retries and the operator relaunch command.
+
+Feature evidence is recorded for [source acceptance](docs/mel-8-acceptance.md),
+[HLS processing](docs/mel-9-acceptance.md),
+[publication and discovery](docs/library-acceptance.md),
+[custom thumbnails](docs/custom-thumbnail-acceptance.md), and
+[partial deletion admission](docs/deletion-acceptance.md). These local records
+do not replace the live cloud showcase.
 
 ## API design targets
 
@@ -269,9 +286,11 @@ uv run --locked python scripts/check_examples.py
 
 ## Requirements and unresolved decisions
 
-The source requirements are [`video-backend-spec.md`](../docs/video-backend-spec.md),
-its [consolidated specification](../.scratch/video-backend/spec.md), and the
-[approved API examples](../docs/pilgrims-progress-video-api-spec.md).
+The [canonical showcase specification](../.scratch/video-backend/spec.md) defines
+implementation scope. The retained [business API specification](docs/specs/pilgrims-progress-video-api-spec.md)
+provides context; current OpenAPI controls HTTP shapes and supersedes older prose
+examples. The [tracker configuration](../docs/agents/issue-tracker.md) identifies
+the approved Linear tickets.
 `AGENTS.md` records the essential contract and generated-output conventions.
 
 The approved showcase scope is MP4 up to 100 MiB and 300 seconds by default,
@@ -323,7 +342,8 @@ FastAPI's native 422 responses. The current generated suite has 23 cases; 202
 operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
 assertions. Persisted operations retain these generated HTTP cases through handwritten Arrange
-fixtures. Remaining operations serve examples until their implementation tickets land.
+fixtures. Handwritten business cases cover acceptance behavior beyond those
+fixed examples, including asynchronous 202 operations.
 
 ## Source uploads and direct launch
 
