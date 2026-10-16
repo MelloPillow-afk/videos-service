@@ -39,7 +39,9 @@ async def create_attempt(
         await cursor.execute(
             """INSERT INTO upload_attempts
             (id,video_id,kind,object_key,declared_size_bytes,content_type,expires_at,created_at)
-            VALUES (%s,%s,'SOURCE',%s,%s,%s,%s,%s) RETURNING *""",
+            VALUES (%s,%s,'SOURCE',%s,%s,%s,%s,%s)
+            RETURNING id,video_id,kind,object_key,declared_size_bytes,content_type,expires_at,
+                is_current,state,accepted_at,created_at""",
             (id, video_id, key, size, content_type, expires_at, now),
         )
         result = await cursor.fetchone()
@@ -51,10 +53,14 @@ async def create_attempt(
 
 
 async def accept_attempt(
-    connection: AsyncConnection[TupleRow], attempt: UploadAttempt, now: datetime
+    connection: AsyncConnection[TupleRow],
+    attempt: UploadAttempt,
+    now: datetime,
+    processing_job_id: UUID,
 ) -> None:
     await connection.execute(
-        "UPDATE upload_attempts SET state='ACCEPTED',accepted_at=%s WHERE id=%s", (now, attempt.id)
+        "UPDATE upload_attempts SET state='ACCEPTED',accepted_at=%s,processing_job_id=%s WHERE id=%s",
+        (now, processing_job_id, attempt.id),
     )
     await connection.execute(
         """UPDATE videos SET status='QUEUED',source_key=%s,size_bytes=%s,

@@ -27,11 +27,10 @@ async def record_job(
     return RecordedJob(id, kind, prefix)
 
 
-async def source_processing_job(connection: AsyncConnection[TupleRow], video_id: UUID) -> UUID:
+async def source_processing_job(connection: AsyncConnection[TupleRow], upload_id: UUID) -> UUID:
     cursor = await connection.execute(
-        """SELECT id FROM jobs WHERE video_id=%s AND kind='VIDEO'
-        ORDER BY created_at,id LIMIT 1""",
-        (video_id,),
+        """SELECT processing_job_id FROM upload_attempts WHERE id=%s AND state='ACCEPTED'""",
+        (upload_id,),
     )
     result = await cursor.fetchone()
     assert result is not None

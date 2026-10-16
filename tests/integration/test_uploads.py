@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
 from typing import cast
 from urllib.parse import parse_qs, urlsplit
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -370,3 +371,30 @@ async def test_confirmed_source_cannot_be_renewed_or_reaccepted_after_deletion(
     assert (
         await upload_client.post(path + ":complete-upload", json={"upload_id": upload["upload_id"]})
     ).status_code == 409
+
+
+async def test_accepted_completion_keeps_original_job_after_a_peer_retry(
+    upload_client: AsyncClient, storage: MemoryStorage, test_database: tuple[str, str]
+) -> None:
+    path, upload = await prepare_upload(upload_client)
+    await storage.browser_put(
+        str(upload["url"]), b"video-source", cast(dict[str, str], upload["headers"])
+    )
+    accepted = await upload_client.post(
+        path + ":complete-upload", json={"upload_id": upload["upload_id"]}
+    )
+    original = accepted.json()["processing_job_id"]
+    url, schema = test_database
+    async with await AsyncConnection.connect(url, autocommit=True) as connection:
+        await connection.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))
+        await connection.execute("UPDATE jobs SET is_current=false WHERE kind='VIDEO'")
+        await connection.execute(
+            """INSERT INTO jobs (id,video_id,kind,output_prefix,created_at,updated_at)
+            SELECT %s,video_id,'VIDEO',%s,created_at-interval '1 second',updated_at FROM jobs WHERE id=%s""",
+            (uuid4(), "peer-retry/", original),
+        )
+    repeated = await upload_client.post(
+        path + ":complete-upload", json={"upload_id": upload["upload_id"]}
+    )
+    assert repeated.status_code == 202
+    assert repeated.json()["processing_job_id"] == original

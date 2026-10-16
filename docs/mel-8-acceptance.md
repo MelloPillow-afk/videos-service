@@ -54,5 +54,12 @@ Primary references checked:
 
 Final integration verification: `make check` passed (45 contract examples,
 Ruff/format, strict Pyright with zero diagnostics); `uv run --locked pytest -q`
-passed 117 tests after combining MEL-13, including 14 upload acceptance cases.
+passed 118 tests after combining MEL-13, including 15 upload acceptance cases.
 Combined owned output was regenerated from the merged contract.
+
+Accepted source attempts store their original `processing_job_id` (migration
+0004) so repeated completion is independent of later retry timestamps. The
+regression tracer first failed when selection depended on job ordering, then
+passed with the explicit acceptance result. Attempt SQL uses explicit fields,
+including INSERT RETURNING, so independent thumbnail columns remain compatible.
+Yoyo rollback acceptance now selects all migrations rather than assuming one.

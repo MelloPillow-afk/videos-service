@@ -91,12 +91,12 @@ class SourceUploads:
         return attempt
 
     async def _accepted(
-        self, connection: AsyncConnection[TupleRow], video: VideoRecord
+        self, connection: AsyncConnection[TupleRow], video: VideoRecord, upload_id: UUID
     ) -> SourceAccepted:
         return SourceAccepted(
             video.id,
             video.status,
-            await source_processing_job(connection, video.id),
+            await source_processing_job(connection, upload_id),
             video.generated_thumbnail_status,
         )
 
@@ -106,7 +106,7 @@ class SourceUploads:
             attempt = self.current(video, await find_attempt(connection, upload_id), video_id)
             if attempt.state == "ACCEPTED":
                 assert video is not None
-                return await self._accepted(connection, video)
+                return await self._accepted(connection, video, upload_id)
             self.eligible(video)
         observed = await self.storage.head("private", attempt.object_key)
         if observed is None:
@@ -124,7 +124,7 @@ class SourceUploads:
             attempt = self.current(video, await find_attempt(connection, upload_id), video_id)
             assert video is not None
             if attempt.state == "ACCEPTED":
-                return await self._accepted(connection, video)
+                return await self._accepted(connection, video, upload_id)
             self.eligible(video)
             now = self.clock()
             video_job = await record_job(
@@ -133,13 +133,13 @@ class SourceUploads:
             thumbnail_job = await record_job(
                 connection, id=self.new_id(), video_id=video_id, kind="THUMBNAIL", now=now
             )
-            await accept_attempt(connection, attempt, now)
+            await accept_attempt(connection, attempt, now, video_job.id)
         await asyncio.gather(self.launch(video_job.id), self.launch(thumbnail_job.id))
         async with self.database.connection() as connection:
             video = await get_video(connection, video_id)
             if video is None or video.status == "DELETING":
                 raise VideoConflict("The video is being deleted.")
-            return await self._accepted(connection, video)
+            return await self._accepted(connection, video, upload_id)
 
     async def launch(self, id: UUID) -> None:
         async with self.database.connection() as connection:

@@ -40,6 +40,7 @@ async def test_yoyo_apply_and_rollback(
             "--config",
             str(config),
             command,
+            *(["--all"] if command == "rollback" else []),
             env=environment,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
