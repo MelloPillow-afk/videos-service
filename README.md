@@ -378,3 +378,10 @@ source display proportions. Independent failures never block video readiness or
 publication, and a valid custom selection stays preferred. See the
 [MEL-11 acceptance record](docs/mel-11-acceptance.md) for real-image, concurrency,
 and retry evidence.
+
+## Container preparation
+
+[Local container acceptance](docs/container-local-acceptance.md) documents the
+Linux AMD64 image build, API/worker entry points, explicit migration command,
+real image media checks, and worker CLI exit outcomes. This preparation does not
+close the remaining live MEL-7/MEL-16 gates.

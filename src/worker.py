@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from uuid import UUID
 
 from src.config import Settings
+from src.domain.videos import VideoConflict
 from src.providers.storage import Storage
 from src.repositories.database import Database
 from src.services import media_jobs
@@ -76,6 +77,7 @@ def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = No
         help="Operator confirms the previous execution is terminated; required for RUNNING claims.",
     )
     parsed = parser.parse_args(arguments)
+    failure_message = "Job execution failed; inspect persisted state and provider execution."
     try:
         result = asyncio.run(
             main_async(
@@ -87,6 +89,9 @@ def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = No
                 ),
             )
         )
+    except VideoConflict as error:
+        result = False
+        failure_message = str(error)
     except Exception:
         # Provider/configuration exceptions can contain credentials. Persisted state
         # and provider execution evidence are the operator diagnostic boundaries.
@@ -101,7 +106,7 @@ def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = No
         )
     )
     if result is False:
-        parser.exit(1, "Job execution failed; inspect persisted state and provider execution.\n")
+        parser.exit(1, failure_message + "\n")
 
 
 if __name__ == "__main__":
