@@ -3,14 +3,15 @@
 The Python backend for a shared video library. The OpenAPI contract generates
 13 routes: `/ping` and 12 video operations under `/v1`. Handwritten handlers and
 PostgreSQL implement draft management, direct uploads, publication/discovery,
-playback, custom thumbnails, and asynchronous deletion admission. FFmpeg workers
+playback, custom thumbnails, and asynchronous guarded deletion. FFmpeg workers
 produce media independently of requests. Privileged requests verify Neon Auth
 JWTs and the current provider-owned administrator role; viewers browse ready,
 published videos anonymously. Documentation endpoints remain disabled.
 
-Deletion admission immediately hides content and records cleanup work. Physical
-cleanup remains pending the writer-protection decision and its evidence; a 202
-response does not certify removal. The reproducible showcase (MEL-15), configured
+Deletion admission immediately hides content and records cleanup work. The
+explicit worker replaces media bytes with permanent zero-byte guards before
+removing application rows. A 202 response acknowledges admission; it does not
+certify removal. See the [approved guard policy](docs/specs/deletion-guard-policy.md). The reproducible showcase (MEL-15), configured
 cloud readiness (MEL-7), and live provider acceptance (MEL-16) are separate gates.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
@@ -161,7 +162,7 @@ Feature evidence is recorded for [source acceptance](docs/mel-8-acceptance.md),
 [HLS processing](docs/mel-9-acceptance.md),
 [publication and discovery](docs/library-acceptance.md),
 [custom thumbnails](docs/custom-thumbnail-acceptance.md), and
-[partial deletion admission](docs/deletion-acceptance.md). These local records
+[guarded deletion](docs/deletion-acceptance.md). These local records
 do not replace the live cloud showcase.
 
 ## API design targets

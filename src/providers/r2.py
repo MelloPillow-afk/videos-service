@@ -12,6 +12,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from src.config import Settings
 from src.providers.storage import (
+    GUARD_CONTENT_TYPE,
+    GUARD_METADATA_KEY,
     StorageArea,
     StorageConflictError,
     StorageLimitError,
@@ -102,7 +104,9 @@ class R2Storage:
                 lambda: self.client.head_object(Bucket=self.bucket(area), Key=key)
             )
             return StoredObject(
-                result["ContentLength"], result.get("ContentType", "application/octet-stream")
+                result["ContentLength"],
+                result.get("ContentType", "application/octet-stream"),
+                result.get("Metadata", {}).get(GUARD_METADATA_KEY) == "1",
             )
         except StorageMissingError:
             return None
@@ -144,6 +148,19 @@ class R2Storage:
             )
         )
 
+    async def seal(self, area: StorageArea, key: str) -> None:
+        # A single unconditional PUT closes both existing and absent-key races.
+        await self._run(
+            lambda: self.client.put_object(
+                Bucket=self.bucket(area),
+                Key=key,
+                Body=b"",
+                ContentType=GUARD_CONTENT_TYPE,
+                Metadata={GUARD_METADATA_KEY: "1"},
+                CacheControl="no-store",
+            )
+        )
+
     async def list(self, area: StorageArea, prefix: str) -> list[str]:
         keys: list[str] = []
         token = ""
@@ -161,6 +178,3 @@ class R2Storage:
             if not response.get("IsTruncated"):
                 return keys
             token = response["NextContinuationToken"]
-
-    async def delete(self, area: StorageArea, key: str) -> None:
-        await self._run(lambda: self.client.delete_object(Bucket=self.bucket(area), Key=key))

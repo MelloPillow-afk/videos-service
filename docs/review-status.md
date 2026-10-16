@@ -50,9 +50,10 @@ inline operation example. Contract checks and regeneration remain authoritative.
 
 - **MEL-7:** target accounts, credentials, provider token/schema configuration,
   browser CORS/create-once protection, runtime identities, and readiness evidence.
-- **MEL-14:** physical cleanup and eventual row removal await the owner decision
-  and evidence for writer drain or permanent guards. Admission/inventory remains
-  explicitly partial; no cleanup completion is claimed.
+- **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
+  late-writer fencing, runtime exhaustion, manual recovery and row removal are
+  covered by [deletion acceptance](deletion-acceptance.md). Configured live
+  provider evidence remains separately tracked under MEL-7/MEL-16.
 - **MEL-15:** the complete reproducible showcase depends on completed deletion.
 - **MEL-16:** real Neon/R2/Cloud Run/CDN end-to-end evidence remains unexecuted.
 

@@ -38,6 +38,8 @@ class Settings(BaseSettings):
 
     ffmpeg_binary: str = "ffmpeg"
     ffprobe_binary: str = "ffprobe"
+    cleanup_runtime_seconds: float = Field(default=900, gt=0)
+    cleanup_retry_delays_seconds: tuple[float, ...] = (1, 4, 16, 30)
     media_retry_delays_seconds: tuple[float, float] = (1, 4)
     media_threads: int = Field(default=2, ge=1, le=8)
     media_probe_timeout_seconds: float = Field(default=30, gt=0)
@@ -55,6 +57,14 @@ class Settings(BaseSettings):
             or not 0 <= self.media_retry_delays_seconds[0] < self.media_retry_delays_seconds[1]
         ):
             raise ValueError("Media retry delays must be nonnegative and increasing.")
+        cleanup_delays = self.cleanup_retry_delays_seconds
+        if (
+            not math.isfinite(self.cleanup_runtime_seconds)
+            or not cleanup_delays
+            or not all(math.isfinite(d) and d >= 0 for d in cleanup_delays)
+            or any(a >= b for a, b in zip(cleanup_delays, cleanup_delays[1:], strict=False))
+        ):
+            raise ValueError("Cleanup retry delays must be nonnegative and increasing.")
         if self.db_pool_min_size > self.db_pool_max_size:
             raise ValueError("DB_POOL_MIN_SIZE must not exceed DB_POOL_MAX_SIZE")
         if not self.database_url.get_secret_value().startswith(("postgresql://", "postgres://")):

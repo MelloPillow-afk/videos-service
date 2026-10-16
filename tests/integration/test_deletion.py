@@ -6,14 +6,25 @@ import os
 import sys
 from asyncio import Event, create_subprocess_exec, create_task, gather, wait_for
 from collections.abc import AsyncIterator
-from uuid import UUID
+from pathlib import Path
+from typing import Any
+from urllib.parse import unquote, urlsplit
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from psycopg import AsyncConnection, sql
+from psycopg.types.json import Jsonb
 
+from src.config import Settings
+from src.domain.videos import VideoConflict
+from src.providers.storage import StorageArea, StorageConflictError, TemporaryStorageError
+from src.services.job_recovery import JobSubmission
+from src.worker import run_job
+from tests.integration.test_custom_thumbnails import image_bytes
+from tests.integration.test_processing import make_source
 from tests.job_provider import RecordingLauncher
 from tests.providers import LocalSigningKeys
 from tests.storage_provider import MemoryStorage
@@ -74,8 +85,84 @@ async def test_deletion_records_one_cleanup_job_and_immediately_hides_published_
             )
         ).fetchall()
     assert len(rows) == 1 and rows[0][1] == "LAUNCHED"
-    assert rows[0][2] and rows[0][3] == "CLEANUP_POLICY_REQUIRED"
+    assert rows[0][2] and rows[0][3] is None
     assert launcher.submissions == [UUID(rows[0][0].hex)]
+
+
+async def test_cleanup_guards_registered_and_listed_keys_then_removes_all_application_rows(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    test_database: tuple[str, str],
+    launcher: RecordingLauncher,
+    storage: MemoryStorage,
+) -> None:
+    created = await deletion_client.post("/v1/videos", json={"title": "Guard deletion"})
+    path, video_id = created.headers["Location"], created.json()["id"]
+    source = await deletion_client.post(
+        path + ":upload-url",
+        json={
+            "file_name": "source.mp4",
+            "content_type": "video/mp4",
+            "size_bytes": 12,
+        },
+    )
+    upload = source.json()["upload"]
+    private_upload = unquote(urlsplit(str(upload["url"])).path.lstrip("/"))
+    prefix = f"videos/{video_id}/"
+    absent_output = prefix + "jobs/old/attempt-2/late.ts"
+    known_output = prefix + "jobs/old/attempt-1/old.ts"
+    listed_orphan = prefix + "unregistered-legacy.jpg"
+    await storage.write("private", "legacy/original.mp4", b"source", "video/mp4")
+    await storage.write("public", known_output, b"segment", "video/mp2t")
+    await storage.write("public", listed_orphan, b"old image", "image/jpeg")
+    url, schema = test_database
+    async with await AsyncConnection.connect(url, autocommit=True) as connection:
+        await connection.execute(
+            sql.SQL(
+                "UPDATE {}.videos SET source_key='legacy/original.mp4',playback_key=%s WHERE id=%s"
+            ).format(sql.Identifier(schema)),
+            (known_output, video_id),
+        )
+        await connection.execute(
+            sql.SQL(
+                "INSERT INTO {}.jobs (id,video_id,kind,is_current,output_prefix,output_keys,created_at,updated_at) VALUES (%s,%s,'VIDEO',false,%s,%s,now(),now())"
+            ).format(sql.Identifier(schema)),
+            (uuid4(), video_id, prefix + "jobs/old/", Jsonb([known_output, absent_output])),
+        )
+    assert (await deletion_client.delete(path)).status_code == 202
+    job = launcher.submissions[0]
+    results = await gather(
+        *(run_job(job, api_app.state.database, storage, Settings()) for _ in range(2))
+    )
+    assert sorted(results) == [False, True]
+    assert (await deletion_client.get(path)).status_code == 404
+    assert (await deletion_client.delete(path)).status_code == 404
+    expected: set[tuple[StorageArea, str]] = {
+        ("private", private_upload),
+        ("private", "legacy/original.mp4"),
+        ("public", known_output),
+        ("public", absent_output),
+        ("public", listed_orphan),
+    }
+    assert set(storage.objects) == expected
+    for area, key in expected:
+        observed = await storage.head(area, key)
+        assert observed is not None and observed.size_bytes == 0 and observed.deletion_guard
+        assert await storage.read(area, key, 1) == b""
+    with pytest.raises(StorageConflictError):
+        await storage.browser_put(upload["url"], b"source bytes", upload["headers"])
+    with pytest.raises(StorageConflictError):
+        await storage.write("public", absent_output, b"late media", "video/mp2t", create_only=True)
+    async with await AsyncConnection.connect(url, autocommit=True) as connection:
+        for table in ("videos", "jobs", "upload_attempts"):
+            count = await (
+                await connection.execute(
+                    sql.SQL("SELECT count(*) FROM {}.{}").format(
+                        sql.Identifier(schema), sql.Identifier(table)
+                    )
+                )
+            ).fetchone()
+            assert count == (0,)
 
 
 async def test_failed_cleanup_launch_stays_visible_and_repeat_does_not_launch_again(
@@ -253,3 +340,253 @@ async def test_readonly_inventory_keeps_all_attempts_keys_job_manifests_and_writ
     )
     assert not inventory["storage_listed"] and not inventory["physical_cleanup_complete"]
     assert (await deletion_client.get(path)).json()["status"] == "DELETING"
+
+
+class GuardTestStorage(MemoryStorage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.seal_failures = 0
+        self.bad_metadata = False
+        self.write_started: Event | None = None
+        self.write_release: Event | None = None
+
+    async def seal(self, area: StorageArea, key: str) -> None:
+        if self.seal_failures:
+            self.seal_failures -= 1
+            raise TemporaryStorageError("secret provider error must stay private")
+        await super().seal(area, key)
+        if self.bad_metadata:
+            self.guards.discard((area, key))
+
+    async def write(
+        self,
+        area: StorageArea,
+        key: str,
+        data: bytes,
+        content_type: str,
+        *,
+        create_only: bool = True,
+    ) -> None:
+        if area == "public" and self.write_started is not None and self.write_release is not None:
+            self.write_started.set()
+            await self.write_release.wait()
+        await super().write(area, key, data, content_type, create_only=create_only)
+
+
+@pytest.fixture
+def storage() -> GuardTestStorage:
+    return GuardTestStorage()
+
+
+async def create_reserved_source(client: AsyncClient) -> tuple[str, dict[str, Any]]:
+    created = await client.post("/v1/videos", json={"title": "Cleanup failure"})
+    path = created.headers["Location"]
+    issued = await client.post(
+        path + ":upload-url",
+        json={
+            "file_name": "source.mp4",
+            "content_type": "video/mp4",
+            "size_bytes": 12,
+        },
+    )
+    assert issued.status_code == 200
+    return path, issued.json()["upload"]
+
+
+async def test_cleanup_retries_beyond_media_budget_with_increasing_delays(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    storage: GuardTestStorage,
+    test_database: tuple[str, str],
+    launcher: RecordingLauncher,
+) -> None:
+    path, _ = await create_reserved_source(deletion_client)
+    await deletion_client.delete(path)
+    job = launcher.submissions[-1]
+    storage.seal_failures = 5
+    delays: list[float] = []
+    attempts: list[int] = []
+
+    async def retry(delay: float) -> None:
+        delays.append(delay)
+        async with await AsyncConnection.connect(test_database[0]) as connection:
+            row = await (
+                await connection.execute(
+                    sql.SQL(
+                        "SELECT execution_attempts,error_code,error_message FROM {}.jobs WHERE id=%s"
+                    ).format(sql.Identifier(test_database[1])),
+                    (job,),
+                )
+            ).fetchone()
+        assert row is not None and row[1] == "CLEANUP_RETRYING" and "secret" not in row[2]
+        attempts.append(row[0])
+        assert (await deletion_client.get(path)).json()["status"] == "DELETING"
+        assert (await deletion_client.delete(path)).status_code == 202
+
+    assert await run_job(job, api_app.state.database, storage, Settings(), sleep=retry)
+    assert attempts == [1, 2, 3, 4, 5]
+    assert delays == [1, 4, 16, 30, 30]
+    assert len(launcher.submissions) == 1
+    assert (await deletion_client.get(path)).status_code == 404
+
+
+@pytest.mark.parametrize("invalid_metadata", [False, True])
+async def test_cleanup_runtime_failure_preserves_rows_and_manual_recovery_has_no_budget(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    storage: GuardTestStorage,
+    test_database: tuple[str, str],
+    launcher: RecordingLauncher,
+    invalid_metadata: bool,
+) -> None:
+    path, _ = await create_reserved_source(deletion_client)
+    await deletion_client.delete(path)
+    job = launcher.submissions[-1]
+    storage.bad_metadata = invalid_metadata
+    storage.seal_failures = 0 if invalid_metadata else 10
+
+    async def wait_for_runtime(_: float) -> None:
+        await asyncio.sleep(10)
+
+    assert not await run_job(
+        job,
+        api_app.state.database,
+        storage,
+        Settings(cleanup_runtime_seconds=0.1),
+        sleep=wait_for_runtime,
+    )
+    assert (await deletion_client.get(path)).json()["status"] == "DELETING"
+    async with await AsyncConnection.connect(test_database[0], autocommit=True) as connection:
+        row = await (
+            await connection.execute(
+                sql.SQL("SELECT state,error_code FROM {}.jobs WHERE id=%s").format(
+                    sql.Identifier(test_database[1])
+                ),
+                (job,),
+            )
+        ).fetchone()
+        assert row == ("FAILED", "CLEANUP_RUNTIME_EXHAUSTED")
+        await connection.execute(
+            sql.SQL("UPDATE {}.jobs SET execution_attempts=8 WHERE id=%s").format(
+                sql.Identifier(test_database[1])
+            ),
+            (job,),
+        )
+    storage.seal_failures, storage.bad_metadata = 0, False
+    assert await JobSubmission(api_app.state.database, launcher).recover(job)
+    assert await run_job(job, api_app.state.database, storage, Settings())
+    assert (await deletion_client.get(path)).status_code == 404
+    assert all(not data for data, _ in storage.objects.values())
+
+
+@pytest.mark.parametrize("kind", ["VIDEO", "THUMBNAIL"])
+async def test_cleanup_guards_real_media_manifest_while_conditional_output_put_is_in_flight(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    storage: GuardTestStorage,
+    launcher: RecordingLauncher,
+    tmp_path: Path,
+    kind: str,
+) -> None:
+    data = make_source(tmp_path / "source.mp4")
+    created = await deletion_client.post("/v1/videos", json={"title": "Race real media"})
+    path = created.headers["Location"]
+    issued = await deletion_client.post(
+        path + ":upload-url",
+        json={
+            "file_name": "source.mp4",
+            "content_type": "video/mp4",
+            "size_bytes": len(data),
+        },
+    )
+    upload = issued.json()["upload"]
+    await storage.browser_put(upload["url"], data, upload["headers"])
+    assert (
+        await deletion_client.post(
+            path + ":complete-upload", json={"upload_id": upload["upload_id"]}
+        )
+    ).status_code == 202
+    # Source acceptance records independent video and generated-image jobs.
+    async with api_app.state.database.connection() as connection:
+        row = await (
+            await connection.execute(
+                "SELECT id FROM jobs WHERE video_id=%s AND kind=%s", (created.json()["id"], kind)
+            )
+        ).fetchone()
+    assert row is not None
+    storage.write_started, storage.write_release = Event(), Event()
+    processing = create_task(run_job(row[0], api_app.state.database, storage, Settings()))
+    await wait_for(storage.write_started.wait(), timeout=10)
+    try:
+        assert (await deletion_client.delete(path)).status_code == 202
+        assert await run_job(launcher.submissions[-1], api_app.state.database, storage, Settings())
+    finally:
+        storage.write_release.set()
+    assert not await wait_for(processing, timeout=10)
+    assert (await deletion_client.get(path)).status_code == 404
+    assert any(area == "public" for area, _ in storage.objects)
+    assert all(not data for data, _ in storage.objects.values())
+    assert set(storage.objects) == storage.guards
+
+
+async def test_cleanup_guards_registered_custom_copy_while_real_image_put_is_in_flight(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    storage: GuardTestStorage,
+    launcher: RecordingLauncher,
+) -> None:
+    created = await deletion_client.post("/v1/videos", json={"title": "Race image"})
+    path = created.headers["Location"]
+    data = image_bytes()
+    issued = await deletion_client.post(
+        path + "/thumbnails:upload-url",
+        json={
+            "file_name": "cover.jpg",
+            "content_type": "image/jpeg",
+            "size_bytes": len(data),
+        },
+    )
+    upload = issued.json()["upload"]
+    await storage.browser_put(upload["url"], data, upload["headers"])
+    storage.write_started, storage.write_release = Event(), Event()
+    accepting = create_task(
+        deletion_client.post(
+            path + "/thumbnails:complete-upload", json={"upload_id": upload["upload_id"]}
+        )
+    )
+    await wait_for(storage.write_started.wait(), timeout=5)
+    try:
+        assert (await deletion_client.delete(path)).status_code == 202
+        assert await run_job(launcher.submissions[-1], api_app.state.database, storage, Settings())
+    finally:
+        storage.write_release.set()
+    assert (await wait_for(accepting, timeout=5)).status_code == 409
+    assert (await deletion_client.get(path)).status_code == 404
+    assert len(storage.guards) == 2
+    assert all(not data for data, _ in storage.objects.values())
+
+
+async def test_recovered_cleanup_token_fences_old_execution_before_row_removal(
+    deletion_client: AsyncClient,
+    api_app: FastAPI,
+    storage: GuardTestStorage,
+    launcher: RecordingLauncher,
+) -> None:
+    path, _ = await create_reserved_source(deletion_client)
+    await deletion_client.delete(path)
+    job = launcher.submissions[-1]
+    storage.head_started, storage.head_release = Event(), Event()
+    interrupted = create_task(run_job(job, api_app.state.database, storage, Settings()))
+    await wait_for(storage.head_started.wait(), timeout=3)
+    try:
+        with pytest.raises(VideoConflict, match="terminated"):
+            await JobSubmission(api_app.state.database, launcher).recover(job)
+        assert await JobSubmission(api_app.state.database, launcher).recover(
+            job, previous_execution_terminated=True
+        )
+    finally:
+        storage.head_release.set()
+    assert not await wait_for(interrupted, timeout=3)
+    assert (await deletion_client.get(path)).json()["status"] == "DELETING"
+    assert await run_job(job, api_app.state.database, storage, Settings())
+    assert (await deletion_client.get(path)).status_code == 404
