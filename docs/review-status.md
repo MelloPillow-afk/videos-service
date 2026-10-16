@@ -69,3 +69,11 @@ the new UTC/session and unequal-audio/video regressions, existing recovery polic
 cases, and genuine 300-second boundary/rotation/rendition checks. Measured
 coverage is 85%; the separately exercised inventory CLI subprocess is outside
 that coverage collection. No live cloud verification was performed.
+
+Final integration-checkout verification on 2026-10-16 also passed `make check`
+(46 examples, Ruff/format, strict Pyright with zero errors) and all **204 tests**
+against local PostgreSQL and real FFmpeg/FFprobe. A second `ag` run was
+byte-identical across all 26 owned files and the ownership record. Generated
+source-location metadata now points at the integration checkout. Both reviewers
+confirmed their findings resolved; no new actionable finding remained in the
+follow-up review. The outstanding gates above remain open.
