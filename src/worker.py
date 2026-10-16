@@ -6,6 +6,8 @@ import json
 from collections.abc import Awaitable, Callable, Sequence
 from uuid import UUID
 
+import httpx
+
 from src.config import Settings
 from src.domain.videos import VideoConflict
 from src.providers.storage import Storage
@@ -38,7 +40,11 @@ async def main_async(
     recover: bool = False,
     previous_execution_terminated: bool = False,
     storage: Storage | None = None,
+    gcloud_auth: bool = False,
+    job_transport: httpx.AsyncBaseTransport | None = None,
 ) -> bool | None:
+    if gcloud_auth and not recover:
+        raise ValueError("Local gcloud authentication is available only for recovery.")
     settings = Settings()
     # Import the configured cloud adapter only for the executable entry point.
     from src.providers.r2 import R2Storage
@@ -50,9 +56,10 @@ async def main_async(
             from src.providers.cloud_run import CloudRunJobLauncher
             from src.services.job_recovery import JobSubmission
 
-            return await JobSubmission(database, CloudRunJobLauncher(settings)).recover(
-                job_id, previous_execution_terminated=previous_execution_terminated
-            )
+            return await JobSubmission(
+                database,
+                CloudRunJobLauncher(settings, transport=job_transport, gcloud_auth=gcloud_auth),
+            ).recover(job_id, previous_execution_terminated=previous_execution_terminated)
         return await run_job(
             job_id, database, storage if storage is not None else R2Storage(settings), settings
         )
@@ -60,7 +67,12 @@ async def main_async(
         await database.close()
 
 
-def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = None) -> None:
+def main(
+    arguments: Sequence[str] | None = None,
+    *,
+    storage: Storage | None = None,
+    job_transport: httpx.AsyncBaseTransport | None = None,
+) -> None:
     parser = argparse.ArgumentParser(
         description="Run one persisted media job; no periodic dispatcher."
     )
@@ -71,6 +83,11 @@ def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = No
         "recover", help="Explicitly relaunch recorded work; never resets an active claim silently."
     )
     recover.add_argument("--job-id", type=UUID, required=True)
+    recover.add_argument(
+        "--gcloud-auth",
+        action="store_true",
+        help="Use the local gcloud login explicitly for this recovery; default is runtime metadata identity.",
+    )
     recover.add_argument(
         "--previous-execution-terminated",
         action="store_true",
@@ -84,6 +101,8 @@ def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = No
                 parsed.job_id,
                 recover=parsed.command == "recover",
                 storage=storage,
+                gcloud_auth=getattr(parsed, "gcloud_auth", False),
+                job_transport=job_transport,
                 previous_execution_terminated=getattr(
                     parsed, "previous_execution_terminated", False
                 ),

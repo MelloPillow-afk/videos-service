@@ -42,10 +42,15 @@ cloud execution termination before explicit recovery:
 
 ```sh
 uv run --locked python -m src.cleanup inspect --job-id UUID --list-storage
-uv run --locked python -m src.worker recover --job-id UUID
+uv run --locked python -m src.worker recover --job-id UUID --gcloud-auth
 # A stranded RUNNING claim additionally requires confirmed prior termination:
-uv run --locked python -m src.worker recover --job-id UUID --previous-execution-terminated
+uv run --locked python -m src.worker recover --job-id UUID --gcloud-auth --previous-execution-terminated
 ```
+
+The examples run locally with an installed, authenticated gcloud CLI and an
+explicit launch-capable operator account. Omit `--gcloud-auth` when using an
+appropriately authorized runtime metadata identity. See the
+[recovery guide](mel-10-acceptance.md) for credential and timeout behavior.
 
 The inspection command exposes keys/history, not secrets or signed URLs. It is a
 read-only snapshot and always reports `physical_cleanup_complete: false`; after

@@ -8,10 +8,12 @@ from pathlib import Path
 from threading import Event
 from uuid import UUID
 
+import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from psycopg import AsyncConnection, sql
 
 from src.providers.storage import StorageArea, TemporaryStorageError
 from src.worker import main
@@ -298,3 +300,74 @@ async def test_cleanup_runtime_exhaustion_exits_failed_and_stays_deleting(
     assert exited.value.code == 1
     assert json.loads(capsys.readouterr().out)["outcome"] == "failed"
     assert (await cli_client.get(path)).json()["status"] == "DELETING"
+
+
+@pytest.mark.parametrize("auth_available", [True, False])
+async def test_local_gcloud_recovery_records_confirmed_or_failed_launch_through_real_cli_and_database(
+    cli_client: AsyncClient,
+    storage: MemoryStorage,
+    test_database: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    gcloud_cli: Path,
+    auth_available: bool,
+) -> None:
+    path, job_id = await accepted_job(cli_client, storage, b"awaiting independent media job")
+    url, schema = test_database
+    monkeypatch.setenv("DATABASE_URL", url)
+    monkeypatch.setenv("DB_SCHEMA", schema)
+    monkeypatch.setenv("CLOUD_RUN_JOB_RESOURCE", "projects/target/locations/region/jobs/media")
+    if not auth_available:
+        monkeypatch.setenv("TEST_GCLOUD_EXIT", "1")
+    requests: list[httpx.Request] = []
+
+    async def launch(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "POST" and request.url.host == "run.googleapis.com"
+        assert request.headers["Authorization"] == "Bearer controlled-operator-access-token"
+        assert json.loads(request.content)["overrides"]["containerOverrides"][0]["args"] == [
+            "run",
+            "--job-id",
+            str(job_id),
+        ]
+        return httpx.Response(
+            200, json={"name": "projects/target/locations/region/operations/operator-recovery"}
+        )
+
+    async def recover() -> None:
+        await asyncio.to_thread(
+            main,
+            ["recover", "--job-id", str(job_id), "--gcloud-auth"],
+            job_transport=httpx.MockTransport(launch),
+        )
+
+    if auth_available:
+        await recover()
+    else:
+        with pytest.raises(SystemExit) as error:
+            await recover()
+        assert error.value.code == 1
+    output = capsys.readouterr()
+    assert json.loads(output.out) == {
+        "job_id": str(job_id),
+        "command": "recover",
+        "outcome": "succeeded" if auth_available else "failed",
+    }
+    assert "controlled-operator-access-token" not in output.out + output.err
+    assert "controlled-gcloud-private-error" not in output.out + output.err
+    assert len(requests) == (1 if auth_available else 0) and gcloud_cli.exists()
+    assert (await cli_client.get(path)).json()["status"] == "QUEUED"
+    async with await AsyncConnection.connect(url) as connection:
+        row = await (
+            await connection.execute(
+                sql.SQL(
+                    "SELECT state,execution_reference,execution_attempts FROM {}.jobs WHERE id=%s"
+                ).format(sql.Identifier(schema)),
+                (job_id,),
+            )
+        ).fetchone()
+    assert row == (
+        ("LAUNCHED", "projects/target/locations/region/operations/operator-recovery", 0)
+        if auth_available
+        else ("LAUNCH_FAILED", f"projects/test/locations/test/operations/{job_id}", 0)
+    )

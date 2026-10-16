@@ -35,8 +35,17 @@ RECORDED, LAUNCH_FAILED and LAUNCHED work can be explicitly relaunched while
 current and eligible. No media is processed inline by this command:
 
 ```sh
-uv run --locked python -m src.worker recover --job-id JOB_UUID
+uv run --locked python -m src.worker recover --job-id JOB_UUID --gcloud-auth
 ```
+
+On a local operator machine, `--gcloud-auth` explicitly uses the installed
+`gcloud` CLI's current login with `auth print-access-token --quiet`. Authenticate
+the intended operator account first and give it `run.jobs.runWithOverrides` on
+the configured job. Token output and CLI diagnostics are captured without logging;
+a ten-second credential timeout kills and reaps the process. This opt-in exists
+only for `recover`; the runtime image does not install gcloud. Without the flag,
+recovery continues to use a launch-capable runtime metadata identity. There is no
+automatic fallback to a local account, and API/worker runtime identity is unchanged.
 
 A lost submission response can mean an execution already exists. Inspect Cloud
 Run executions for the configured worker job and the UUID supplied in its args;
@@ -54,7 +63,7 @@ and inspect its terminal state before proceeding:
 
 ```sh
 gcloud run jobs executions cancel EXECUTION --region=REGION
-uv run --locked python -m src.worker recover --job-id JOB_UUID \
+uv run --locked python -m src.worker recover --job-id JOB_UUID --gcloud-auth \
   --previous-execution-terminated
 ```
 
@@ -65,7 +74,8 @@ FAILED and returns an explanatory error instead of starting a fourth. A validate
 retained source can then use the administrator retry endpoint; invalid/unverified
 sources use deletion and recreation. Superseded, deleted and finished work is
 rejected. Deletion has its separate retry policy and does not inherit this media
-budget; its physical-cleanup policy and live writer-drain evidence remain separate.
+budget; its approved permanent-guard policy is documented in
+[deletion acceptance](deletion-acceptance.md).
 
 Unknown/rejected relaunches stay visible as LAUNCH_FAILED; inspect provider state
 before trying again. An interrupted worker or direct launch may require this
@@ -107,3 +117,12 @@ real-media suite passed **199 tests** in 28.24s, with 85% overall measured cover
 The 19 recovery cases and 5 deletion-admission cases also passed independently.
 A repeat `ag` run changed none of the 27 checked ownership/artifact files.
 Live cloud execution and physical cleanup remain unverified and are not claimed.
+
+Local operator-auth follow-up: the boundary tracer first failed because explicit
+gcloud selection was missing. The completed path passes **38 targeted checks**
+covering external CLI success/empty/error/missing/timeout, timeout child reaping,
+metadata-only defaults without fallback, run-flag rejection, actual recover CLI
+with real PostgreSQL and controlled Cloud Run HTTP, existing recovery/media and
+redacted worker-command outcomes. `make check` passes 46 examples, Ruff/format and
+strict Pyright. No HTTP schema or generated output changed. These checks do not
+claim live operator permissions or a deployed recovery execution.

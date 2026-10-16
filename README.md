@@ -171,6 +171,9 @@ processing and the acceptance suite. Run accepted work with
 job and source from PostgreSQL and uses configured private/public R2 storage.
 The [processing recovery guide](docs/mel-10-acceptance.md) describes bounded
 media retries, explicit administrator retries and the operator relaunch command.
+For local recovery, explicitly select the authenticated operator with
+`python -m src.worker recover --job-id UUID --gcloud-auth`; deployed callers
+continue to use metadata identity by default.
 
 Feature evidence is recorded for [source acceptance](docs/mel-8-acceptance.md),
 [HLS processing](docs/mel-9-acceptance.md),
