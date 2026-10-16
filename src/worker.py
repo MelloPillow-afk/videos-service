@@ -2,14 +2,14 @@
 
 import argparse
 import asyncio
+import json
 import tempfile
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from src.config import Settings
 from src.domain.jobs import TemporaryWorkFailure
-from src.domain.videos import VideoConflict
 from src.providers.storage import (
     Storage,
     StorageConflictError,
@@ -39,15 +39,15 @@ async def run_job(
     settings: Settings,
     *,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-) -> bool:
-    """Dispatch one persisted job; media budgets and cleanup runtime are independent."""
+) -> bool | None:
+    """True completed, False failed, None unclaimed/fenced; each execution owns its budget."""
     async with database.connection() as connection:
         kind = await job_kind(connection, job_id)
     if kind == "DELETION":
         return await run_cleanup(job_id, database, storage, settings, sleep=sleep)
     async with database.connection() as connection:
         if kind not in ("VIDEO", "THUMBNAIL"):
-            return False
+            return None
         work = await claim(connection, job_id, uuid4(), kind=kind)
     processor = process_video
     if kind == "THUMBNAIL":
@@ -56,7 +56,7 @@ async def run_job(
         processor = process
     while work is not None:
         try:
-            return await processor(work, database, storage, settings)
+            return True if await processor(work, database, storage, settings) else None
         except (InvalidMedia, StorageLimitError) as error:
             message = (
                 str(error)
@@ -64,8 +64,8 @@ async def run_job(
                 else "The source exceeds the configured byte limit."
             )
             async with database.connection() as connection:
-                await fail(connection, work, "INVALID_SOURCE", message, permanent=True)
-            return False
+                outcome = await fail(connection, work, "INVALID_SOURCE", message, permanent=True)
+            return False if outcome is not None else None
         except (
             TemporaryWorkFailure,
             MediaProcessingError,
@@ -85,12 +85,12 @@ async def run_job(
                     and error.source_validated,
                     permanent=False,
                 )
-            if not retry:
-                return False
+            if retry is not True:
+                return retry
             await sleep(settings.media_retry_delays_seconds[work.attempt - 1])
             async with database.connection() as connection:
                 work = await next_attempt(connection, work, uuid4())
-    return False
+    return None
 
 
 async def process_video(
@@ -156,8 +156,12 @@ async def process_video(
 
 
 async def main_async(
-    job_id: UUID, *, recover: bool = False, previous_execution_terminated: bool = False
-) -> bool:
+    job_id: UUID,
+    *,
+    recover: bool = False,
+    previous_execution_terminated: bool = False,
+    storage: Storage | None = None,
+) -> bool | None:
     settings = Settings()
     # Import the configured cloud adapter only for the executable entry point.
     from src.providers.r2 import R2Storage
@@ -172,12 +176,14 @@ async def main_async(
             return await JobSubmission(database, CloudRunJobLauncher(settings)).recover(
                 job_id, previous_execution_terminated=previous_execution_terminated
             )
-        return await run_job(job_id, database, R2Storage(settings), settings)
+        return await run_job(
+            job_id, database, storage if storage is not None else R2Storage(settings), settings
+        )
     finally:
         await database.close()
 
 
-def main() -> None:
+def main(arguments: Sequence[str] | None = None, *, storage: Storage | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Run one persisted media job; no periodic dispatcher."
     )
@@ -193,19 +199,33 @@ def main() -> None:
         action="store_true",
         help="Operator confirms the previous execution is terminated; required for RUNNING claims.",
     )
-    arguments = parser.parse_args()
+    parsed = parser.parse_args(arguments)
     try:
-        asyncio.run(
+        result = asyncio.run(
             main_async(
-                arguments.job_id,
-                recover=arguments.command == "recover",
+                parsed.job_id,
+                recover=parsed.command == "recover",
+                storage=storage,
                 previous_execution_terminated=getattr(
-                    arguments, "previous_execution_terminated", False
+                    parsed, "previous_execution_terminated", False
                 ),
             )
         )
-    except VideoConflict as error:
-        parser.exit(1, str(error) + "\n")
+    except Exception:
+        # Provider/configuration exceptions can contain credentials. Persisted state
+        # and provider execution evidence are the operator diagnostic boundaries.
+        result = False
+    print(
+        json.dumps(
+            {
+                "job_id": str(parsed.job_id),
+                "command": parsed.command,
+                "outcome": "no_op" if result is None else "succeeded" if result else "failed",
+            }
+        )
+    )
+    if result is False:
+        parser.exit(1, "Job execution failed; inspect persisted state and provider execution.\n")
 
 
 if __name__ == "__main__":

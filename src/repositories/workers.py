@@ -135,9 +135,10 @@ async def fail(
     *,
     source_validated: bool = False,
     permanent: bool = True,
-) -> bool:
+) -> bool | None:
+    """True retries, False persisted failure, None fenced before any failure transition."""
     if not await eligible(connection, work):
-        return False
+        return None
     retry = not permanent and work.attempt < 3
     await history(connection, work, "TEMPORARY_FAILURE" if retry else "FAILED", code)
     await connection.execute(

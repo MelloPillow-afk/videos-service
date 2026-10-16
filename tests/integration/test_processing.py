@@ -311,7 +311,7 @@ async def test_duplicate_worker_invocations_claim_once(
     results = await asyncio.gather(
         *(run_job(job_id, api_app.state.database, storage, Settings()) for _ in range(2))
     )
-    assert sorted(results) == [False, True]
+    assert results.count(True) == 1 and results.count(None) == 1
     assert (
         await worker_client.get(
             location, headers={"Authorization": "Bearer " + signing_keys.token()}
