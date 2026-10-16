@@ -141,6 +141,8 @@ components:
       $ref: schemas/playback/playback.yaml
     thumbnail:
       $ref: schemas/thumbnails/thumbnail.yaml
+    thumbnail_removal:
+      $ref: schemas/thumbnails/thumbnail_removal.yaml
     videos:
       $ref: schemas/videos/videos.yaml
     error:

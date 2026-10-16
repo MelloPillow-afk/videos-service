@@ -286,11 +286,7 @@ async def arrange_thumbnails_delete_thumbnail(
     async with await AsyncConnection.connect(url, autocommit=True) as connection:
         await connection.execute(
             sql.SQL(
-                "UPDATE {}.videos SET generated_thumbnail_status='READY',generated_thumbnail_key='fallback.jpg',custom_thumbnail_key='custom.jpg'"
-            ).format(sql.Identifier(schema))
+                "UPDATE {}.videos SET generated_thumbnail_status='READY',generated_thumbnail_key=%s,custom_thumbnail_key='custom.jpg'"
+            ).format(sql.Identifier(schema)),
+            ("videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",),
         )
-    api_case.expected_body["thumbnail"] = {
-        "status": "READY",
-        "source": "GENERATED",
-        "url": "https://media.example.com/fallback.jpg",
-    }

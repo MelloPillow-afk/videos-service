@@ -16,7 +16,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.uploads.UploadComplete",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel10/api-specs/schemas/uploads/upload_complete.yaml#",
+            "source": "/private/tmp/videos-showcase-review/api-specs/schemas/uploads/upload_complete.yaml#",
         },
         "expected_body": {
             "thumbnail": {
@@ -50,9 +50,9 @@ _CASES: dict[str, dict[str, Any]] = {
         "body_model": None,
         "expected_body": {
             "thumbnail": {
-                "source": "CUSTOM",
+                "source": "GENERATED",
                 "status": "READY",
-                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
             },
             "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },
@@ -73,7 +73,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "path": "/v1/videos/{id}/thumbnails",
         "path_params": {"id": "550e8400-e29b-41d4-a716-446655440000"},
         "query": {},
-        "response_model": "src.schemas.generated.thumbnails.Thumbnail",
+        "response_model": "src.schemas.generated.thumbnails.ThumbnailRemoval",
     },
     "thumbnails.upload_url": {
         "body": {"content_type": "image/jpeg", "file_name": "faith-cover.jpg", "size_bytes": 183420},
@@ -81,7 +81,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.thumbnails.ThumbnailUploadCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel10/api-specs/schemas/thumbnails/thumbnail_upload_create.yaml#",
+            "source": "/private/tmp/videos-showcase-review/api-specs/schemas/thumbnails/thumbnail_upload_create.yaml#",
         },
         "expected_body": {
             "upload": {

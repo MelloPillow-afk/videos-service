@@ -40,6 +40,7 @@ class EncodedMedia:
     info: MediaInfo
     files: tuple[Path, ...]
     master: Path
+    duration: Decimal
 
 
 def command(arguments: list[str], timeout: float) -> bytes:
@@ -205,6 +206,7 @@ def encode_hls(
     info = info or validate_source(source, settings)
     output.mkdir()
     variants: list[str] = []
+    durations: list[Decimal] = []
     for index, (width, height, bandwidth) in enumerate(rendition_sizes(info)):
         playlist = output / f"v{index}.m3u8"
         arguments = [
@@ -254,7 +256,21 @@ def encode_hls(
             "expr:gte(t,n_forced*4)",
         ]
         if info.audio_index is not None:
-            arguments += ["-c:a", "aac", "-ac", "2", "-ar", "48000", "-b:a", "128k"]
+            # The video timeline controls playback: pad short audio, and end
+            # existing audio when video ends. Video-only sources stay silent.
+            arguments += [
+                "-af",
+                "apad",
+                "-shortest",
+                "-c:a",
+                "aac",
+                "-ac",
+                "2",
+                "-ar",
+                "48000",
+                "-b:a",
+                "128k",
+            ]
         arguments += [
             "-f",
             "hls",
@@ -280,6 +296,10 @@ def encode_hls(
             str(settings.source_max_duration_seconds)
         ):
             raise InvalidMedia("The decoded video exceeds the configured duration limit.")
+        duration = sum(segment_durations, start=Decimal(0))
+        if duration <= 0 or (durations and abs(duration - durations[0]) > Decimal(1) / 30):
+            raise MediaProcessingError
+        durations.append(duration)
         command(
             [
                 settings.ffmpeg_binary,
@@ -308,4 +328,4 @@ def encode_hls(
             output.iterdir(), key=lambda path: (path.suffix == ".m3u8", path == master, path.name)
         )
     )
-    return EncodedMedia(info, files, master)
+    return EncodedMedia(info, files, master, durations[0])

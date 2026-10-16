@@ -35,6 +35,11 @@ class Thumbnail(WireModel):
     thumbnail: ThumbnailImage = Field(description="The current thumbnail.")
     video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
+class ThumbnailRemoval(WireModel):
+    model_config = ConfigDict(extra='allow')
+    thumbnail: ThumbnailImage = Field(description="The current thumbnail.")
+    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+
 class ThumbnailUploadCreate(WireModel):
     model_config = ConfigDict(extra='allow')
     content_type: Annotated[str, Field(min_length=1)] = Field(
