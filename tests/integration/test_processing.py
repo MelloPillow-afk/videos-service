@@ -581,3 +581,183 @@ async def test_corrupt_video_packets_fail_even_when_mp4_metadata_is_valid(
     assert response.json()["status"] == "FAILED"
     assert response.json()["processing_error"]["code"] == "INVALID_SOURCE"
     assert not any(area == "public" for area, _ in storage.objects)
+
+
+@pytest.mark.parametrize(
+    "video_duration,audio_duration,expected",
+    [("1", "5", 1.0), ("2", "0.25", 2.0), ("2", None, 2.0)],
+)
+async def test_playback_duration_follows_video_and_existing_audio_is_trimmed_or_padded(
+    worker_client: AsyncClient,
+    api_app: FastAPI,
+    signing_keys: LocalSigningKeys,
+    test_database: tuple[str, str],
+    tmp_path: Path,
+    video_duration: str,
+    audio_duration: str | None,
+    expected: float,
+) -> None:
+    source_path = tmp_path / "av.mp4"
+    args = [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        f"testsrc2=size=320x180:rate=10:duration={video_duration}",
+    ]
+    if audio_duration is not None:
+        args += [
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=sample_rate=48000:duration={audio_duration}",
+            "-c:a",
+            "aac",
+        ]
+    args += ["-c:v", "libx264", "-threads", "2", str(source_path)]
+    subprocess.run(args, check=True, capture_output=True)
+    storage = MediaStorage()
+    location, job_id = await seed_job(
+        worker_client, signing_keys, test_database, storage, source_path.read_bytes()
+    )
+    assert await run_job(job_id, api_app.state.database, storage, Settings())
+    detail = await worker_client.get(
+        location, headers={"Authorization": "Bearer " + signing_keys.token()}
+    )
+    assert detail.json()["status"] == "READY"
+    assert detail.json()["duration_seconds"] == pytest.approx(expected, abs=1 / 30)
+    for (area, key), data in storage.objects.items():
+        if area == "public":
+            (tmp_path / key.rsplit("/", 1)[1]).write_bytes(data)
+    playlist = (tmp_path / "v0.m3u8").read_text()
+    playable_duration = sum(
+        float(line.partition(":")[2].rstrip(","))
+        for line in playlist.splitlines()
+        if line.startswith("#EXTINF:")
+    )
+    assert playable_duration == pytest.approx(expected, abs=1 / 30)
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_streams",
+            "-show_packets",
+            "-of",
+            "json",
+            str(tmp_path / "v0_00000.ts"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    metadata = json.loads(probe.stdout)
+    streams = metadata["streams"]
+    video = next(stream for stream in streams if stream["codec_type"] == "video")
+    assert float(video["duration"]) == pytest.approx(playable_duration, abs=1 / 30)
+    audio = [stream for stream in streams if stream["codec_type"] == "audio"]
+    assert bool(audio) == (audio_duration is not None)
+    if audio:
+        from array import array
+
+        # One video frame plus two 48kHz AAC packets allow encoder priming/rounding.
+        decoded_audio = subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-i",
+                str(tmp_path / "master.m3u8"),
+                "-map",
+                "0:a:0",
+                "-f",
+                "f32le",
+                "-acodec",
+                "pcm_f32le",
+                "-",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        samples = array("f", decoded_audio.stdout)
+        assert (audio[0]["sample_rate"], audio[0]["channels"]) == ("48000", 2)
+        assert len(samples) / (48000 * 2) == pytest.approx(playable_duration, abs=0.08)
+        video_end = max(
+            float(packet["pts_time"]) + float(packet["duration_time"])
+            for packet in metadata["packets"]
+            if packet["stream_index"] == video["index"]
+        )
+        audio_end = max(
+            float(packet["pts_time"]) + float(packet["duration_time"])
+            for packet in metadata["packets"]
+            if packet["stream_index"] == audio[0]["index"]
+        )
+        assert audio_end == pytest.approx(video_end, abs=0.08)
+        if audio_duration == "0.25":
+            tail = samples[48000 * 2 * 3 // 2 :]
+            assert tail and max(abs(sample) for sample in tail) < 0.001
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-xerror",
+            "-i",
+            str(tmp_path / "master.m3u8"),
+            "-f",
+            "null",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
+async def test_long_audio_still_counts_toward_source_admission_limit(
+    worker_client: AsyncClient,
+    api_app: FastAPI,
+    signing_keys: LocalSigningKeys,
+    test_database: tuple[str, str],
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "overlimit-audio.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=16x16:rate=10:duration=1",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=sample_rate=48000:duration=5",
+            "-c:v",
+            "libx264",
+            "-threads",
+            "2",
+            "-c:a",
+            "aac",
+            str(source),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    storage = MediaStorage()
+    location, job_id = await seed_job(
+        worker_client, signing_keys, test_database, storage, source.read_bytes()
+    )
+    assert not await run_job(
+        job_id, api_app.state.database, storage, Settings(source_max_duration_seconds=3)
+    )
+    detail = await worker_client.get(
+        location, headers={"Authorization": "Bearer " + signing_keys.token()}
+    )
+    assert detail.json()["processing_error"]["code"] == "INVALID_SOURCE"
+    assert not any(area == "public" for area, _ in storage.objects)

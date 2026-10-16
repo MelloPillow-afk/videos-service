@@ -7,6 +7,8 @@ from fastapi import HTTPException, Request
 from src.domain.uploads import UploadRejected
 from src.domain.videos import VideoConflict, VideoNotFound, VideoRecord
 from src.handlers.dependencies import require_admin
+from src.handlers.timestamps import utc_timestamp
+from src.handlers.upload_errors import upload_rejection
 from src.handlers.video_projection import video_response
 from src.providers.storage import StorageLimitError, StorageMissingError, TemporaryStorageError
 from src.schemas.generated.operations import (
@@ -14,7 +16,12 @@ from src.schemas.generated.operations import (
     ThumbnailsDeleteThumbnailIdParameter,
     ThumbnailsUploadUrlIdParameter,
 )
-from src.schemas.generated.thumbnails import Thumbnail, ThumbnailUpload, ThumbnailUploadCreate
+from src.schemas.generated.thumbnails import (
+    Thumbnail,
+    ThumbnailRemoval,
+    ThumbnailUpload,
+    ThumbnailUploadCreate,
+)
 from src.schemas.generated.uploads import UploadComplete
 from src.services.thumbnails import CustomThumbnails
 
@@ -28,9 +35,7 @@ def thumbnail_response(video: VideoRecord, request: Request) -> Thumbnail:
 
 def http_error(error: Exception) -> HTTPException:
     if isinstance(error, UploadRejected):
-        return HTTPException(
-            {"missing": 404, "too_large": 413, "invalid": 400}[error.reason], error.message
-        )
+        return upload_rejection(error)
     if isinstance(error, VideoNotFound):
         return HTTPException(404, "The video was not found.")
     if isinstance(error, VideoConflict):
@@ -59,7 +64,7 @@ async def upload_url(
                 "method": upload.method,
                 "url": upload.url,
                 "headers": upload.headers,
-                "expires_at": attempt.expires_at.isoformat().replace("+00:00", "Z"),
+                "expires_at": utc_timestamp(attempt.expires_at),
             },
         }
     )
@@ -85,10 +90,14 @@ async def complete_upload(
 
 async def delete_thumbnail(
     *, id: ThumbnailsDeleteThumbnailIdParameter, request: Request
-) -> Thumbnail:
+) -> ThumbnailRemoval:
     await require_admin(request)
     service: CustomThumbnails = request.app.state.thumbnails
     try:
-        return thumbnail_response(await service.remove(UUID(id)), request)
+        video = await service.remove(UUID(id))
+        return ThumbnailRemoval(
+            video_id=str(video.id),
+            thumbnail=video_response(video, request.app.state.settings.cdn_origin).thumbnail,
+        )
     except (VideoConflict, VideoNotFound) as error:
         raise http_error(error) from None

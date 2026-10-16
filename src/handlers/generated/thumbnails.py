@@ -18,7 +18,9 @@ from src.schemas.generated.operations import (
     ThumbnailsUploadUrlIdParameter as _UploadUrlIdParameter,
 )
 from src.schemas.generated.thumbnails import Thumbnail as _CompleteUploadResponse
-from src.schemas.generated.thumbnails import Thumbnail as _DeleteThumbnailResponse
+from src.schemas.generated.thumbnails import (
+    ThumbnailRemoval as _DeleteThumbnailResponse,
+)
 from src.schemas.generated.thumbnails import ThumbnailUpload as _UploadUrlResponse
 from src.schemas.generated.thumbnails import ThumbnailUploadCreate as _UploadUrlBody
 from src.schemas.generated.uploads import UploadComplete as _CompleteUploadBody
@@ -43,9 +45,9 @@ async def delete_thumbnail(
     return _generator_TypeAdapter(_DeleteThumbnailResponse).validate_python(
         {
             "thumbnail": {
-                "source": "CUSTOM",
+                "source": "GENERATED",
                 "status": "READY",
-                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/generated.jpg",
             },
             "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },

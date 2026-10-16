@@ -8,6 +8,8 @@ from src.domain.library import InvalidCursor, LibraryQuery
 from src.domain.uploads import UploadRejected
 from src.domain.videos import VideoConflict, VideoNotFound
 from src.handlers.dependencies import optional_admin, require_admin
+from src.handlers.timestamps import utc_timestamp
+from src.handlers.upload_errors import upload_rejection
 from src.handlers.video_projection import video_response
 from src.providers.storage import TemporaryStorageError
 from src.schemas.generated.operations import (
@@ -134,9 +136,7 @@ async def upload_url(
     except VideoConflict as error:
         raise HTTPException(409, str(error)) from None
     except UploadRejected as error:
-        raise HTTPException(
-            {"missing": 404, "too_large": 413, "invalid": 400}[error.reason], error.message
-        ) from None
+        raise upload_rejection(error) from None
     except TemporaryStorageError:
         raise HTTPException(503, "Object storage is temporarily unavailable.") from None
     return SourceUpload.model_validate(
@@ -148,7 +148,7 @@ async def upload_url(
                 "method": result.upload.method,
                 "url": result.upload.url,
                 "headers": result.upload.headers,
-                "expires_at": result.attempt.expires_at.isoformat().replace("+00:00", "Z"),
+                "expires_at": utc_timestamp(result.attempt.expires_at),
             },
         }
     )
@@ -166,9 +166,7 @@ async def complete_upload(
     except VideoConflict as error:
         raise HTTPException(409, str(error)) from None
     except UploadRejected as error:
-        raise HTTPException(
-            {"missing": 404, "too_large": 413, "invalid": 400}[error.reason], error.message
-        ) from None
+        raise upload_rejection(error) from None
     except TemporaryStorageError:
         raise HTTPException(503, "Object storage is temporarily unavailable.") from None
     return SourceUploadProcessing.model_validate(

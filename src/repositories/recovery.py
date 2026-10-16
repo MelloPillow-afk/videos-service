@@ -5,9 +5,8 @@ from datetime import datetime
 from uuid import UUID
 
 from psycopg import AsyncConnection
-from psycopg.rows import TupleRow
+from psycopg.rows import TupleRow, class_row
 
-from src.domain.videos import VideoConflict
 from src.repositories.jobs import record_job
 
 
@@ -40,62 +39,82 @@ async def queue_retry(
     return RetriedVideo(video_id, job_id, number)
 
 
-async def prepare_relaunch(
-    connection: AsyncConnection[TupleRow], job_id: UUID, *, previous_execution_terminated: bool
-) -> bool:
+@dataclass(frozen=True)
+class LockedRecoverySnapshot:
+    job_id: UUID
+    video_id: UUID
+    video_status: str
+    kind: str
+    state: str
+    is_current: bool
+    execution_attempts: int
+
+
+async def lock_recovery_snapshot(
+    connection: AsyncConnection[TupleRow], job_id: UUID
+) -> LockedRecoverySnapshot | None:
+    """The caller retains the transaction; always lock the parent before its job."""
     cursor = await connection.execute(
         "SELECT v.id,v.status FROM videos v JOIN jobs j ON j.video_id=v.id WHERE j.id=%s FOR UPDATE OF v",
         (job_id,),
     )
     video = await cursor.fetchone()
     if video is None:
-        raise VideoConflict("The job was not found.")
-    cursor = await connection.execute(
-        "SELECT kind,state,is_current,execution_attempts FROM jobs WHERE id=%s FOR UPDATE",
+        return None
+    async with connection.cursor(row_factory=class_row(LockedRecoverySnapshot)) as cursor:
+        await cursor.execute(
+            """SELECT id AS job_id,video_id,%s::text AS video_status,
+            kind,state,is_current,execution_attempts FROM jobs WHERE id=%s FOR UPDATE""",
+            (video[1], job_id),
+        )
+        return await cursor.fetchone()
+
+
+async def record_interrupted_execution(connection: AsyncConnection[TupleRow], job_id: UUID) -> None:
+    await connection.execute(
+        """UPDATE jobs SET execution_history=execution_history || jsonb_build_array(
+        jsonb_build_object('attempt',execution_attempts,'token',claim_token,'state','INTERRUPTED','at',now()))
+        WHERE id=%s AND state='RUNNING' AND is_current""",
         (job_id,),
     )
-    job = await cursor.fetchone()
-    assert job is not None
-    kind, state, current, attempts = job
-    if not current or ((kind == "DELETION") != (video[1] == "DELETING")):
-        raise VideoConflict("The job is superseded or ineligible for its video state.")
-    if state not in ("RECORDED", "LAUNCH_FAILED", "LAUNCHED", "RUNNING") and not (
-        kind == "DELETION" and state == "FAILED"
-    ):
-        raise VideoConflict("Only stranded launches or interrupted executions can be relaunched.")
-    if state == "RUNNING" and not previous_execution_terminated:
-        raise VideoConflict(
-            "Confirm the previous execution has terminated before recovering a running claim."
-        )
-    if state == "RUNNING":
-        await connection.execute(
-            """UPDATE jobs SET execution_history=execution_history || jsonb_build_array(
-            jsonb_build_object('attempt',execution_attempts,'token',claim_token,'state','INTERRUPTED','at',now()))
-            WHERE id=%s""",
-            (job_id,),
-        )
-    if kind != "DELETION" and attempts >= 3:
-        await connection.execute(
-            "UPDATE jobs SET state='FAILED',error_code='EXECUTION_INTERRUPTED',error_message='The execution budget was exhausted after an interruption.',updated_at=now() WHERE id=%s",
-            (job_id,),
-        )
-        if kind == "VIDEO":
-            await connection.execute(
-                "UPDATE videos SET status='FAILED',processing_error_code='EXECUTION_INTERRUPTED',processing_error_message='Processing was interrupted after its execution budget was exhausted.',updated_at=now() WHERE id=%s",
-                (video[0],),
-            )
-        else:
-            await connection.execute(
-                "UPDATE videos SET generated_thumbnail_status='FAILED',updated_at=now() WHERE id=%s",
-                (video[0],),
-            )
-        return False
-    await connection.execute(
-        "UPDATE jobs SET state='RECORDED',claim_token=NULL,updated_at=now() WHERE id=%s", (job_id,)
-    )
-    if kind == "VIDEO":
-        await connection.execute(
-            "UPDATE videos SET status='QUEUED',updated_at=now() WHERE id=%s", (video[0],)
-        )
 
-    return True
+
+async def fail_interrupted_job(connection: AsyncConnection[TupleRow], job_id: UUID) -> None:
+    await connection.execute(
+        """UPDATE jobs SET state='FAILED',error_code='EXECUTION_INTERRUPTED',
+        error_message='The execution budget was exhausted after an interruption.',updated_at=now()
+        WHERE id=%s AND is_current""",
+        (job_id,),
+    )
+
+
+async def fail_interrupted_video(connection: AsyncConnection[TupleRow], video_id: UUID) -> None:
+    await connection.execute(
+        """UPDATE videos SET status='FAILED',processing_error_code='EXECUTION_INTERRUPTED',
+        processing_error_message='Processing was interrupted after its execution budget was exhausted.',
+        updated_at=now() WHERE id=%s AND status <> 'DELETING'""",
+        (video_id,),
+    )
+
+
+async def fail_interrupted_thumbnail(connection: AsyncConnection[TupleRow], video_id: UUID) -> None:
+    await connection.execute(
+        """UPDATE videos SET generated_thumbnail_status='FAILED',updated_at=now()
+        WHERE id=%s AND status <> 'DELETING'""",
+        (video_id,),
+    )
+
+
+async def reset_job_for_relaunch(connection: AsyncConnection[TupleRow], job_id: UUID) -> None:
+    await connection.execute(
+        """UPDATE jobs SET state='RECORDED',claim_token=NULL,updated_at=now()
+        WHERE id=%s AND is_current""",
+        (job_id,),
+    )
+
+
+async def queue_interrupted_video(connection: AsyncConnection[TupleRow], video_id: UUID) -> None:
+    await connection.execute(
+        "UPDATE videos SET status='QUEUED',updated_at=now() WHERE id=%s AND status <> 'DELETING'",
+        (video_id,),
+    )

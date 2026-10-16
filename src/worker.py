@@ -134,7 +134,7 @@ async def process_video(
                     connection,
                     work,
                     prefix + result.master.name,
-                    float(result.info.duration),
+                    float(result.duration),
                     result.info.width,
                     result.info.height,
                 )

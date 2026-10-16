@@ -35,6 +35,15 @@ AAC stereo48kHz128kbit/s when present; silent sources remain video-only. VOD HLS
 uses4s MPEG-TS segments, aligned forced keyframes and a master with actual
 rendition dimensions and conservative peak bandwidth.
 
+After integration review, video duration governs playback: existing audio is
+padded with silence if short and trimmed when the video ends (`apad` and
+`-shortest`). Sources without audio remain video-only. Admission still uses the
+maximum actual container/audio/video duration, so trimming does not admit a
+source above the configured limit. The resource stores the produced playlist's
+verified playable duration rather than the original container maximum. Real
+unequal audio/video fixtures verify playlist timing, decoded audio sample count,
+packet end times, and a silent padded tail.
+
 Generated variants are fully decoded locally, their durations checked, and all
 segments/manifests uploaded in that order with the master last. Every uploaded
 object must be available with the expected length before current work can become
@@ -74,6 +83,7 @@ Primary references used for the bounded implementation choices:
 
 - [FFmpeg HLS muxer](https://www.ffmpeg.org/ffmpeg-formats.html#hls-2)
 - [FFprobe metadata](https://ffmpeg.org/ffprobe.html)
+- [FFmpeg audio padding](https://ffmpeg.org/ffmpeg-filters.html#apad)
 - [FFmpeg scaling](https://ffmpeg.org/ffmpeg-filters.html#scale)
 - [Cloud Run job launch API](https://docs.cloud.google.com/run/docs/reference/rest/v2/projects.locations.jobs/run)
 - [R2 atomic conditional PUT](https://developers.cloudflare.com/r2/api/s3/extensions/#conditional-operations-in-putobject)

@@ -3,6 +3,7 @@
 from urllib.parse import quote
 
 from src.domain.videos import VideoRecord
+from src.handlers.timestamps import utc_timestamp
 from src.schemas.generated.videos import Video
 
 
@@ -39,11 +40,9 @@ def video_response(video: VideoRecord, cdn_origin: str = "https://media.example.
             "size_bytes": video.size_bytes,
             "duration_seconds": video.duration_seconds,
             "thumbnail": thumbnail,
-            "published_at": video.published_at.isoformat().replace("+00:00", "Z")
-            if video.published_at
-            else None,
-            "created_at": video.created_at.isoformat().replace("+00:00", "Z"),
-            "updated_at": video.updated_at.isoformat().replace("+00:00", "Z"),
+            "published_at": utc_timestamp(video.published_at) if video.published_at else None,
+            "created_at": utc_timestamp(video.created_at),
+            "updated_at": utc_timestamp(video.updated_at),
             **error,
         }
     )
