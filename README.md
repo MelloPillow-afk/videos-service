@@ -357,3 +357,10 @@ Inspect `jobs.state`, `execution_reference`, and sanitized errors for recorded w
 An interrupted or uncertain launch requires manual inspection and explicit recovery;
 repeating upload confirmation does not dispatch it again. No periodic dispatcher or
 cleanup scheduler is included.
+
+Generated thumbnails now run independently through the same job-ID worker entry
+point. FFmpeg fits the first decoded frame on a padded 1280 × 720 canvas, retaining
+source display proportions. Independent failures never block video readiness or
+publication, and a valid custom selection stays preferred. See the
+[MEL-11 acceptance record](docs/mel-11-acceptance.md) for real-image, concurrency,
+and retry evidence.
