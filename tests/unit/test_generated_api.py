@@ -1,5 +1,6 @@
 """The complete generated contract is available through native FastAPI HTTP routes."""
 
+import pytest
 from fastapi import HTTPException
 from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
@@ -27,6 +28,48 @@ async def test_invalid_video_id_uses_native_request_validation() -> None:
 VIDEO_ID = "550e8400-e29b-41d4-a716-446655440000"
 RESOURCE = f"/v1/videos/{VIDEO_ID}"
 SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "body"),
+    [
+        ("GET", "/v1/videos?limit=0", None),
+        ("GET", "/v1/videos?limit=101", None),
+        ("GET", "/v1/videos?limit=many", None),
+        ("GET", "/v1/videos?publication_status=UNKNOWN", None),
+        ("GET", "/v1/videos?status=UNKNOWN", None),
+        ("GET", f"/v1/videos?search={'x' * 201}", None),
+        ("POST", "/v1/videos", None),
+        ("POST", "/v1/videos", {}),
+        ("POST", "/v1/videos", {"title": " "}),
+        ("POST", "/v1/videos", {"title": "x" * 201}),
+        ("POST", "/v1/videos", {"title": None}),
+        ("PATCH", RESOURCE, {}),
+        ("PATCH", RESOURCE, {"unknown": "value"}),
+        ("PATCH", RESOURCE, {"title": None}),
+        ("PATCH", RESOURCE, {"publication_status": "UNKNOWN"}),
+        ("POST", f"{RESOURCE}:complete-upload", {"upload_id": "invalid"}),
+        (
+            "POST",
+            f"{RESOURCE}:upload-url",
+            {"file_name": "lesson.mp4", "content_type": "video/webm", "size_bytes": 5},
+        ),
+        (
+            "POST",
+            f"{RESOURCE}/thumbnails:upload-url",
+            {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 0},
+        ),
+    ],
+)
+async def test_invalid_requests_use_native_validation(
+    method: str, path: str, body: dict[str, object] | None
+) -> None:
+    app = create_app(Settings(db_pool_min_size=0))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.request(method, path, json=body)
+    assert response.status_code == 422, response.text
+    assert isinstance(response.json()["detail"], list)
+    assert "error" not in response.json()
 
 
 async def test_native_query_parsing_and_exact_collection_path() -> None:

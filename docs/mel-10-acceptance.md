@@ -1,10 +1,10 @@
 # MEL-10 — processing retries and manual recovery
 
 Temporary media failures allow three total executions per persisted job. The
-same claim owner runs them with increasing delays (1s then4s by default), using
+same claim owner runs them with increasing delays (1 second then 4 seconds by default), using
 new claim tokens and isolated output prefixes each time. Configure two finite,
 nonnegative, increasing values with `MEDIA_RETRY_DELAYS_SECONDS=[1,4]`.
-Cloud Run provider retries remain zero, avoiding a multiplied budget.
+Configure Cloud Run provider retries to zero to avoid multiplying the budget.
 
 The job remains RUNNING between execution attempts, so a duplicate worker
 cannot steal a delayed retry. Counts increment when an execution starts.
@@ -18,9 +18,9 @@ previously validated source. Exhaustion becomes FAILED; an administrator can
 POST `/v1/videos/{id}:retry` only with a retained validated source still available.
 One transaction supersedes the previous VIDEO job, records a new job/namespace,
 and returns QUEUED/DRAFT before direct submission. Concurrent requests produce
-one accepted retry and one409. Old job diagnostics/output manifests remain.
+one accepted retry and one 409. Old job diagnostics/output manifests remain.
 Thumbnail jobs are unaffected. The response's `attempt` is the VIDEO job number
-(first explicit retry2); execution-attempt counts are tracked within each job.
+(first explicit retry is 2); execution-attempt counts are tracked within each job.
 Unusable sources require deletion and recreation.
 
 ## Operator procedure
@@ -82,19 +82,28 @@ and credentials evidence is reserved for MEL-16.
 
 The contract descriptions/job numbering were updated, validated with
 `make lint-api` (45 examples), and regenerated through `ag-generate` before
-handwritten behavior. The generator reports13 operations and23 HTTP cases;
+handwritten behavior. The generator reports 13 operations and 23 HTTP cases;
 handwritten recovery tests remain outside generated packages.
 
 The first transient-storage tracer failed before retry orchestration; the explicit
-HTTP tracer returned an example202 while detail remained FAILED before real
-retry behavior.17 recovery cases now cover temporary success, exhaustion and
+HTTP tracer returned an example 202 while detail remained FAILED before real
+retry behavior.19 recovery cases now cover temporary success, exhaustion and
 increasing delays, permanent-source rejection, cumulative attempt manifests,
 source-validation retention, concurrent explicit retries, current-role denial,
-native422, missing source, launch interruption, manual relaunch, stale/deleting/
+native 422, missing source, launch interruption, manual relaunch, stale/deleting/
 finished jobs, mandatory termination confirmation independent of timestamp age,
-and interrupted final execution without a fourth execution.
+interrupted final execution without a fourth execution, deletion during retry
+backoff, and cleanup relaunch without applying the media budget or clearing the
+pending cleanup-policy diagnostic.
 
 They use the real app, PostgreSQL and FFmpeg, controlling external storage,
-identity, launch and waiting at their boundaries. Existing source-upload direct
-launches now share the same submission implementation. Final integration check
-results are recorded below once the full relevant suite completes.
+identity, launch and waiting at their boundaries. Existing source-upload and deletion-admission direct launches now share the same
+submission implementation. Native validation cases were retained while retiring
+fixed-example assumptions for implemented business operations.
+
+After merging integration `e0f3a77`, `make check` passed OpenAPI validation,
+45 examples, Ruff/format and strict Pyright. The full relevant PostgreSQL and
+real-media suite passed **199 tests** in 28.24s, with 85% overall measured coverage.
+The 19 recovery cases and 5 deletion-admission cases also passed independently.
+A repeat `ag` run changed none of the 27 checked ownership/artifact files.
+Live cloud execution and physical cleanup remain unverified and are not claimed.

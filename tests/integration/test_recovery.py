@@ -571,3 +571,76 @@ async def test_manual_relaunch_rejects_finished_jobs(
     with pytest.raises(VideoConflict, match="Only stranded launches"):
         await JobSubmission(api_app.state.database, launcher).recover(job_id)
     assert launcher.submissions == []
+
+
+async def test_deletion_during_backoff_prevents_another_media_execution(
+    worker_client: AsyncClient,
+    api_app: FastAPI,
+    signing_keys: LocalSigningKeys,
+    test_database: tuple[str, str],
+    tmp_path: Path,
+    storage: IntermittentStorage,
+) -> None:
+    storage.failures = 1
+    location, job_id = await seed_job(
+        worker_client, signing_keys, test_database, storage, make_source(tmp_path / "source.mp4")
+    )
+
+    async def delete_while_waiting(delay: float) -> None:
+        response = await worker_client.delete(
+            location, headers={"Authorization": "Bearer " + signing_keys.token()}
+        )
+        assert response.status_code == 202
+
+    assert not await run_job(
+        job_id, api_app.state.database, storage, Settings(), sleep=delete_while_waiting
+    )
+    assert (
+        await worker_client.get(
+            location, headers={"Authorization": "Bearer " + signing_keys.token()}
+        )
+    ).json()["status"] == "DELETING"
+    async with await AsyncConnection.connect(test_database[0]) as connection:
+        row = await (
+            await connection.execute(
+                sql.SQL("SELECT execution_attempts FROM {}.jobs WHERE id=%s").format(
+                    sql.Identifier(test_database[1])
+                ),
+                (job_id,),
+            )
+        ).fetchone()
+    assert row == (1,)
+
+
+async def test_cleanup_relaunch_has_no_media_execution_cap_and_keeps_policy_diagnostic(
+    worker_client: AsyncClient,
+    api_app: FastAPI,
+    signing_keys: LocalSigningKeys,
+    test_database: tuple[str, str],
+    launcher: RecordingLauncher,
+) -> None:
+    headers = {"Authorization": "Bearer " + signing_keys.token()}
+    created = await worker_client.post("/v1/videos", json={"title": "Delete"}, headers=headers)
+    location = created.headers["Location"]
+    assert (await worker_client.delete(location, headers=headers)).status_code == 202
+    async with await AsyncConnection.connect(test_database[0], autocommit=True) as connection:
+        cursor = await connection.execute(
+            sql.SQL(
+                "UPDATE {}.jobs SET state='FAILED',execution_attempts=5 WHERE kind='DELETION' RETURNING id"
+            ).format(sql.Identifier(test_database[1]))
+        )
+        row = await cursor.fetchone()
+        assert row is not None
+        job_id = row[0]
+    assert await JobSubmission(api_app.state.database, launcher).recover(job_id)
+    assert (await worker_client.get(location, headers=headers)).json()["status"] == "DELETING"
+    async with await AsyncConnection.connect(test_database[0]) as connection:
+        row = await (
+            await connection.execute(
+                sql.SQL(
+                    "SELECT state,execution_attempts,error_code FROM {}.jobs WHERE id=%s"
+                ).format(sql.Identifier(test_database[1])),
+                (job_id,),
+            )
+        ).fetchone()
+    assert row == ("LAUNCHED", 5, "CLEANUP_POLICY_REQUIRED")

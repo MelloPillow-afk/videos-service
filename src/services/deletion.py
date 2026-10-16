@@ -5,11 +5,12 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from src.domain.videos import VideoNotFound
-from src.providers.jobs import JobLauncher, JobLaunchError
+from src.providers.jobs import JobLauncher
 from src.repositories.database import Database
 from src.repositories.deletion import current_cleanup, enter_deleting, mark_cleanup_policy_required
-from src.repositories.jobs import record_job, record_launch
+from src.repositories.jobs import record_job
 from src.repositories.videos import get_video
+from src.services.job_recovery import JobSubmission
 from src.services.videos import utc_now
 
 
@@ -38,9 +39,4 @@ class Deletions:
                 connection, id=self.new_id(), video_id=video_id, kind="DELETION", now=now
             )
             await mark_cleanup_policy_required(connection, job.id)
-        try:
-            reference = await self.launcher.launch(job.id)
-        except JobLaunchError:
-            reference = None
-        async with self.database.connection() as connection:
-            await record_launch(connection, job.id, reference, self.clock())
+        await JobSubmission(self.database, self.launcher, clock=self.clock).submit(job.id)

@@ -59,7 +59,9 @@ async def prepare_relaunch(
     kind, state, current, attempts = job
     if not current or ((kind == "DELETION") != (video[1] == "DELETING")):
         raise VideoConflict("The job is superseded or ineligible for its video state.")
-    if state not in ("RECORDED", "LAUNCH_FAILED", "LAUNCHED", "RUNNING"):
+    if state not in ("RECORDED", "LAUNCH_FAILED", "LAUNCHED", "RUNNING") and not (
+        kind == "DELETION" and state == "FAILED"
+    ):
         raise VideoConflict("Only stranded launches or interrupted executions can be relaunched.")
     if state == "RUNNING" and not previous_execution_terminated:
         raise VideoConflict(
