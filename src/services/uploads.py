@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -9,15 +10,21 @@ from psycopg import AsyncConnection
 from psycopg.rows import TupleRow
 
 from src.config import Settings
-from src.domain.uploads import SourceAccepted, SourceInstructions, UploadAttempt, UploadRejected
+from src.domain.uploads import SourceAccepted, UploadAttempt, UploadRejected
 from src.domain.videos import VideoConflict, VideoNotFound, VideoRecord
 from src.providers.jobs import JobLauncher, JobLaunchError
-from src.providers.storage import Storage
+from src.providers.storage import Storage, UploadInstructions
 from src.repositories.database import Database
 from src.repositories.jobs import may_launch, record_job, record_launch, source_processing_job
 from src.repositories.uploads import accept_attempt, create_attempt, find_attempt
 from src.repositories.videos import get_video
 from src.services.videos import utc_now
+
+
+@dataclass(frozen=True)
+class SourceInstructions:
+    attempt: UploadAttempt
+    upload: UploadInstructions
 
 
 class SourceUploads:
@@ -49,7 +56,7 @@ class SourceUploads:
 
     async def issue(self, video_id: UUID, content_type: str, size: int) -> SourceInstructions:
         if size > self.settings.source_max_bytes:
-            raise UploadRejected(413, "The file exceeds the configured size limit.")
+            raise UploadRejected("too_large", "The file exceeds the configured size limit.")
         async with self.database.connection() as connection:
             self.eligible(await get_video(connection, video_id))
         id, now = self.new_id(), self.clock()
@@ -103,13 +110,15 @@ class SourceUploads:
             self.eligible(video)
         observed = await self.storage.head("private", attempt.object_key)
         if observed is None:
-            raise UploadRejected(404, "The uploaded file was not found.")
+            raise UploadRejected("missing", "The uploaded file was not found.")
         if observed.size_bytes > self.settings.source_max_bytes:
-            raise UploadRejected(413, "The file exceeds the configured size limit.")
+            raise UploadRejected("too_large", "The file exceeds the configured size limit.")
         if observed.size_bytes != attempt.declared_size_bytes:
-            raise UploadRejected(400, "The uploaded size does not match the declared size.")
+            raise UploadRejected("invalid", "The uploaded size does not match the declared size.")
         if observed.content_type != attempt.content_type:
-            raise UploadRejected(400, "The uploaded media type does not match the declared type.")
+            raise UploadRejected(
+                "invalid", "The uploaded media type does not match the declared type."
+            )
         async with self.database.connection() as connection:
             video = await get_video(connection, video_id, for_update=True)
             attempt = self.current(video, await find_attempt(connection, upload_id), video_id)

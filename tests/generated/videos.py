@@ -106,7 +106,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "parameters": [
             {
                 "attribute": "cursor",
-                "description": "Token from the previous page.",
+                "description": "Opaque continuation token bound to the original filters, search, page size,\nand visibility.\n",
                 "in": "query",
                 "model": "src.schemas.generated.operations.VideosListVideosCursorParameter",
                 "name": "cursor",

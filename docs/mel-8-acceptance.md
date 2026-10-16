@@ -51,3 +51,8 @@ Primary references checked:
 - [R2 conditional PUT](https://developers.cloudflare.com/r2/api/s3/extensions/#conditional-operations-in-putobject)
 - [Boto3 PutObject](https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/put_object.html)
 - [Cloud Run jobs.run](https://docs.cloud.google.com/run/docs/reference/rest/v2/projects.locations.jobs/run)
+
+Final integration verification: `make check` passed (45 contract examples,
+Ruff/format, strict Pyright with zero diagnostics); `uv run --locked pytest -q`
+passed 117 tests after combining MEL-13, including 14 upload acceptance cases.
+Combined owned output was regenerated from the merged contract.

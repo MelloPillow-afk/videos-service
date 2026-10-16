@@ -27,47 +27,10 @@ async def test_invalid_video_id_uses_native_request_validation() -> None:
 # Literal expectations follow the authoritative schema examples.
 VIDEO_ID = "550e8400-e29b-41d4-a716-446655440000"
 RESOURCE = f"/v1/videos/{VIDEO_ID}"
-CREATED: dict[str, object] = {
-    "id": VIDEO_ID,
-    "title": "Introduction to Faith",
-    "description": "An introductory lesson",
-    "status": "CREATED",
-    "publication_status": "DRAFT",
-    "size_bytes": None,
-    "duration_seconds": None,
-    "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
-    "published_at": None,
-    "created_at": "2026-10-13T14:00:00Z",
-    "updated_at": "2026-10-13T14:00:00Z",
-}
-GENERATED_THUMBNAIL = {
-    "status": "READY",
-    "source": "GENERATED",
-    "url": f"https://media.example.com/videos/{VIDEO_ID}/thumbnails/generated.jpg",
-}
 CUSTOM_THUMBNAIL = {
     "status": "READY",
     "source": "CUSTOM",
     "url": f"https://media.example.com/videos/{VIDEO_ID}/thumbnails/custom-v2.jpg",
-}
-READY: dict[str, object] = {
-    **CREATED,
-    "status": "READY",
-    "size_bytes": 52428800,
-    "duration_seconds": 147.5,
-    "thumbnail": GENERATED_THUMBNAIL,
-    "updated_at": "2026-10-13T14:05:00Z",
-}
-PUBLISHED: dict[str, object] = {
-    **READY,
-    "publication_status": "PUBLISHED",
-    "thumbnail": CUSTOM_THUMBNAIL,
-    "published_at": "2026-10-13T15:00:00Z",
-    "updated_at": "2026-10-13T15:00:00Z",
-}
-COLLECTION: dict[str, object] = {
-    "data": [PUBLISHED],
-    "pagination": {"has_more": True, "next_page_token": "example_next_page_token"},
 }
 SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
 THUMBNAIL_UPLOAD_ID = "50fd0382-794f-4c9b-9a12-60e92a89e008"
@@ -76,21 +39,7 @@ THUMBNAIL_UPLOAD_ID = "50fd0382-794f-4c9b-9a12-60e92a89e008"
 async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
     cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
         ("GET", "/ping", None, 200, {"status": "ok"}),
-        ("GET", "/v1/videos", None, 200, COLLECTION),
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
-        (
-            "GET",
-            f"{RESOURCE}/playback",
-            None,
-            200,
-            {
-                "video_id": VIDEO_ID,
-                "playback": {
-                    "type": "hls",
-                    "url": "https://media.example.com/videos/intro/hls/master.m3u8",
-                },
-            },
-        ),
         (
             "POST",
             f"{RESOURCE}:retry",
@@ -193,8 +142,8 @@ async def test_native_query_parsing_and_exact_collection_path() -> None:
         response = await client.get(
             "/v1/videos?limit=2&status=READY&publication_status=PUBLISHED&search=faith&cursor=next"
         )
-        assert response.status_code == 200
-        assert response.json() == COLLECTION
+        assert response.status_code == 403
+        assert response.json() == {"detail": "Administrator access is required for these filters."}
         # The collection route preserves its exact contract spelling.
         response = await client.get("/v1/videos/")
         assert response.status_code == 307
