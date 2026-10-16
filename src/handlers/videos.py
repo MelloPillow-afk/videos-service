@@ -17,6 +17,7 @@ from src.schemas.generated.operations import (
     VideosListVideosCursorParameter,
     VideosListVideosLimitParameter,
     VideosListVideosSearchParameter,
+    VideosRetryProcessingIdParameter,
     VideosUpdateVideoIdParameter,
     VideosUploadUrlIdParameter,
 )
@@ -31,12 +32,14 @@ from src.schemas.generated.videos import (
     Video,
     VideoCreate,
     VideoDeletion,
+    VideoRetry,
     Videos,
     VideoStatus,
     VideoUpdate,
 )
 from src.services.deletion import Deletions
 from src.services.library import LibraryService
+from src.services.processing_recovery import ProcessingRecovery
 from src.services.uploads import SourceUploads
 from src.services.videos import VideoService
 
@@ -175,4 +178,23 @@ async def complete_upload(
             "processing_job_id": str(result.processing_job_id),
             "thumbnail_status": result.thumbnail_status,
         }
+    )
+
+
+async def retry_processing(*, id: VideosRetryProcessingIdParameter, request: Request) -> VideoRetry:
+    await require_admin(request)
+    service: ProcessingRecovery = request.app.state.processing_recovery
+    try:
+        result = await service.retry(UUID(id))
+    except VideoNotFound:
+        raise HTTPException(404, "The video was not found.") from None
+    except VideoConflict as error:
+        raise HTTPException(409, str(error)) from None
+    except TemporaryStorageError:
+        raise HTTPException(503, "Object storage is temporarily unavailable.") from None
+    return VideoRetry(
+        video_id=str(result.video_id),
+        status="QUEUED",
+        processing_job_id=str(result.job_id),
+        attempt=result.number,
     )

@@ -29,7 +29,9 @@ type VideoDescription = Annotated[str, Field(max_length=5000)] | None
 
 class VideoRetry(WireModel):
     model_config = ConfigDict(extra='allow')
-    attempt: Annotated[int, Field(ge=2)] = Field(description="Processing attempt number.")
+    attempt: Annotated[int, Field(ge=2)] = Field(
+        description="Processing job number; first explicit retry is 2.\nExecution retries are counted per job.\n",
+    )
     processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
     status: Literal["QUEUED"]
     video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

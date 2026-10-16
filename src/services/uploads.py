@@ -12,12 +12,13 @@ from psycopg.rows import TupleRow
 from src.config import Settings
 from src.domain.uploads import SourceAccepted, UploadAttempt, UploadRejected
 from src.domain.videos import VideoConflict, VideoNotFound, VideoRecord
-from src.providers.jobs import JobLauncher, JobLaunchError
+from src.providers.jobs import JobLauncher
 from src.providers.storage import Storage, UploadInstructions
 from src.repositories.database import Database
-from src.repositories.jobs import may_launch, record_job, record_launch, source_processing_job
+from src.repositories.jobs import record_job, source_processing_job
 from src.repositories.uploads import accept_attempt, create_attempt, find_attempt
 from src.repositories.videos import get_video
+from src.services.job_recovery import JobSubmission
 from src.services.videos import utc_now
 
 
@@ -142,12 +143,4 @@ class SourceUploads:
             return await self._accepted(connection, video, upload_id)
 
     async def launch(self, id: UUID) -> None:
-        async with self.database.connection() as connection:
-            if not await may_launch(connection, id):
-                return
-        try:
-            reference = await self.launcher.launch(id)
-        except JobLaunchError:
-            reference = None
-        async with self.database.connection() as connection:
-            await record_launch(connection, id, reference, self.clock())
+        await JobSubmission(self.database, self.launcher, clock=self.clock).submit(id)

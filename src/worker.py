@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from src.config import Settings
 from src.domain.jobs import TemporaryWorkFailure
+from src.domain.videos import VideoConflict
 from src.providers.storage import (
     Storage,
     StorageConflictError,
@@ -150,7 +151,9 @@ async def process_video(
         raise TemporaryWorkFailure(source_validated=validated) from None
 
 
-async def main_async(job_id: UUID) -> bool:
+async def main_async(
+    job_id: UUID, *, recover: bool = False, previous_execution_terminated: bool = False
+) -> bool:
     settings = Settings()
     # Import the configured cloud adapter only for the executable entry point.
     from src.providers.r2 import R2Storage
@@ -158,6 +161,13 @@ async def main_async(job_id: UUID) -> bool:
     database = Database(settings)
     await database.connect()
     try:
+        if recover:
+            from src.providers.cloud_run import CloudRunJobLauncher
+            from src.services.job_recovery import JobSubmission
+
+            return await JobSubmission(database, CloudRunJobLauncher(settings)).recover(
+                job_id, previous_execution_terminated=previous_execution_terminated
+            )
         return await run_job(job_id, database, R2Storage(settings), settings)
     finally:
         await database.close()
@@ -170,8 +180,28 @@ def main() -> None:
     subcommands = parser.add_subparsers(dest="command", required=True)
     run = subcommands.add_parser("run")
     run.add_argument("--job-id", type=UUID, required=True)
+    recover = subcommands.add_parser(
+        "recover", help="Explicitly relaunch recorded work; never resets an active claim silently."
+    )
+    recover.add_argument("--job-id", type=UUID, required=True)
+    recover.add_argument(
+        "--previous-execution-terminated",
+        action="store_true",
+        help="Operator confirms the previous execution is terminated; required for RUNNING claims.",
+    )
     arguments = parser.parse_args()
-    asyncio.run(main_async(arguments.job_id))
+    try:
+        asyncio.run(
+            main_async(
+                arguments.job_id,
+                recover=arguments.command == "recover",
+                previous_execution_terminated=getattr(
+                    arguments, "previous_execution_terminated", False
+                ),
+            )
+        )
+    except VideoConflict as error:
+        parser.exit(1, str(error) + "\n")
 
 
 if __name__ == "__main__":

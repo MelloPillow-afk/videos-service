@@ -154,6 +154,8 @@ encoding, media limits and resource defaults. Install FFmpeg and FFprobe for rea
 processing and the acceptance suite. Run accepted work with
 `uv run --locked python -m src.worker run --job-id UUID`; the worker reads the
 job and source from PostgreSQL and uses configured private/public R2 storage.
+The [processing recovery guide](docs/mel-10-acceptance.md) describes bounded
+media retries, explicit administrator retries and the operator relaunch command.
 
 Feature evidence is recorded for [source acceptance](docs/mel-8-acceptance.md),
 [HLS processing](docs/mel-9-acceptance.md),

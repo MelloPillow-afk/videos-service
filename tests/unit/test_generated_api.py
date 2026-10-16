@@ -30,33 +30,6 @@ RESOURCE = f"/v1/videos/{VIDEO_ID}"
 SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
 
 
-async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
-    cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
-        ("GET", "/ping", None, 200, {"status": "ok"}),
-        (
-            "POST",
-            f"{RESOURCE}:retry",
-            None,
-            202,
-            {
-                "video_id": VIDEO_ID,
-                "status": "QUEUED",
-                "attempt": 2,
-                "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
-            },
-        ),
-    ]
-    app = create_app(Settings(db_pool_min_size=0))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        for method, path, body, status, expected in cases:
-            response = await client.request(method, path, json=body)
-            assert response.status_code == status, (method, path, response.text)
-            assert not response.history
-            assert response.json() == expected, (method, path)
-            if status == 201:
-                assert response.headers["Location"] == RESOURCE
-
-
 @pytest.mark.parametrize(
     ("method", "path", "body"),
     [

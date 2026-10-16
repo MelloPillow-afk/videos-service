@@ -332,7 +332,14 @@
       - Videos
     operationId: videos.retry_processing
     summary: Retry Video Processing
-    description: Retry FAILED video processing with a retained validated source using a new job.
+    description: |
+      Retry only FAILED video processing with a retained validated source. Record
+      a new processing job and output namespace, return QUEUED, and launch it
+      directly. Publication remains DRAFT; thumbnail recovery is independent.
+      Concurrent retries cannot create multiple current processing jobs. Invalid
+      sources require deletion and recreation. Temporary failures permit three
+      total worker executions per job with increasing delays; interrupted job
+      launch or execution may require explicit manual recovery.
     x-required-role: admin
     responses:
       '202':
