@@ -17,6 +17,7 @@ from src.providers.storage import (
     TemporaryStorageError,
 )
 from src.repositories.database import Database
+from src.repositories.jobs import job_kind
 from src.repositories.workers import (
     Work,
     claim,
@@ -39,10 +40,18 @@ async def run_job(
 ) -> bool:
     """One claim owner performs at most three executions; duplicates cannot steal retries."""
     async with database.connection() as connection:
-        work = await claim(connection, job_id, uuid4())
+        kind = await job_kind(connection, job_id)
+        if kind not in ("VIDEO", "THUMBNAIL"):
+            return False
+        work = await claim(connection, job_id, uuid4(), kind=kind)
+    processor = process_video
+    if kind == "THUMBNAIL":
+        from src.services.thumbnail_worker import process
+
+        processor = process
     while work is not None:
         try:
-            return await process_video(work, database, storage, settings)
+            return await processor(work, database, storage, settings)
         except (InvalidMedia, StorageLimitError) as error:
             message = (
                 str(error)
