@@ -16,7 +16,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/videos/video_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel12/api-specs/schemas/videos/video_create.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -172,7 +172,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.videos.VideoUpdate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/videos/video_update.yaml#",
+            "source": "/private/tmp/videos-showcase-mel12/api-specs/schemas/videos/video_update.yaml#",
         },
         "expected_body": {
             "created_at": "2026-10-13T14:00:00Z",
@@ -212,7 +212,7 @@ _CASES: dict[str, dict[str, Any]] = {
             "attribute": "body",
             "model": "src.schemas.generated.uploads.SourceUploadCreate",
             "required": True,
-            "source": "/private/tmp/videos-showcase-mel13/api-specs/schemas/uploads/source_upload_create.yaml#",
+            "source": "/private/tmp/videos-showcase-mel12/api-specs/schemas/uploads/source_upload_create.yaml#",
         },
         "expected_body": {
             "status": "UPLOADING",
