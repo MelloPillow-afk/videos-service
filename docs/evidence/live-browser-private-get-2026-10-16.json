@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "source",
+    "private_s3_get_status": 200,
+    "bytes": 2238866,
+    "sha256": "299c36101fac4bbea7ad2e222c287657c7260280fd680845d3bd647ad304f251",
+    "original_digest_matches": true,
+    "browser_digest_matches": true,
+    "size_matches": true
+  },
+  {
+    "kind": "image",
+    "private_s3_get_status": 200,
+    "bytes": 15028,
+    "sha256": "21f2b6f66bd50be6cd0d676a5422c127663a1384d6175108c50565143735ba02",
+    "original_digest_matches": true,
+    "browser_digest_matches": true,
+    "size_matches": true
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "source": "Actual in-app browser acceptance observed by root",
+  "hls_js_version": "1.7.3",
+  "available_heights": [
+    360,
+    720
+  ],
+  "selected_height": 720,
+  "observed_time_progression_seconds": [
+    0,
+    14,
+    18.07
+  ],
+  "ended": true,
+  "ready_state": 4,
+  "dropped_frames": 0,
+  "media_error": null
+}
