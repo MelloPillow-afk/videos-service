@@ -26,12 +26,15 @@ class SourceUploadCreate(WireModel):
 class UploadHeaders(WireModel):
     model_config = ConfigDict(extra='allow')
     Content_Type: str = Field(alias="Content-Type")
+    If_None_Match: Literal["*"] = Field(alias="If-None-Match")
     __pydantic_extra__: dict[str, str] = Field(init=False)  # pyright: ignore[reportIncompatibleVariableOverride]
 
 class Upload(WireModel):
     model_config = ConfigDict(extra='allow')
     expires_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
-    headers: UploadHeaders = Field(description="Headers to include with the upload.")
+    headers: UploadHeaders = Field(
+        description="Required signed headers. If-None-Match prevents replacing an existing\nobject even while the upload URL remains valid.\n",
+    )
     method: Literal["PUT"]
     upload_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
     url: Annotated[

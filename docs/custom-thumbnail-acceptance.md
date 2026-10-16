@@ -41,3 +41,10 @@ An inactive copied object can remain under its registered key until explicit
 cleanup. Real R2 conditional-PUT/browser-CORS proof and deletion's writer-drain or
 guard policy remain separate cloud evidence gates; these local tests do not
 claim production cleanup or CDN revocation.
+
+Executed after merging source-upload and media-worker integration: `make check`
+(including 45 contract examples and strict Pyright), `ag` regeneration (13
+operations / 23 generated HTTP cases), Yoyo apply/reapply/full rollback, and the
+complete pytest suite: **158 passed**, including 23 custom-thumbnail business
+cases. Coverage was 88% across the combined implementation. Checks ran in this
+ticket's isolated virtual environment.

@@ -28,7 +28,9 @@ def thumbnail_response(video: VideoRecord, request: Request) -> Thumbnail:
 
 def http_error(error: Exception) -> HTTPException:
     if isinstance(error, UploadRejected):
-        return HTTPException(error.status, error.message)
+        return HTTPException(
+            {"missing": 404, "too_large": 413, "invalid": 400}[error.reason], error.message
+        )
     if isinstance(error, VideoNotFound):
         return HTTPException(404, "The video was not found.")
     if isinstance(error, VideoConflict):

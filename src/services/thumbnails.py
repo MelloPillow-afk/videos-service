@@ -35,13 +35,13 @@ def validate_image(data: bytes, content_type: str) -> None:
         with Image.open(BytesIO(data), formats=["JPEG", "PNG", "WEBP"]) as image:
             if image.format != IMAGE_FORMATS[content_type][0] or image.size != (1280, 720):
                 raise UploadRejected(
-                    400, "The image must match its declared type and be 1280 by 720 pixels."
+                    "invalid", "The image must match its declared type and be 1280 by 720 pixels."
                 )
             image.verify()
         with Image.open(BytesIO(data), formats=["JPEG", "PNG", "WEBP"]) as image:
             image.load()
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
-        raise UploadRejected(400, "The uploaded image could not be decoded.") from None
+        raise UploadRejected("invalid", "The uploaded image could not be decoded.") from None
 
 
 class CustomThumbnails:
@@ -84,9 +84,9 @@ class CustomThumbnails:
         self, video_id: UUID, content_type: str, size: int
     ) -> tuple[UploadAttempt, UploadInstructions]:
         if content_type not in IMAGE_FORMATS:
-            raise UploadRejected(400, "Custom thumbnails support JPEG, PNG, and WebP.")
+            raise UploadRejected("invalid", "Custom thumbnails support JPEG, PNG, and WebP.")
         if size > self.settings.thumbnail_max_bytes:
-            raise UploadRejected(413, "The image exceeds the configured size limit.")
+            raise UploadRejected("too_large", "The image exceeds the configured size limit.")
         async with self.database.connection() as connection:
             self.eligible(await get_video(connection, video_id))
         id = self.new_id()
@@ -116,21 +116,21 @@ class CustomThumbnails:
                 return video
         observed = await self.storage.head("private", attempt.object_key)
         if observed is None:
-            raise UploadRejected(404, "The uploaded image was not found.")
+            raise UploadRejected("missing", "The uploaded image was not found.")
         if observed.size_bytes > self.settings.thumbnail_max_bytes:
-            raise UploadRejected(413, "The image exceeds the configured size limit.")
+            raise UploadRejected("too_large", "The image exceeds the configured size limit.")
         if (
             observed.size_bytes != attempt.declared_size_bytes
             or observed.content_type != attempt.content_type
         ):
             raise UploadRejected(
-                400, "The uploaded image does not match its declared size or type."
+                "invalid", "The uploaded image does not match its declared size or type."
             )
         data = await self.storage.read(
             "private", attempt.object_key, self.settings.thumbnail_max_bytes
         )
         if len(data) != attempt.declared_size_bytes:
-            raise UploadRejected(400, "The uploaded image does not match its declared size.")
+            raise UploadRejected("invalid", "The uploaded image does not match its declared size.")
         await to_thread(validate_image, data, attempt.content_type)
         key = f"videos/{video_id}/thumbnails/custom/{attempt.id}/image.{IMAGE_FORMATS[attempt.content_type][1]}"
         async with self.database.connection() as connection:

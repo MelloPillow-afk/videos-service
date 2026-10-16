@@ -36,35 +36,6 @@ async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
         ("DELETE", RESOURCE, None, 202, {"video_id": VIDEO_ID, "status": "DELETING"}),
         (
             "POST",
-            f"{RESOURCE}:upload-url",
-            {"file_name": "lesson.mp4", "content_type": "video/mp4", "size_bytes": 52428800},
-            200,
-            {
-                "video_id": VIDEO_ID,
-                "status": "UPLOADING",
-                "upload": {
-                    "upload_id": SOURCE_UPLOAD_ID,
-                    "method": "PUT",
-                    "url": "https://uploads.example.com/source.mp4?signature=example",
-                    "headers": {"Content-Type": "video/mp4"},
-                    "expires_at": "2026-10-13T14:15:00Z",
-                },
-            },
-        ),
-        (
-            "POST",
-            f"{RESOURCE}:complete-upload",
-            {"upload_id": SOURCE_UPLOAD_ID},
-            202,
-            {
-                "video_id": VIDEO_ID,
-                "status": "QUEUED",
-                "processing_job_id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
-                "thumbnail_status": "PENDING",
-            },
-        ),
-        (
-            "POST",
             f"{RESOURCE}:retry",
             None,
             202,

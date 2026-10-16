@@ -139,6 +139,12 @@ The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
 Neon, R2/CDN, and Cloud Run inputs, setup permissions, and pending live evidence.
 Local acceptance does not require cloud credentials.
 
+The [local HLS worker acceptance record](docs/mel-9-acceptance.md) documents
+encoding, media limits and resource defaults. Install FFmpeg and FFprobe for real
+processing and the acceptance suite. Run accepted work with
+`uv run --locked python -m src.worker run --job-id UUID`; the worker reads the
+job and source from PostgreSQL and uses configured private/public R2 storage.
+
 ## API design targets
 
 The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
@@ -316,3 +322,18 @@ operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
 assertions. Persisted operations retain these generated HTTP cases through handwritten Arrange
 fixtures. Remaining operations serve examples until their implementation tickets land.
+
+## Source uploads and direct launch
+
+Source upload instructions and confirmation now persist attempts and independent
+VIDEO/THUMBNAIL jobs. Configure R2 and the Cloud Run Job resource from `.env.example`.
+The R2 signer binds create-once PUT headers; originals and delivery outputs use
+separate buckets. The Cloud Run service's runtime identity submits jobs directly.
+Missing provider configuration returns unavailable instead of serving an upload
+example. The [MEL-8 acceptance record](docs/mel-8-acceptance.md) describes local
+provider checks and the separate live-cloud evidence gates.
+
+Inspect `jobs.state`, `execution_reference`, and sanitized errors for recorded work.
+An interrupted or uncertain launch requires manual inspection and explicit recovery;
+repeating upload confirmation does not dispatch it again. No periodic dispatcher or
+cleanup scheduler is included.

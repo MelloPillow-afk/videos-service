@@ -19,6 +19,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.app import create_app
 from src.config import Settings
 from tests.generated._support import APICase
+from tests.job_provider import RecordingLauncher
 from tests.providers import ISSUER, SUBJECT, LocalSigningKeys
 from tests.storage_provider import MemoryStorage
 
@@ -53,6 +54,7 @@ async def api_app(
     signing_keys: LocalSigningKeys,
     request: pytest.FixtureRequest,
     storage: MemoryStorage,
+    launcher: RecordingLauncher,
 ) -> FastAPI:
     """Generated HTTP tests use the real app and a fresh PostgreSQL schema."""
     url, schema = test_database
@@ -69,6 +71,7 @@ async def api_app(
             ),
             signing_keys=signing_keys,
             storage=storage,
+            launcher=launcher,
             clock=lambda: datetime(2026, 10, 13, 14, tzinfo=UTC),
             new_id=lambda: UUID("550e8400-e29b-41d4-a716-446655440000"),
         )
@@ -82,6 +85,7 @@ async def api_app(
         ),
         signing_keys=signing_keys,
         storage=storage,
+        launcher=launcher,
     )
 
 
@@ -148,6 +152,34 @@ async def arrange_videos_update_video(
     assert response.status_code == 201
 
 
+@pytest.fixture
+def storage() -> MemoryStorage:
+    return MemoryStorage()
+
+
+@pytest.fixture
+def launcher() -> RecordingLauncher:
+    return RecordingLauncher()
+
+
+@pytest_asyncio.fixture
+async def arrange_videos_upload_url(
+    api_case: APICase, api_client: AsyncClient, signing_keys: LocalSigningKeys
+) -> None:
+    api_case.headers["Authorization"] = "Bearer " + signing_keys.token()
+    response = await api_client.post(
+        "/v1/videos",
+        headers=api_case.headers,
+        json={"title": "Introduction to Faith", "description": "An introductory lesson"},
+    )
+    assert response.status_code == 201
+    id = "550e8400-e29b-41d4-a716-446655440000"
+    api_case.expected_body["upload"]["upload_id"] = id
+    api_case.expected_body["upload"]["url"] = (
+        f"https://uploads.test/videos/{id}/uploads/{id}/source.mp4?signature=controlled"
+    )
+
+
 async def arrange_ready_example(test_database: tuple[str, str]) -> None:
     """Seed a completed peer state; real processing has its own acceptance seam."""
     url, schema = test_database
@@ -191,11 +223,6 @@ async def arrange_playback_get_playback(
     api_app: FastAPI,
 ) -> None:
     await arrange_ready_example(test_database)
-
-
-@pytest.fixture
-def storage() -> MemoryStorage:
-    return MemoryStorage()
 
 
 @pytest_asyncio.fixture

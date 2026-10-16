@@ -2,9 +2,8 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
-
-from src.providers.storage import UploadInstructions
 
 
 @dataclass(frozen=True)
@@ -23,12 +22,6 @@ class UploadAttempt:
 
 
 @dataclass(frozen=True)
-class SourceInstructions:
-    attempt: UploadAttempt
-    upload: UploadInstructions
-
-
-@dataclass(frozen=True)
 class SourceAccepted:
     video_id: UUID
     status: str
@@ -37,7 +30,7 @@ class SourceAccepted:
 
 
 class UploadRejected(Exception):
-    def __init__(self, status: int, message: str) -> None:
-        self.status = status
+    def __init__(self, reason: Literal["missing", "too_large", "invalid"], message: str) -> None:
+        self.reason = reason
         self.message = message
         super().__init__(message)
