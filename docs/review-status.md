@@ -165,7 +165,11 @@ evidence in the [deployment record](cloud-deployment.md).
 ## Final live documentation delta
 
 The final live criteria are verified by the linked sanitized provider/browser
-results. Provisional Standards and Spec reports contain zero actionable findings.
-The frozen final documentation commit still requires its delta reviews and merge;
-this entry does not claim those unperformed reviews. Historical local and image
-checkpoints above retain their original counts and evidence limits.
+results. Frozen documentation commit `9969d622dc9554cb10afa7233d82b5be00f8d4b5`
+passed separate final Standards and Spec delta reviews with **zero actionable
+findings** and was merged as `8a5dbb0fc9c0cfff5a7f1981dae61698bd8524d2`. The portable final result records
+**25 completed checks**, no remaining live checks, every disposable video returning
+HTTP 404 with zero jobs, the retained READY/PUBLISHED/18.0s/GENERATED sample, and restored demo
+role `user` with the other administrator unchanged. Historical local and image
+checkpoints above retain their original counts and evidence limits. This final
+delta changed only documentation/evidence; no broad runtime retest was needed.
