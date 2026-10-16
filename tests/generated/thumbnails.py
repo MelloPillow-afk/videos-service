@@ -11,6 +11,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 _CASES: dict[str, dict[str, Any]] = {
     "thumbnails.complete_upload": {
+        "authentication": "required",
         "body": {"upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394"},
         "body_model": {
             "attribute": "body",
@@ -46,6 +47,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.thumbnails.Thumbnail",
     },
     "thumbnails.delete_thumbnail": {
+        "authentication": "required",
         "body": None,
         "body_model": None,
         "expected_body": {
@@ -76,6 +78,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.thumbnails.Thumbnail",
     },
     "thumbnails.upload_url": {
+        "authentication": "required",
         "body": {"content_type": "image/jpeg", "file_name": "faith-cover.jpg", "size_bytes": 183420},
         "body_model": {
             "attribute": "body",
@@ -134,6 +137,21 @@ async def test_delete_thumbnail_200(api_case: APICase, api_client: AsyncClient) 
 
 
 @pytest.mark.api_case(
+    _CASES["thumbnails.delete_thumbnail"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_thumbnails_delete_thumbnail")
+async def test_delete_thumbnail_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
     _CASES["thumbnails.delete_thumbnail"], mutation={
         "error_types": ["value_error"],
         "in": "path",
@@ -172,6 +190,21 @@ async def test_complete_upload_200(api_case: APICase, api_client: AsyncClient) -
 
 
 @pytest.mark.api_case(
+    _CASES["thumbnails.complete_upload"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_thumbnails_complete_upload")
+async def test_complete_upload_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
     _CASES["thumbnails.complete_upload"], mutation={
         "error_types": ["value_error"],
         "in": "path",
@@ -196,6 +229,21 @@ async def test_complete_upload_422_path_id_invalid_format(api_case: APICase, api
 )
 @pytest.mark.usefixtures("arrange_thumbnails_upload_url")
 async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
+    _CASES["thumbnails.upload_url"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_thumbnails_upload_url")
+async def test_upload_url_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
     # Arrange
     request = api_case.prepare_request()
 

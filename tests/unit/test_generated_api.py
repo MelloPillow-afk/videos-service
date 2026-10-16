@@ -14,10 +14,15 @@ from src.handlers.generated import (
     videos,
 )
 
+# Auth is disabled here, so any bearer token reaches the mocks.
+BEARER = {"Authorization": "Bearer local"}
+
 
 async def test_invalid_video_id_uses_native_request_validation() -> None:
-    app = create_app(Settings(db_pool_min_size=0))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=BEARER
+    ) as client:
         response = await client.get("/v1/videos/not-a-uuid")
     assert response.status_code == 422
     assert response.json()["detail"][0]["loc"] == ["path", "id"]
@@ -166,8 +171,10 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
             {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
         ),
     ]
-    app = create_app(Settings(db_pool_min_size=0))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=BEARER
+    ) as client:
         for method, path, body, status, expected in cases:
             response = await client.request(method, path, json=body)
             assert response.status_code == status, (method, path, response.text)
@@ -211,8 +218,10 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
 async def test_invalid_requests_use_native_validation(
     method: str, path: str, body: dict[str, object] | None
 ) -> None:
-    app = create_app(Settings(db_pool_min_size=0))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=BEARER
+    ) as client:
         response = await client.request(method, path, json=body)
     assert response.status_code == 422, response.text
     assert isinstance(response.json()["detail"], list)
@@ -220,8 +229,10 @@ async def test_invalid_requests_use_native_validation(
 
 
 async def test_native_query_parsing_and_nullable_updates_are_accepted() -> None:
-    app = create_app(Settings(db_pool_min_size=0))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=BEARER
+    ) as client:
         response = await client.get(
             "/v1/videos?limit=2&status=READY&publication_status=PUBLISHED&search=faith&cursor=next"
         )
@@ -238,7 +249,7 @@ async def test_native_query_parsing_and_nullable_updates_are_accepted() -> None:
 
 
 async def test_application_routes_keep_native_errors_and_preserved_lifecycle() -> None:
-    app = create_app(Settings(db_pool_min_size=0))
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
 
     @app.get("/deliberate")
     async def deliberate() -> None:

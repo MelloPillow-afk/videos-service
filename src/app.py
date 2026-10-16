@@ -7,11 +7,15 @@ from fastapi import FastAPI
 
 from src.config import Settings
 from src.core.generated.routers import register_routers
+from src.providers.auth import DisabledAuth, NeonIdentity, SigningKeys
 from src.repositories import Database
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    database = Database(settings or Settings())
+def create_app(
+    settings: Settings | None = None, *, signing_keys: SigningKeys | None = None
+) -> FastAPI:
+    settings = settings or Settings()
+    database = Database(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
@@ -29,5 +33,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     app.state.database = database
+    app.state.authenticator = (
+        DisabledAuth(settings.auth_disabled_subject)
+        if settings.auth_disabled
+        else NeonIdentity(settings, signing_keys)
+    )
     register_routers(app)
     return app

@@ -36,6 +36,8 @@ class APICase:
     response_model: str | None
     expected_status: int
     mutation: dict[str, Any] | None = None
+    authentication: str | None = None
+    unauthenticated: bool = False
     headers: dict[str, str] = field(default_factory=dict[str, str])
     response: Response | None = None
     _expected: Any = field(default=None, init=False)
@@ -76,11 +78,16 @@ class APICase:
                 f"{self.operation_id}: path parameter {name} must occupy one URL segment"
             )
             path = path.replace("{" + name + "}", quote(text, safe=""))
+        headers = {
+            name: value
+            for name, value in self.headers.items()
+            if not (self.unauthenticated and name.lower() == "authorization")
+        }
         request: dict[str, Any] = {
             "method": self.method,
             "url": path,
             "params": {name: _wire(value) for name, value in query.items()},
-            "headers": dict(self.headers),
+            "headers": headers,
         }
         if self.body is not None:
             request["json"] = deepcopy(self.body)
@@ -94,8 +101,13 @@ class APICase:
             f"{self.operation_id}: {response.status_code} {response.text}; "
             f"arrange fixture: arrange_{self.operation_id.replace('.', '_')}"
         )
+        if response.status_code == 401 and self.authentication and not self.unauthenticated:
+            context += "; bearer token fixture: api_bearer_token"
         assert response.status_code == self.expected_status, context
-        if self.mutation is not None:
+        if self.unauthenticated:
+            challenge = response.headers.get("WWW-Authenticate", "")
+            assert challenge.lower().startswith("bearer"), context
+        elif self.mutation is not None:
             detail: list[dict[str, Any]] = response.json().get("detail")
             assert isinstance(detail, list), context
             location = [self.mutation["in"], self.mutation["name"]]
@@ -136,15 +148,28 @@ async def api_client(api_app: FastAPI) -> AsyncIterator[AsyncClient]:
         yield client
 
 
+@pytest.fixture
+def api_bearer_token() -> str | None:
+    """Override in tests/conftest.py to authenticate operations declaring security."""
+    return None
+
+
 @pytest_asyncio.fixture
-async def api_case(request: Any, api_client: AsyncClient) -> APICase:
+async def api_case(
+    request: Any, api_client: AsyncClient, api_bearer_token: str | None
+) -> APICase:
     marker: pytest.Mark | None = request.node.get_closest_marker("api_case")
     assert marker is not None, "generated API tests require an api_case marker"
     values: dict[str, Any] = deepcopy(marker.args[0])
     values.update(deepcopy(marker.kwargs))
     if values.get("mutation") is not None:
         values["expected_status"] = 422
-    return APICase(**values)
+    if values.get("unauthenticated"):
+        values["expected_status"] = 401
+    case = APICase(**values)
+    if case.authentication and api_bearer_token is not None:
+        case.headers["Authorization"] = f"Bearer {api_bearer_token}"
+    return case
 
 
 MODULES = ["health", "playback", "thumbnails", "videos"]

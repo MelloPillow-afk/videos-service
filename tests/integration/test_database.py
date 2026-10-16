@@ -13,7 +13,9 @@ pytestmark = pytest.mark.integration
 async def test_pool_commits_and_rolls_back(test_database: tuple[str, str]) -> None:
     url, schema = test_database
     table = sql.Identifier(schema, "probe")
-    database = Database(Settings(database_url=SecretStr(url), db_pool_max_size=1))
+    database = Database(
+        Settings(database_url=SecretStr(url), auth_disabled=True, db_pool_max_size=1)
+    )
     await database.connect()
     try:
         async with database.connection() as connection:
@@ -36,7 +38,9 @@ async def test_pool_commits_and_rolls_back(test_database: tuple[str, str]) -> No
 
 async def test_queries_have_a_bounded_timeout(test_database: tuple[str, str]) -> None:
     url, _ = test_database
-    database = Database(Settings(database_url=SecretStr(url), db_statement_timeout_ms=50))
+    database = Database(
+        Settings(database_url=SecretStr(url), auth_disabled=True, db_statement_timeout_ms=50)
+    )
     await database.connect()
     try:
         with pytest.raises(errors.QueryCanceled):
@@ -51,7 +55,7 @@ async def test_queries_have_a_bounded_timeout(test_database: tuple[str, str]) ->
 
 async def test_pool_uses_the_configured_isolated_schema(test_database: tuple[str, str]) -> None:
     url, schema = test_database
-    database = Database(Settings(database_url=SecretStr(url), db_schema=schema))
+    database = Database(Settings(database_url=SecretStr(url), auth_disabled=True, db_schema=schema))
     await database.connect()
     try:
         async with database.connection() as connection:

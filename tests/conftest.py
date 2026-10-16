@@ -3,6 +3,7 @@
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from psycopg import AsyncConnection, sql
@@ -11,6 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.app import create_app
 from src.config import Settings
+from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 
 
 class TestDatabaseSettings(BaseSettings):
@@ -34,8 +36,21 @@ async def test_database() -> AsyncIterator[tuple[str, str]]:
             )
 
 
+@pytest.fixture
+def signing_keys() -> LocalSigningKeys:
+    return LocalSigningKeys()
+
+
+@pytest.fixture
+def api_bearer_token(signing_keys: LocalSigningKeys) -> str:
+    return signing_keys.token()
+
+
 @pytest_asyncio.fixture
-async def api_app(test_database: tuple[str, str]) -> FastAPI:
-    """Generated HTTP tests use the real app and a fresh PostgreSQL schema."""
+async def api_app(test_database: tuple[str, str], signing_keys: LocalSigningKeys) -> FastAPI:
+    """Generated HTTP tests use the real app, real JWT checks, and a fresh PostgreSQL schema."""
     url, schema = test_database
-    return create_app(Settings(database_url=SecretStr(url), db_schema=schema))
+    return create_app(
+        Settings(database_url=SecretStr(url), db_schema=schema, **AUTH_SETTINGS),
+        signing_keys=signing_keys,
+    )

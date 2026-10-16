@@ -2,6 +2,7 @@
 # fmt: off
 from fastapi import FastAPI
 
+from src.core.generated.authentication import require_authenticator
 from src.handlers.generated.health import router as _health_router
 from src.handlers.generated.playback import router as _playback_router
 from src.handlers.generated.thumbnails import router as _thumbnails_router
@@ -9,6 +10,7 @@ from src.handlers.generated.videos import router as _videos_router
 
 
 def register_routers(app: FastAPI) -> None:
+    require_authenticator(app)
     app.include_router(_health_router)
     app.include_router(_playback_router)
     app.include_router(_thumbnails_router)

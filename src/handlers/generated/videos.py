@@ -4,11 +4,18 @@ from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
 from fastapi import Body as _generator_Body
+from fastapi import Depends as _generator_Depends
 from fastapi import Path as _generator_Path
 from fastapi import Query as _generator_Query
 from fastapi import Response as _generator_Response
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
+from src.core.generated.authentication import (
+    optional_authentication as _generator_optional_authentication,
+)
+from src.core.generated.authentication import (
+    require_authentication as _generator_require_authentication,
+)
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.operations import (
     VideosCompleteUploadIdParameter as _CompleteUploadIdParameter,
@@ -64,6 +71,7 @@ router = _generator_APIRouter(prefix="/v1")
     response_model=_ListVideosResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_optional_authentication)],
 )
 @_generator_select_endpoint("videos.list_videos")
 async def list_videos(
@@ -123,6 +131,7 @@ async def list_videos(
     response_model=_CreateVideoResponse,
     status_code=201,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.create_video")
 async def create_video(
@@ -153,6 +162,7 @@ async def create_video(
     response_model=_DeleteVideoResponse,
     status_code=202,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.delete_video")
 async def delete_video(
@@ -172,6 +182,7 @@ async def delete_video(
     response_model=_GetVideoResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_optional_authentication)],
 )
 @_generator_select_endpoint("videos.get_video")
 async def get_video(
@@ -203,6 +214,7 @@ async def get_video(
     response_model=_UpdateVideoResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.update_video")
 async def update_video(
@@ -235,6 +247,7 @@ async def update_video(
     response_model=_CompleteUploadResponse,
     status_code=202,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.complete_upload")
 async def complete_upload(
@@ -260,6 +273,7 @@ async def complete_upload(
     response_model=_RetryProcessingResponse,
     status_code=202,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.retry_processing")
 async def retry_processing(
@@ -284,6 +298,7 @@ async def retry_processing(
     response_model=_UploadUrlResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("videos.upload_url")
 async def upload_url(

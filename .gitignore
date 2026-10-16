@@ -4,6 +4,7 @@ __pycache__/
 dist/
 .env
 .env.*
+.envrc
 !.env.example
 .coverage
 .coverage.*

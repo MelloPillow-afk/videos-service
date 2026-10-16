@@ -3,9 +3,13 @@
 from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
+from fastapi import Depends as _generator_Depends
 from fastapi import Path as _generator_Path
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
+from src.core.generated.authentication import (
+    optional_authentication as _generator_optional_authentication,
+)
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.operations import (
     PlaybackGetPlaybackIdParameter as _GetPlaybackIdParameter,
@@ -20,6 +24,7 @@ router = _generator_APIRouter(prefix="/v1/videos")
     response_model=_GetPlaybackResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_optional_authentication)],
 )
 @_generator_select_endpoint("playback.get_playback")
 async def get_playback(

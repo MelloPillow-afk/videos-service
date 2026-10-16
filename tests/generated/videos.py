@@ -11,6 +11,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 _CASES: dict[str, dict[str, Any]] = {
     "videos.create_video": {
+        "authentication": "required",
         "body": {"description": "An introductory lesson", "title": "Introduction to Faith"},
         "body_model": {
             "attribute": "body",
@@ -41,6 +42,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.videos.Video",
     },
     "videos.get_video": {
+        "authentication": "optional",
         "body": None,
         "body_model": None,
         "expected_body": {
@@ -76,6 +78,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.videos.Video",
     },
     "videos.list_videos": {
+        "authentication": "optional",
         "body": None,
         "body_model": None,
         "expected_body": {
@@ -163,6 +166,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.videos.Videos",
     },
     "videos.update_video": {
+        "authentication": "required",
         "body": {
             "description": "An introductory lesson",
             "publication_status": "DRAFT",
@@ -207,6 +211,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "response_model": "src.schemas.generated.videos.Video",
     },
     "videos.upload_url": {
+        "authentication": "required",
         "body": {"content_type": "video/mp4", "file_name": "introduction.mp4", "size_bytes": 524288000},
         "body_model": {
             "attribute": "body",
@@ -455,6 +460,21 @@ async def test_update_video_200(api_case: APICase, api_client: AsyncClient) -> N
 
 
 @pytest.mark.api_case(
+    _CASES["videos.update_video"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_videos_update_video")
+async def test_update_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
     _CASES["videos.update_video"], mutation={
         "error_types": ["value_error"],
         "in": "path",
@@ -493,10 +513,40 @@ async def test_create_video_201(api_case: APICase, api_client: AsyncClient) -> N
 
 
 @pytest.mark.api_case(
+    _CASES["videos.create_video"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_videos_create_video")
+async def test_create_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
     _CASES["videos.upload_url"],
 )
 @pytest.mark.usefixtures("arrange_videos_upload_url")
 async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
+    _CASES["videos.upload_url"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_videos_upload_url")
+async def test_upload_url_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
     # Arrange
     request = api_case.prepare_request()
 

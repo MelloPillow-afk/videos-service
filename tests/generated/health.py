@@ -11,6 +11,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 _CASES: dict[str, dict[str, Any]] = {
     "health.ping": {
+        "authentication": None,
         "body": None,
         "body_model": None,
         "expected_body": {"status": "ok"},

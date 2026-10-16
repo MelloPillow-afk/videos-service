@@ -4,9 +4,13 @@ from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
 from fastapi import Body as _generator_Body
+from fastapi import Depends as _generator_Depends
 from fastapi import Path as _generator_Path
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
+from src.core.generated.authentication import (
+    require_authentication as _generator_require_authentication,
+)
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.operations import (
     ThumbnailsCompleteUploadIdParameter as _CompleteUploadIdParameter,
@@ -31,6 +35,7 @@ router = _generator_APIRouter(prefix="/v1/videos")
     response_model=_DeleteThumbnailResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("thumbnails.delete_thumbnail")
 async def delete_thumbnail(
@@ -57,6 +62,7 @@ async def delete_thumbnail(
     response_model=_CompleteUploadResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("thumbnails.complete_upload")
 async def complete_upload(
@@ -84,6 +90,7 @@ async def complete_upload(
     response_model=_UploadUrlResponse,
     status_code=200,
     response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
 @_generator_select_endpoint("thumbnails.upload_url")
 async def upload_url(

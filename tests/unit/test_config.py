@@ -9,6 +9,7 @@ from src.config import Settings
 def test_settings_read_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DB_POOL_MIN_SIZE", "2")
     monkeypatch.setenv("DB_POOL_MAX_SIZE", "4")
+    monkeypatch.setenv("AUTH_DISABLED", "true")
     settings = Settings()
     assert settings.db_pool_min_size == 2
     assert settings.db_pool_max_size == 4

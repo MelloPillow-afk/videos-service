@@ -18,6 +18,7 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
         database_url=SecretStr(f"postgresql://videos:videos@/videos_test?host={tmp_path}"),
         db_pool_min_size=1,
         db_pool_timeout_seconds=0.05,
+        auth_disabled=True,
     )
     app = create_app(settings)
     async with asyncio.timeout(2), app.router.lifespan_context(app):
@@ -36,7 +37,7 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
 
 
 def test_health_stays_at_root_and_documentation_remains_disabled() -> None:
-    app = create_app(Settings())
+    app = create_app(Settings(auth_disabled=True))
     paths = app.openapi()["paths"]
     assert "/ping" in paths
     assert "/v1/ping" not in paths
