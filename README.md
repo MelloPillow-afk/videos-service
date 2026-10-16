@@ -146,7 +146,8 @@ provider readiness require their own target evidence. Development migrations
 remain manual through Make.
 
 The [showcase cloud readiness record](docs/cloud-readiness.md) lists required
-Neon, R2/CDN, and Cloud Run inputs, setup permissions, and pending live evidence.
+Neon, R2/CDN, and Cloud Run inputs, applied least-privilege setup, actual R2
+conditional-upload/deletion-guard evidence, and remaining Auth/CORS/CDN/deployment gates.
 Local acceptance does not require cloud credentials.
 
 The [local HLS worker acceptance record](docs/mel-9-acceptance.md) documents
