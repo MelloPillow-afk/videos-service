@@ -67,11 +67,11 @@ async def run_cleanup(
     settings: Settings,
     *,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-) -> bool:
+) -> bool | None:
     async with database.connection() as connection:
         work = await repository.claim(connection, job_id, uuid4())
     if work is None:
-        return False
+        return None
     try:
         async with asyncio.timeout(settings.cleanup_runtime_seconds):
             retry_index = 0
@@ -79,9 +79,11 @@ async def run_cleanup(
                 try:
                     if not isinstance(storage, GuardStorage):
                         raise TemporaryStorageError
-                    return await protect_inventory(work, database, storage, settings)
+                    return (
+                        True if await protect_inventory(work, database, storage, settings) else None
+                    )
                 except VideoNotFound:
-                    return False
+                    return None
                 except (
                     TemporaryStorageError,
                     StorageConflictError,
@@ -91,16 +93,16 @@ async def run_cleanup(
                 ):
                     async with database.connection() as connection:
                         if not await repository.failure(connection, work, terminal=False):
-                            return False
+                            return None
                     delays = settings.cleanup_retry_delays_seconds
                     await sleep(delays[min(retry_index, len(delays) - 1)])
                     retry_index += 1
                     async with database.connection() as connection:
                         following = await repository.next_attempt(connection, work)
                     if following is None:
-                        return False
+                        return None
                     work = following
     except TimeoutError:
         async with database.connection() as connection:
-            await repository.failure(connection, work, terminal=True)
-        return False
+            applied = await repository.failure(connection, work, terminal=True)
+        return False if applied else None

@@ -134,7 +134,7 @@ async def test_cleanup_guards_registered_and_listed_keys_then_removes_all_applic
     results = await gather(
         *(run_job(job, api_app.state.database, storage, Settings()) for _ in range(2))
     )
-    assert sorted(results) == [False, True]
+    assert results.count(True) == 1 and results.count(None) == 1
     assert (await deletion_client.get(path)).status_code == 404
     assert (await deletion_client.delete(path)).status_code == 404
     expected: set[tuple[StorageArea, str]] = {

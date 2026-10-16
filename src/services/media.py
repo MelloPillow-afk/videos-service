@@ -27,6 +27,7 @@ class MediaRejected(MediaProcessingError):
 @dataclass(frozen=True)
 class MediaInfo:
     duration: Decimal
+    video_duration: Decimal
     width: int
     height: int
     video_index: int
@@ -130,7 +131,16 @@ def inspect_media(source: Path, settings: Settings) -> MediaInfo:
             (int(stream["index"]) for stream in streams if stream.get("codec_type") == "audio"),
             None,
         )
-        return MediaInfo(duration, width, height, int(video["index"]), audio, aspect, rotated)
+        return MediaInfo(
+            duration,
+            Decimal(str(video.get("duration", metadata["duration"]))),
+            width,
+            height,
+            int(video["index"]),
+            audio,
+            aspect,
+            rotated,
+        )
     except InvalidMedia:
         raise
     except (
@@ -256,11 +266,12 @@ def encode_hls(
             "expr:gte(t,n_forced*4)",
         ]
         if info.audio_index is not None:
-            # The video timeline controls playback: pad short audio, and end
-            # existing audio when video ends. Video-only sources stay silent.
+            # Bound padding to the selected video timeline. Older FFmpeg/HLS
+            # combinations can mux excess buffered audio with apad/-shortest alone.
+            # Overall source duration still includes long audio for admission.
             arguments += [
                 "-af",
-                "apad",
+                f"apad,atrim=duration={info.video_duration}",
                 "-shortest",
                 "-c:a",
                 "aac",

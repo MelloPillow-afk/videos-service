@@ -49,14 +49,14 @@ inline operation example. Contract checks and regeneration remain authoritative.
 ## Outstanding gates
 
 - **MEL-7:** [current cloud readiness](cloud-readiness.md) records verified
-  Neon/R2 data-plane and scoped IAM evidence; target Auth, browser CORS/CDN and
-  deployed execution gates remain open.
+  Neon/R2 data-plane, browser conditional uploads and scoped IAM evidence; target
+  Auth, delivery hostname/CDN and deployed execution gates remain open.
 - **MEL-14:** the owner subsequently approved permanent guards. Local cleanup,
   late-writer fencing, runtime exhaustion, manual recovery and row removal are
   covered by [deletion acceptance](deletion-acceptance.md). Configured live
   provider evidence remains separately tracked under MEL-7/MEL-16.
-- **MEL-15:** the complete reproducible showcase remains separate; its deletion
-  dependency is now implemented locally.
+- **MEL-15:** the [local showcase](showcase.md) now exercises the complete journey;
+  its controlled provider boundaries do not constitute deployed cloud evidence.
 - **MEL-16:** real Neon/R2/Cloud Run/CDN end-to-end evidence remains unexecuted.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
@@ -87,3 +87,34 @@ tests** were verified (215 in the full run plus the two migration subprocess
 cases rerun successfully through uv's PATH). See [deletion acceptance](deletion-acceptance.md)
 for exact evidence and the retained-guard exception. This does not supersede the
 remaining showcase or live deployment gates.
+
+## Final Standards follow-up
+
+The `fe07f99...29f2f1f` Standards review identified two remaining P2 responsibility
+breaches. Both are fixed without HTTP or lifecycle changes. `src.worker` keeps
+compatible `run_job`/`process_video` wrappers and CLI/resource composition, while
+`services/media_jobs.py` owns claim orchestration, failure classification, media
+processing, manifest publication and retry decisions. The media service chooses
+retry versus final failure and source invalidation; repository operations persist
+that selected transition. Parent-before-job locks, current claim tokens and
+defensive SQL execution caps remain in place.
+
+The coordinated worker CLI distinguishes success (`True`), persisted failure
+(`False`) and benign unclaimed/fenced work (`None`); the move preserves those
+outcomes and CLI exit behavior. Existing real HTTP/PostgreSQL/media acceptance
+provides regression evidence; no tests of private calls or mechanical module
+placement were introduced. Targeted recovery, worker CLI and local-showcase
+checks pass **30 tests**.
+
+Final combined checkpoint `5c1cdb5` includes the local showcase, Linux runtime
+packaging, explicit bounded audio padding/trimming and sanitized CLI outcomes.
+`make check` passes all **46 examples**, Ruff/format checks and strict Pyright
+with zero errors. The complete native suite ran once through `uv run --locked
+pytest --cov --cov-report=term-missing -q --tb=short`: **228 passed in 35.55s**,
+including PostgreSQL migration subprocesses, real FFmpeg/Pillow processing,
+worker command outcomes, recovery, deletion races and both showcase journeys.
+Measured native coverage is **88%**. The image checks and remaining live gates
+are independently recorded in [container acceptance](container-local-acceptance.md)
+and [cloud readiness](cloud-readiness.md); native success does not close MEL-7
+or MEL-16. No additional HTTP change or generation was required for these
+responsibility fixes.

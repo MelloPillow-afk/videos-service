@@ -115,13 +115,16 @@ async def history(
 async def next_attempt(
     connection: AsyncConnection[TupleRow], work: Work, token: UUID
 ) -> Work | None:
-    if work.attempt >= 3 or not await eligible(connection, work):
+    if not await eligible(connection, work):
         return None
-    await connection.execute(
+    cursor = await connection.execute(
         """UPDATE jobs SET execution_attempts=execution_attempts+1,claim_token=%s,
-        error_code=NULL,error_message=NULL,updated_at=now() WHERE id=%s""",
+        error_code=NULL,error_message=NULL,updated_at=now() WHERE id=%s
+        AND execution_attempts<3 RETURNING id""",
         (token, work.id),
     )
+    if await cursor.fetchone() is None:
+        return None
     next_work = replace(work, attempt=work.attempt + 1, token=token)
     await history(connection, next_work, "RUNNING")
     return next_work
@@ -133,24 +136,28 @@ async def fail(
     code: str,
     message: str,
     *,
+    retry: bool,
     source_validated: bool = False,
-    permanent: bool = True,
-) -> bool:
+    invalidate_source: bool = False,
+) -> bool | None:
+    """Persist the service-selected transition; None means eligibility/budget fencing."""
     if not await eligible(connection, work):
-        return False
-    retry = not permanent and work.attempt < 3
-    await history(connection, work, "TEMPORARY_FAILURE" if retry else "FAILED", code)
-    await connection.execute(
-        """UPDATE jobs SET state=%s,error_code=%s,error_message=%s,updated_at=now() WHERE id=%s""",
-        ("RUNNING" if retry else "FAILED", code, message, work.id),
+        return None
+    cursor = await connection.execute(
+        """UPDATE jobs SET state=%s,error_code=%s,error_message=%s,updated_at=now()
+        WHERE id=%s AND (NOT %s OR execution_attempts<3) RETURNING id""",
+        ("RUNNING" if retry else "FAILED", code, message, work.id, retry),
     )
+    if await cursor.fetchone() is None:
+        return None
+    await history(connection, work, "TEMPORARY_FAILURE" if retry else "FAILED", code)
     if work.kind == "VIDEO":
         await connection.execute(
             """UPDATE videos SET status=%s,source_validated=CASE WHEN %s THEN false ELSE source_validated OR %s END,
             processing_error_code=%s,processing_error_message=%s,updated_at=now() WHERE id=%s""",
             (
                 "PROCESSING" if retry else "FAILED",
-                permanent,
+                invalidate_source,
                 source_validated,
                 None if retry else code,
                 None if retry else message,
