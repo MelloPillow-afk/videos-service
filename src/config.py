@@ -26,10 +26,21 @@ class Settings(BaseSettings):
     thumbnail_max_bytes: int = Field(default=5242880, ge=1)
     cdn_origin: str = "https://media.example.com"
 
+    r2_endpoint_url: str | None = None
+    r2_access_key_id: SecretStr | None = None
+    r2_secret_access_key: SecretStr | None = None
+    r2_private_bucket: str | None = None
+    r2_public_bucket: str | None = None
+    cloud_run_job_resource: str | None = Field(
+        default=None, pattern=r"^projects/[^/]+/locations/[^/]+/jobs/[^/]+$"
+    )
+
     @model_validator(mode="after")
     def validate_database_settings(self) -> Self:
         if self.db_pool_min_size > self.db_pool_max_size:
             raise ValueError("DB_POOL_MIN_SIZE must not exceed DB_POOL_MAX_SIZE")
         if not self.database_url.get_secret_value().startswith(("postgresql://", "postgres://")):
             raise ValueError("DATABASE_URL must be a PostgreSQL connection URL")
+        if self.r2_private_bucket and self.r2_private_bucket == self.r2_public_bucket:
+            raise ValueError("R2 private and public buckets must differ")
         return self
