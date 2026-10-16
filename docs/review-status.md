@@ -46,7 +46,7 @@ the canonical generated image and no longer overrides the expected response.
 The schema supplies the single canonical removal example without a duplicated
 inline operation example. Contract checks and regeneration remain authoritative.
 
-## Readiness and remaining acceptance
+## Completed readiness and live acceptance
 
 - **MEL-7:** [cloud prerequisites are verified](cloud-readiness.md): real Neon
   identity/current-role demotion, runtime grants, browser/storage boundaries,
@@ -59,14 +59,16 @@ inline operation example. Contract checks and regeneration remain authoritative.
   deletion evidence remains separately tracked under MEL-16.
 - **MEL-15:** the [local showcase](showcase.md) now exercises the complete journey;
   its controlled provider boundaries do not constitute deployed cloud evidence.
-- **MEL-16:** the [deployment record](cloud-deployment.md) records the private image
-  publication, explicit production migrations and initial API/job deployment.
-  MEL-16 remains in progress while browser HLS playback/application CORS, invalid
-  source rejection, actual signed-URL expiry and in-flight guarded deletion
-  receive live acceptance evidence.
+- **MEL-16:** the [deployment record](cloud-deployment.md) and
+  [final live acceptance](live-showcase-acceptance.md) verify real browser HLS,
+  required CORS, invalid/oversized sources, expiry/renewal, recovery and in-flight
+  guard cleanup. Final expiry cleanup and every non-happy record return 404 with
+  zero jobs. The retained fixture is READY/PUBLISHED/18.0s/GENERATED; final rows
+  are videos 1, upload_attempts 5, jobs 2. Demo role is `user`, with the one other
+  administrator unchanged. No live acceptance gate remains.
 
 No cron, periodic reconciliation, scheduled orphan cleanup, extra application
-table, full frontend, billing expansion, or cloud completion claim was added.
+table, full frontend or billing expansion was added.
 
 ## Verification
 
@@ -156,5 +158,14 @@ passed **19 affected CLI/operator checks in 16.23s** through real PostgreSQL.
 An emulation-sensitive test helper timeout was raised from 0.25 to two seconds
 while retaining its ten-second delay and child-reaping assertion; production
 behavior is unchanged. The eight operator checks passed natively in 2.77s.
-These local and image checkpoints do not close the remaining deployed-cloud
-gates in the [deployment record](cloud-deployment.md).
+These local and image checkpoints are distinct from the completed deployed
+evidence in the [deployment record](cloud-deployment.md).
+
+
+## Final live documentation delta
+
+The final live criteria are verified by the linked sanitized provider/browser
+results. Provisional Standards and Spec reports contain zero actionable findings.
+The frozen final documentation commit still requires its delta reviews and merge;
+this entry does not claim those unperformed reviews. Historical local and image
+checkpoints above retain their original counts and evidence limits.

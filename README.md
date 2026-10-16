@@ -13,8 +13,8 @@ explicit worker replaces media bytes with permanent zero-byte guards before
 removing application rows. A 202 response acknowledges admission; it does not
 certify removal. See the [approved guard policy](docs/specs/deletion-guard-policy.md).
 The [local showcase](docs/showcase.md) is reproducible with `make showcase`.
-Configured cloud readiness (MEL-7) and live provider acceptance (MEL-16) remain
-separate gates.
+Configured [cloud readiness](docs/cloud-readiness.md) and
+[live acceptance](docs/live-showcase-acceptance.md) are verified separately.
 
 Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
 
@@ -37,7 +37,8 @@ do not edit files under generated packages.
 
 Run `make showcase` after installing dependencies, PostgreSQL, FFmpeg and FFprobe.
 The [showcase guide](docs/showcase.md) explains setup, the printed acceptance
-journey, controlled provider boundaries and separate live-cloud gates.
+journey and controlled provider boundaries; the [live guide](docs/live-showcase-acceptance.md)
+records completed cloud/browser acceptance and public reviewer commands.
 
 ## Local development
 
@@ -162,7 +163,8 @@ conditional-upload/deletion-guard, Auth/demotion and public-origin evidence.
 The owner-restricted R2 pair and independent deployed launch/denial checks now
 pass. [Deployment evidence](docs/cloud-deployment.md) records the final published
 image, explicit production migrations, numeric secret references and bounded
-API/worker deployment. The full live media/player/recovery journey remains separate.
+API/worker deployment. The [completed live journey](docs/live-showcase-acceptance.md)
+records media/player/recovery, guarded cleanup and the retained interview fixture.
 Local acceptance does not require cloud credentials.
 
 The [local HLS worker acceptance record](docs/mel-9-acceptance.md) documents
@@ -327,7 +329,7 @@ the provider-owned `"user"` table supplies current comma-separated roles.
 Only exact `admin` membership permits management; JWT role claims are ignored.
 Missing provider configuration or role lookup failures deny privileged access.
 The application does not create or migrate provider tables. Deployed token
-settings and schema compatibility remain a separate live-cloud acceptance gate.
+settings and schema compatibility are verified in the [cloud record](docs/cloud-readiness.md).
 
 Invalid path, query, and body values use FastAPI's native HTTP 422 JSON response,
 with validation errors in `detail`. Deliberate application errors use standard
@@ -372,7 +374,7 @@ The R2 signer binds create-once PUT headers; originals and delivery outputs use
 separate buckets. The Cloud Run service's runtime identity submits jobs directly.
 Missing provider configuration returns unavailable instead of serving an upload
 example. The [MEL-8 acceptance record](docs/mel-8-acceptance.md) describes local
-provider checks and the separate live-cloud evidence gates.
+provider checks; actual provider proof is in the [live record](docs/live-showcase-acceptance.md).
 
 Inspect `jobs.state`, `execution_reference`, and sanitized errors for recorded work.
 An interrupted or uncertain launch requires manual inspection and explicit recovery;
@@ -390,5 +392,5 @@ and retry evidence.
 
 [Local container acceptance](docs/container-local-acceptance.md) documents the
 Linux AMD64 image build, API/worker entry points, explicit migration command,
-real image media checks, and worker CLI exit outcomes. This preparation does not
-close the remaining live MEL-7/MEL-16 gates.
+real image media checks, and worker CLI exit outcomes. Completed deployed/browser
+acceptance and reviewer commands are in the [live guide](docs/live-showcase-acceptance.md).
