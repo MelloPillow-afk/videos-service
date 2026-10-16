@@ -118,3 +118,13 @@ are independently recorded in [container acceptance](container-local-acceptance.
 and [cloud readiness](cloud-readiness.md); native success does not close MEL-7
 or MEL-16. No additional HTTP change or generation was required for these
 responsibility fixes.
+
+After merging the reviewed implementation and current cloud evidence into the
+integration checkout, `make lint-api` passed and `ag` regenerated **13 operations
+and 23 HTTP cases**. A repeated run was byte-identical across all **26 owned
+files and the ownership record**. Only generated test source-location metadata
+changed during normalization. Final `make check` and both `make showcase`
+journeys pass in the integration checkout. The final Standards and Spec delta
+reviews have **zero open actionable findings**; the two Standards findings above
+are resolved. Real Auth/provider demotion and browser R2 privacy/upload checks
+are recorded separately from the still-required deployed application sequence.
