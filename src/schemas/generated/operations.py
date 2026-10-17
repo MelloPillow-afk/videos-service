@@ -8,6 +8,10 @@ from pydantic import AfterValidator, ConfigDict, Field
 
 from src.schemas.generated.schema_support import WireModel, validate_format
 
+type AdminVideosListVideosLimitParameter = Annotated[int, Field(ge=1, le=100)]
+
+type AdminVideosListVideosPageTokenParameter = str
+
 type AdminVideosDeleteVideoIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
 class AdminVideosDeleteVideoResponse(WireModel):
@@ -30,10 +34,8 @@ type AdminVideosUploadUrlIdParameter = Annotated[str, AfterValidator(lambda valu
 
 type JobsGetJobJobIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
-type VideosListVideosCursorParameter = str
-
 type VideosListVideosLimitParameter = Annotated[int, Field(ge=1, le=100)]
 
-type VideosListVideosSearchParameter = Annotated[str, Field(max_length=200)]
+type VideosListVideosPageTokenParameter = str
 
 type PlaybackGetPlaybackIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

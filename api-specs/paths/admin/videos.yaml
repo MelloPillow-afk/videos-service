@@ -1,4 +1,38 @@
 /admin/videos:
+  get:
+    tags:
+      - Videos
+    operationId: admin.videos.list_videos
+    summary: List Videos
+    description: >-
+      List videos in every lifecycle status, newest created first. Pass
+      next_page_token as page_token, with the same filters, to get the next
+      page.
+    parameters:
+      - $ref: ../../parameters/limit.yaml
+      - $ref: ../../parameters/page_token.yaml
+      - $ref: ../../parameters/publication_status.yaml
+    responses:
+      '200':
+        description: A page of videos.
+        content:
+          application/json:
+            schema:
+              $ref: ../../schemas/videos/admin_videos.yaml
+      '400':
+        $ref: ../../responses/invalid_page_token.yaml
+      '401':
+        $ref: ../../responses/unauthorized.yaml
+      '403':
+        $ref: ../../responses/forbidden.yaml
+      '422':
+        $ref: ../../responses/validation_error.yaml
+      '429':
+        $ref: ../../responses/too_many_requests.yaml
+      '500':
+        $ref: ../../responses/internal_error.yaml
+      '503':
+        $ref: ../../responses/unavailable.yaml
   post:
     tags:
       - Videos
@@ -10,7 +44,7 @@
       content:
         application/json:
           schema:
-            $ref: ../../schemas/videos/video_create.yaml
+            $ref: ../../schemas/videos/admin_video_create.yaml
     responses:
       '201':
         description: Video draft created.
@@ -20,7 +54,7 @@
         content:
           application/json:
             schema:
-              $ref: ../../schemas/videos/video.yaml
+              $ref: ../../schemas/videos/admin_video.yaml
       '400':
         $ref: ../../responses/bad_request.yaml
       '401':
@@ -75,7 +109,7 @@
       content:
         application/json:
           schema:
-            $ref: ../../schemas/videos/video_update.yaml
+            $ref: ../../schemas/videos/admin_video_update.yaml
     responses:
       '200':
         $ref: ../../responses/video_resource.yaml

@@ -1,5 +1,5 @@
 x-python-module: videos
-x-python-name: VideoUpdate
+x-python-name: AdminVideoUpdate
 type: object
 description: Video fields to update.
 anyOf:

@@ -4,16 +4,15 @@
       - Videos
     operationId: videos.list_videos
     summary: Get Videos Collection
-    description: Browse videos with search, filters, and pagination.
+    description: >-
+      Browse ready, published videos, newest published first. Pass
+      next_page_token as page_token to get the next page.
     security:
       - bearer_auth: []
       - {}
     parameters:
       - $ref: ../parameters/limit.yaml
-      - $ref: ../parameters/cursor.yaml
-      - $ref: ../parameters/status.yaml
-      - $ref: ../parameters/publication_status.yaml
-      - $ref: ../parameters/search.yaml
+      - $ref: ../parameters/page_token.yaml
     responses:
       '200':
         description: A page of videos.
@@ -22,7 +21,7 @@
             schema:
               $ref: ../schemas/videos/videos.yaml
       '400':
-        $ref: ../responses/bad_request.yaml
+        $ref: ../responses/invalid_page_token.yaml
       '401':
         $ref: ../responses/unauthorized.yaml
       '403':

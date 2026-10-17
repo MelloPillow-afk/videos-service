@@ -6,6 +6,7 @@ from fastapi import APIRouter as _generator_APIRouter
 from fastapi import Body as _generator_Body
 from fastapi import Depends as _generator_Depends
 from fastapi import Path as _generator_Path
+from fastapi import Query as _generator_Query
 from fastapi import Response as _generator_Response
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
@@ -24,6 +25,12 @@ from src.schemas.generated.operations import (
     AdminVideosGetVideoIdParameter as _GetVideoIdParameter,
 )
 from src.schemas.generated.operations import (
+    AdminVideosListVideosLimitParameter as _ListVideosLimitParameter,
+)
+from src.schemas.generated.operations import (
+    AdminVideosListVideosPageTokenParameter as _ListVideosPageTokenParameter,
+)
+from src.schemas.generated.operations import (
     AdminVideosUpdateVideoIdParameter as _UpdateVideoIdParameter,
 )
 from src.schemas.generated.operations import (
@@ -32,13 +39,69 @@ from src.schemas.generated.operations import (
 from src.schemas.generated.uploads import SourceUpload as _UploadUrlResponse
 from src.schemas.generated.uploads import SourceUploadCreate as _UploadUrlBody
 from src.schemas.generated.uploads import UploadComplete as _CompleteUploadBody
-from src.schemas.generated.videos import Video as _CreateVideoResponse
-from src.schemas.generated.videos import Video as _GetVideoResponse
-from src.schemas.generated.videos import Video as _UpdateVideoResponse
-from src.schemas.generated.videos import VideoCreate as _CreateVideoBody
-from src.schemas.generated.videos import VideoUpdate as _UpdateVideoBody
+from src.schemas.generated.videos import AdminVideo as _CreateVideoResponse
+from src.schemas.generated.videos import AdminVideo as _GetVideoResponse
+from src.schemas.generated.videos import AdminVideo as _UpdateVideoResponse
+from src.schemas.generated.videos import AdminVideoCreate as _CreateVideoBody
+from src.schemas.generated.videos import AdminVideos as _ListVideosResponse
+from src.schemas.generated.videos import AdminVideoUpdate as _UpdateVideoBody
+from src.schemas.generated.videos import (
+    PublicationStatus as _ListVideosPublicationStatusParameter,
+)
 
 router = _generator_APIRouter(prefix="/v1/admin")
+
+
+@router.get(
+    "/videos",
+    response_model=_ListVideosResponse,
+    status_code=200,
+    response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
+)
+@_generator_select_endpoint("admin.videos.list_videos")
+async def list_videos(
+    *,
+    limit: _generator_Annotated[
+        _ListVideosLimitParameter,
+        _generator_Query(alias="limit", description="Maximum number of videos to return."),
+    ] = 20,
+    page_token: _generator_Annotated[
+        _ListVideosPageTokenParameter | None,
+        _generator_Query(
+            alias="page_token",
+            description="The next_page_token from the previous page.",
+        ),
+    ] = None,
+    publication_status: _generator_Annotated[
+        _ListVideosPublicationStatusParameter | None,
+        _generator_Query(
+            alias="publication_status",
+            description="Filter by publication status.",
+        ),
+    ] = None,
+) -> _ListVideosResponse:
+    return _generator_TypeAdapter(_ListVideosResponse).validate_python(
+        {
+            "data": [
+                {
+                    "created_at": "2026-10-13T14:00:00Z",
+                    "description": "An introductory lesson",
+                    "duration_seconds": None,
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "latest_job_id": None,
+                    "publication_status": "DRAFT",
+                    "published_at": None,
+                    "size_bytes": None,
+                    "status": "CREATED",
+                    "thumbnail": {"source": "NONE", "status": "PENDING", "url": None},
+                    "title": "Introduction to Faith",
+                    "updated_at": "2026-10-13T14:00:00Z",
+                },
+            ],
+            "pagination": {"has_more": False, "next_page_token": None},
+        },
+    )
 
 
 @router.post(

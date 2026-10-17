@@ -26,7 +26,7 @@ type VideoStatus = Literal["CREATED", "UPLOADING", "PROCESSING", "READY", "FAILE
 
 type VideoTitle = Annotated[str, Field(min_length=1, max_length=200, pattern="\\S")]
 
-class Video(WireModel):
+class AdminVideo(WireModel):
     model_config = ConfigDict(extra='allow')
     created_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
     description: VideoDescription = Field(description="Optional video description.")
@@ -55,7 +55,7 @@ class Video(WireModel):
     title: VideoTitle = Field(description="Video title.")
     updated_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
 
-class VideoCreate(WireModel):
+class AdminVideoCreate(WireModel):
     model_config = ConfigDict(extra='allow')
     description: VideoDescription = Field(
         default_factory=omitted,
@@ -63,7 +63,7 @@ class VideoCreate(WireModel):
     )
     title: VideoTitle = Field(description="Video title.")
 
-class VideoUpdate(WireModel):
+class AdminVideoUpdate(WireModel):
     model_config = ConfigDict(
         extra='allow',
         json_schema_extra={
@@ -89,12 +89,29 @@ class VideoUpdate(WireModel):
     def _require_present(cls, value: object) -> object:
         return require_properties(value, [["title"], ["description"], ["publication_status"]])
 
-class VideosPagination(WireModel):
+class AdminVideos(WireModel):
     model_config = ConfigDict(extra='allow')
-    has_more: bool = Field(description="Whether another page of results is available.")
-    next_page_token: str | None = Field(description="Token for the next page.")
+    data: list[AdminVideo]
+    pagination: _schema_shared.Pagination = Field(
+        description="Where a page of results ends. Pass next_page_token as the page_token query parameter, with the same filters, to request the next page.",
+    )
+
+class Video(WireModel):
+    model_config = ConfigDict(extra='allow')
+    description: VideoDescription = Field(description="Optional video description.")
+    duration_seconds: Annotated[float, Field(ge=0)] | None = Field(
+        description="Video length in seconds.",
+    )
+    id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+    published_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
+    thumbnail: _schema_thumbnails.ThumbnailImage = Field(
+        description="The current thumbnail.",
+    )
+    title: VideoTitle = Field(description="Video title.")
 
 class Videos(WireModel):
     model_config = ConfigDict(extra='allow')
     data: list[Video]
-    pagination: VideosPagination
+    pagination: _schema_shared.Pagination = Field(
+        description="Where a page of results ends. Pass next_page_token as the page_token query parameter, with the same filters, to request the next page.",
+    )

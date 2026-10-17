@@ -1,7 +1,7 @@
 # Videos service
 
 The Python backend for the videos domain. Its prepared OpenAPI contract generates
-all 13 HTTP operations: `/ping` and the 12 video and job operations under `/v1`. Generated
+all 14 HTTP operations: `/ping` and the 13 video and job operations under `/v1`. Generated
 handlers serve fixed, validated contract examples until a matching handwritten
 async implementation is added. Video business behavior and processing remain to
 be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
@@ -107,7 +107,7 @@ make coverage           # Entire suite; fails under 95%, lists files under 100%,
 make dead-code          # Vulture scan for unused handwritten code (also runs in make lint)
 ```
 
-The generated suite in `tests/generated` covers all 13 operations, their example
+The generated suite in `tests/generated` covers all 14 operations, their example
 bodies, and native validation; handwritten tests cover authentication, configuration,
 health, jobs, and migrations through HTTP, commands, and PostgreSQL.
 The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
@@ -120,7 +120,7 @@ schema per test. They exercise jobs over HTTP, table constraints, statement
 timeouts, `make migrate`, and Yoyo apply/reapply/rollback of the service
 migrations. HTTP tests apply `migrations/` into their schema first.
 Migrations are added incrementally, one per feature slice; `0001_jobs` creates the
-`jobs` table. `make migrate` applies them in dev;
+`jobs` table, `0002_videos` the `videos` table, and `0003_video_listing` the list indexes. `make migrate` applies them in dev;
 `make migrations` lists their status. These are explicit commands, separate
 from server startup.
 
@@ -147,7 +147,7 @@ Development migrations remain manual through Make.
 The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
 null unions, reusable schemas and responses, and security declarations for the
-12 video and job operations. Video and job paths are relative to the `/v1` server base path.
+13 video and job operations. Video and job paths are relative to the `/v1` server base path.
 The unauthenticated health operation overrides the server path to `/`, preserving
 `GET /ping`. JSON fields and component names use snake_case; operation IDs use
 Pythonic `module.function` names, with a leading folder for admin operations
@@ -182,9 +182,11 @@ paths. Reusable responses live in
 are kept in schemas, reusable responses, parameters, and shared request bodies.
 
 Schemas are grouped
-by purpose inside `api-specs/schemas/`. Each schema has one example. A single video uses
-[`videos/video.yaml`](api-specs/schemas/videos/video.yaml); a collection uses
-[`videos/videos.yaml`](api-specs/schemas/videos/videos.yaml).
+by purpose inside `api-specs/schemas/`. Each schema has one example. Viewers see the
+catalog shape: [`videos/video.yaml`](api-specs/schemas/videos/video.yaml) and its collection
+[`videos/videos.yaml`](api-specs/schemas/videos/videos.yaml). Admin-only schemas carry an
+`admin_` file prefix and an `Admin` Python name, such as
+[`videos/admin_video.yaml`](api-specs/schemas/videos/admin_video.yaml) (`AdminVideo`).
 
 | Schema folder | Contents |
 | --- | --- |
@@ -194,12 +196,14 @@ by purpose inside `api-specs/schemas/`. Each schema has one example. A single vi
 | `jobs/` | Background processing jobs and their status. |
 | `thumbnails/` | Thumbnail resources, image status, and custom thumbnail uploads. |
 | `playback/` | Video playback links. |
-| `shared/` | Timestamps and media URLs. |
+| `shared/` | Timestamps, media URLs, and list pagination. |
 
-Each query or path parameter has a definition in `api-specs/parameters/`. IDs, pagination,
-and search schemas are written directly in those files for readability. Video
-status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the collection's
-`next_page_token` as the `cursor` query parameter to request the next page.
+Each query or path parameter has a definition in `api-specs/parameters/`. ID and pagination
+schemas are written directly in those files for readability. The publication status filter
+reuses its schema in `api-specs/schemas/videos/`. Lists have a fixed order: the admin list is
+newest created first, the catalog newest published first. Pass the collection's
+`next_page_token` as the `page_token` query parameter, with the same filters, to request the
+next page; a token the list did not return gets HTTP 400.
 The HTTP-exception schema is defined in `api-specs/index.yaml`; native
 request-validation errors are documented in
 `api-specs/responses/validation_error.yaml`. Processing failure details are the
@@ -229,7 +233,7 @@ present. Required response headers need examples too. The creation response's
 `Location` header references `parameters/response_location.yaml`, a Header Object
 with an example and without the request-parameter `name` and `in` fields.
 These declarations control the generated interface. The complete prepared
-contract currently generates all 13 operations and their validated inline mocks.
+contract currently generates all 14 operations and their validated inline mocks.
 
 ### Handwritten implementations
 
@@ -330,7 +334,8 @@ request. Yield fixtures can inspect `.response`, assert stored effects, and clea
 in `finally`. No hook or fixture belongs inside `tests/generated`.
 
 Schema examples are authoritative for success assertions. Parameter validation keeps
-FastAPI's native 422 responses. The current generated suite has 32 cases; 202
+FastAPI's native 422 responses. The current generated suite has 38 cases; 202
 operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
-assertions. `jobs.get_job` reads PostgreSQL; the other 12 operations still serve generated mocks.
+assertions. `jobs.get_job`, `videos.list_videos`, and the admin video create, list, get, update,
+and delete operations read PostgreSQL; the other operations still serve generated mocks.

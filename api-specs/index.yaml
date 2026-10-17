@@ -73,14 +73,10 @@ components:
       $ref: parameters/job_id.yaml
     limit:
       $ref: parameters/limit.yaml
-    cursor:
-      $ref: parameters/cursor.yaml
-    status:
-      $ref: parameters/status.yaml
+    page_token:
+      $ref: parameters/page_token.yaml
     publication_status:
       $ref: parameters/publication_status.yaml
-    search:
-      $ref: parameters/search.yaml
   headers:
     response_location:
       $ref: parameters/response_location.yaml
@@ -122,12 +118,14 @@ components:
       $ref: schemas/shared/delivery_url.yaml
     thumbnail_image:
       $ref: schemas/thumbnails/thumbnail_image.yaml
+    admin_video:
+      $ref: schemas/videos/admin_video.yaml
+    admin_video_create:
+      $ref: schemas/videos/admin_video_create.yaml
+    admin_video_update:
+      $ref: schemas/videos/admin_video_update.yaml
     video:
       $ref: schemas/videos/video.yaml
-    video_create:
-      $ref: schemas/videos/video_create.yaml
-    video_update:
-      $ref: schemas/videos/video_update.yaml
     source_upload_create:
       $ref: schemas/uploads/source_upload_create.yaml
     thumbnail_upload_create:
@@ -148,8 +146,12 @@ components:
       $ref: schemas/playback/playback.yaml
     thumbnail:
       $ref: schemas/thumbnails/thumbnail.yaml
+    admin_videos:
+      $ref: schemas/videos/admin_videos.yaml
     videos:
       $ref: schemas/videos/videos.yaml
+    pagination:
+      $ref: schemas/shared/pagination.yaml
     error:
       x-python-module: errors
       x-python-name: Error
@@ -170,6 +172,8 @@ components:
       $ref: responses/validation_error.yaml
     bad_request:
       $ref: responses/bad_request.yaml
+    invalid_page_token:
+      $ref: responses/invalid_page_token.yaml
     unauthorized:
       $ref: responses/unauthorized.yaml
     forbidden:

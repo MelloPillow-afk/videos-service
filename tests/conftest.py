@@ -147,3 +147,36 @@ async def insert_example_video(api_case: APICase, db: AsyncConnection) -> None:
         created_at=video["created_at"],
         updated_at=video["updated_at"],
     )
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_list_videos(api_case: APICase, db: AsyncConnection) -> None:
+    (video,) = api_case.expected_body["data"]
+    await insert_video(
+        db,
+        **{
+            column: video[column]
+            for column in ("id", "title", "description", "status", "publication_status")
+        },
+        created_at=video["created_at"],
+        updated_at=video["updated_at"],
+    )
+
+
+@pytest_asyncio.fixture
+async def arrange_videos_list_videos(api_case: APICase, db: AsyncConnection) -> None:
+    (video,) = api_case.expected_body["data"]
+    await insert_video(
+        db,
+        id=video["id"],
+        title=video["title"],
+        description=video["description"],
+        status="READY",
+        publication_status="PUBLISHED",
+        published_at=video["published_at"],
+    )
+    # Duration and thumbnail come from processing, which is not implemented yet.
+    video |= {
+        "duration_seconds": None,
+        "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
+    }

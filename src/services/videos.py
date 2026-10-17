@@ -25,6 +25,18 @@ async def get_video(video_id: UUID) -> Video:
     return video
 
 
+async def list_videos(
+    publication_status: PublicationStatus | None,
+    after: tuple[datetime, UUID] | None,
+    limit: int,
+) -> list[Video]:
+    return await videos_repository.list_videos(publication_status, after, limit)
+
+
+async def list_catalog_videos(after: tuple[datetime, UUID] | None, limit: int) -> list[Video]:
+    return await videos_repository.list_catalog_videos(after, limit)
+
+
 async def update_video(video: Video) -> Video:
     """Save an edited video, keeping its publication time consistent with its status."""
     if video.publication_status is PublicationStatus.PUBLISHED:
@@ -36,7 +48,7 @@ async def update_video(video: Video) -> Video:
         video = replace(video, published_at=None)
     updated = await videos_repository.update_video(video)
     if updated is None:
-        raise VideoNotFound(video.id)  # Deleted after it was read.
+        raise VideoNotFound(video.id)
     return updated
 
 
