@@ -1,31 +1,15 @@
 """Jobs are read from PostgreSQL through the real application."""
 
-from collections.abc import AsyncIterator
 from uuid import uuid4
 
 import psycopg
 import pytest
-import pytest_asyncio
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from psycopg import AsyncConnection
 
 from tests.rows import insert_video
 
 pytestmark = pytest.mark.integration
-
-
-@pytest_asyncio.fixture
-async def client(api_app: FastAPI, api_bearer_token: str) -> AsyncIterator[AsyncClient]:
-    async with (
-        api_app.router.lifespan_context(api_app),
-        AsyncClient(
-            transport=ASGITransport(app=api_app),
-            base_url="http://test",
-            headers={"Authorization": f"Bearer {api_bearer_token}"},
-        ) as client,
-    ):
-        yield client
 
 
 async def insert_job(

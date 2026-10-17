@@ -93,3 +93,20 @@ async def arrange_admin_jobs_get_job(api_case: APICase, db: AsyncConnection) -> 
         "VALUES (%s, %s, 'VIDEO_PROCESSING', %s, %s)",
         (job["id"], job["video_id"], job["status"], job["message"]),
     )
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_create_video(api_case: APICase, db: AsyncConnection) -> None:
+    # The new row takes its id and timestamps from column defaults; pin them to the example.
+    video = api_case.expected_body
+    await db.execute(
+        sql.SQL(
+            "ALTER TABLE videos ALTER COLUMN id SET DEFAULT {id}, "
+            "ALTER COLUMN created_at SET DEFAULT {created_at}, "
+            "ALTER COLUMN updated_at SET DEFAULT {updated_at}"
+        ).format(
+            id=sql.Literal(video["id"]),
+            created_at=sql.Literal(video["created_at"]),
+            updated_at=sql.Literal(video["updated_at"]),
+        )
+    )
