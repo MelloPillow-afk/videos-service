@@ -11,6 +11,7 @@ _modules: dict[str, ModuleType] = {
     for name in [
         "errors",
         "health",
+        "jobs",
         "playback",
         "shared",
         "thumbnails",

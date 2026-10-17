@@ -10,8 +10,6 @@ from src.schemas.generated.schema_support import WireModel, validate_format
 
 if TYPE_CHECKING:
     from src.schemas.generated import shared as _schema_shared
-    from src.schemas.generated import thumbnails as _schema_thumbnails
-    from src.schemas.generated import videos as _schema_videos
 
 
 
@@ -53,14 +51,3 @@ class UploadComplete(WireModel):
     upload_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
         description="Upload ID returned with the upload URL.",
     )
-
-class SourceUploadProcessing(WireModel):
-    model_config = ConfigDict(extra='allow')
-    processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
-        description="Processing job ID.",
-    )
-    status: _schema_videos.VideoStatus = Field(description="Current video status.")
-    thumbnail_status: _schema_thumbnails.ThumbnailStatus = Field(
-        description="Thumbnail status.",
-    )
-    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

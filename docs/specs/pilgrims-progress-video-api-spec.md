@@ -18,7 +18,7 @@ This contract covers administrator video management, direct-to-R2 uploads, async
 - Upload URLs expire, can be renewed before confirmation, and cannot authorize overwriting a confirmed source.
 - `complete-upload` verifies the source object and durably queues processing; it never uploads file bytes or synchronously transcodes.
 - Processing runs in Cloud Run Jobs, with durable job dispatch/reconciliation.
-- Client polls `GET /videos/{id}` for processing state.
+- Client polls `GET /jobs/{jobId}` for processing state; `complete-upload` and `retry` return the job.
 - Video publication is manual with a **separate, explicit `PUBLISHED` publication status**.
 - HLS assets are delivered from Cloudflare CDN; playback URLs are assembled server-side from storage keys.
 - Deletion is asynchronous; a deleting video must immediately become unavailable for playback.
@@ -44,8 +44,7 @@ This contract covers administrator video management, direct-to-R2 uploads, async
 |---|---|
 | `CREATED` | Video record exists; no verified upload |
 | `UPLOADING` | Upload URL issued; upload not confirmed |
-| `QUEUED` | Upload verified; processing request durably recorded |
-| `PROCESSING` | Transcoding underway |
+| `PROCESSING` | Upload verified; processing job queued or running (see the job for detail) |
 | `READY` | Valid HLS output published to R2; playable when published |
 | `FAILED` | Video processing failed; eligible for retry if source remains valid |
 | `DELETING` | Delete accepted; further mutation and playback prohibited |
@@ -58,7 +57,7 @@ Rules:
 2. Only `READY` videos may transition to `PUBLISHED`.
 3. Unpublishing transitions to `DRAFT` and sets `publishedAt=null` (the system does not retain publication history in this API).
 4. A video is viewer-playable **only when** `status=READY AND publicationStatus=PUBLISHED`.
-5. Retry is allowed for `FAILED` videos and returns to `QUEUED`; publication remains `DRAFT` for such videos in this MVP.
+5. Retry is allowed for `FAILED` videos, returns to `PROCESSING`, and creates a new job; publication remains `DRAFT` for such videos in this MVP.
 6. `DELETING` is terminal for client-facing operations; completed deletion results in `404`.
 
 ### 2.2 Standard video resource
@@ -85,10 +84,10 @@ Rules:
 
 `description`, `sizeBytes`, `durationSeconds`, `thumbnail.url`, and `publishedAt` can be `null`. `thumbnail.status` is `PENDING`, `READY`, or `FAILED`; `thumbnail.source` is `GENERATED`, `CUSTOM`, or `NONE`. The `thumbnail` object represents the active thumbnail, not the detailed state of each underlying asset. If the custom thumbnail is not ready, the generated asset can remain active. Source and HLS R2 **keys** are private implementation details and omitted from public responses. Thumbnail URLs are constructed by the API from keys and delivery configuration.
 
-Admin-only processing diagnostics may be returned as an additional `processingError` field:
+Admin responses may include an additional `latestJobId` field: the UUID of the most recent processing job, or `null` before any upload is confirmed. Processing failure details live on the job (Section 2.4), not on the video.
 
 ```json
-{"processingError": {"code": "TRANSCODE_FAILED", "message": "Video processing failed."}}
+{"latestJobId": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"}
 ```
 
 ### 2.3 Standard error response
@@ -117,6 +116,28 @@ Admin-only processing diagnostics may be returned as an additional `processingEr
 
 Error codes are stable; messages are intended for humans. No raw FFmpeg logs, credentials, internal R2 keys, or stack traces in API errors.
 
+### 2.4 Job resource
+
+A job tracks one background processing run. Jobs are a top-level resource, following the Google AIP-151 long-running operation pattern.
+
+```json
+{
+  "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
+  "status": "QUEUED",
+  "contentId": "550e8400-e29b-41d4-a716-446655440000",
+  "message": null
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `id` | UUID | Job ID |
+| `status` | enum | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` |
+| `contentId` | UUID | ID of the resource the job processes; currently always the video ID |
+| `message` | string or null | Human-readable failure explanation; set only when `FAILED` |
+
+Each confirmed upload and each retry creates exactly one job, which covers video transcoding only. Generated-thumbnail work stays independent of the job and reports through `thumbnail.status`. The custom-thumbnail flow is synchronous and creates no job. `message` never contains raw FFmpeg logs, credentials, internal keys, or stack traces.
+
 ---
 
 ## 3. Endpoint index
@@ -135,6 +156,7 @@ Error codes are stable; messages are intended for humans. No raw FFmpeg logs, cr
 | `POST` | `/v1/videos/{id}/thumbnails:upload-url` | Admin | Issue custom thumbnail upload URL |
 | `POST` | `/v1/videos/{id}/thumbnails:complete-upload` | Admin | Validate and activate custom thumbnail |
 | `DELETE` | `/v1/videos/{id}/thumbnails` | Admin | Remove custom thumbnail; restore generated fallback |
+| `GET` | `/v1/jobs/{jobId}` | Admin | Read processing job status |
 
 No endpoint sends media bytes through Cloud Run. The two *upload-url* operations return signed R2 PUT instructions.
 
@@ -225,14 +247,14 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 {"uploadId": "04d1790f-f941-4ba6-8d97-0e6830ca4394"}
 ```
 
-**Response `202`:**
+**Response `202`:** The job resource (Section 2.4), with `Location: /v1/jobs/{jobId}`.
 
 ```json
 {
-  "videoId": "550e8400-e29b-41d4-a716-446655440000",
+  "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
   "status": "QUEUED",
-  "processingJobId": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
-  "thumbnailStatus": "PENDING"
+  "contentId": "550e8400-e29b-41d4-a716-446655440000",
+  "message": null
 }
 ```
 
@@ -241,9 +263,9 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 1. Compare `uploadId` with the active attempt and reject stale attempts (`409 STALE_UPLOAD_ATTEMPT`).
 2. Perform R2 `HEAD` of that attempt's source object; reject missing objects (`404 UPLOAD_NOT_FOUND`).
 3. Check observed size, allowed maximum, and expected size. Actual MP4 media streams/codecs are validated with FFprobe in background processing; invalid files fail safely and never become ready.
-4. In a DB transaction, atomically transition from `UPLOADING` to `QUEUED` and create a `PENDING` transcoding job, plus a durable request for independent generated-thumbnail processing.
+4. In a DB transaction, atomically transition from `UPLOADING` to `PROCESSING`, create a `QUEUED` transcoding job, set `latestJobId`, plus a durable request for independent generated-thumbnail processing.
 5. Dispatch jobs asynchronously with a retrying dispatcher/reconciler; do not wait for FFmpeg before returning.
-6. **Idempotency:** Repeated completion of the *same accepted `uploadId`* returns `202` with the existing `processingJobId` and current video status; no duplicate jobs. A different/stale `uploadId` must not be accepted.
+6. **Idempotency:** Repeated completion of the *same accepted `uploadId`* returns `202` with the existing job; no duplicate jobs. A different/stale `uploadId` must not be accepted.
 
 **Errors:** `400`, `404 UPLOAD_NOT_FOUND`, `409 STALE_UPLOAD_ATTEMPT` / `INVALID_STATUS_TRANSITION`, `413`.
 
@@ -253,7 +275,7 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 **Path:** `id` UUID  
 **Query/body:** None
 
-**Response `200`:** Standard video resource (Section 2.2); admin responses may include `processingError`. Intended for admin polling every ~5 seconds while `QUEUED` or `PROCESSING`; stop polling on `READY` or `FAILED`. Thumbnail generation may still be `PENDING` after the video is `READY`, and its status is independently observable via `thumbnail`.
+**Response `200`:** Standard video resource (Section 2.2); admin responses may include `latestJobId`. Poll the job (Section 4.10) for processing progress rather than this resource. Thumbnail generation may still be `PENDING` after the video is `READY`, and its status is independently observable via `thumbnail`.
 
 **Errors:** `400`, `401`/`403` for protected access, `404`.
 
@@ -288,7 +310,7 @@ No endpoint sends media bytes through Cloud Run. The two *upload-url* operations
 |---|---|---|---|
 | `limit` | integer | No | `20`; range `1..100` |
 | `cursor` | string | No | Opaque pagination cursor |
-| `status` | enum | No | Admin only; `CREATED`, `UPLOADING`, `QUEUED`, `PROCESSING`, `READY`, `FAILED`, `DELETING` |
+| `status` | enum | No | Admin only; `CREATED`, `UPLOADING`, `PROCESSING`, `READY`, `FAILED`, `DELETING` |
 | `publicationStatus` | enum | No | Admin only; `DRAFT` or `PUBLISHED` |
 | `search` | string | No | Trimmed, max 200 chars; case-insensitive title contains |
 
@@ -358,18 +380,9 @@ Example: `GET /v1/videos?limit=20&status=READY&publicationStatus=PUBLISHED&searc
 **Path:** `id` UUID  
 **Query/body:** None
 
-**Response `202`:**
+**Response `202`:** A new job resource (Section 2.4), with `Location: /v1/jobs/{jobId}`.
 
-```json
-{
-  "videoId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "QUEUED",
-  "processingJobId": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
-  "attempt": 2
-}
-```
-
-**Behavior:** Only `FAILED` videos with a retained validated source may be retried. Create a fresh processing attempt with unique HLS output prefix and increment attempt count. Atomically change video to `QUEUED` and create durable job request. Reject concurrent duplicate retries with `409` rather than launching multiple jobs. Previous attempts remain for debugging. Automatically generated thumbnail processing is not coupled to a transcode retry; its own recovery is handled by worker reconciliation. Publication remains `DRAFT` in this MVP retry path.
+**Behavior:** Only `FAILED` videos with a retained validated source may be retried. Create a fresh job with a unique HLS output prefix. Atomically change the video to `PROCESSING`, set `latestJobId`, and create the durable job request. Reject concurrent duplicate retries with `409` rather than launching multiple jobs. Previous jobs remain readable for debugging. Automatically generated thumbnail processing is not coupled to a transcode retry; its own recovery is handled by worker reconciliation. Publication remains `DRAFT` in this MVP retry path.
 
 **Errors:** `404`, `409 INVALID_STATUS_TRANSITION`, `503` if service unavailable before durable acceptance.
 
@@ -391,6 +404,18 @@ Example: `GET /v1/videos?limit=20&status=READY&publicationStatus=PUBLISHED&searc
 **Behavior:** Atomically set `status=DELETING` and create a durable cleanup request. Immediately block API playback, upload, mutation, and job scheduling. Cleanup worker cancels or fences active jobs, then deletes original source objects, all HLS attempts, and generated/custom thumbnails from R2. When complete, delete or archive related DB rows per retention policy. Repeated DELETE while `DELETING` returns `202`; after full deletion returns `404`. Note: previously retrieved public CDN URLs may remain cache-accessible until expiration/purge; immediate CDN revocation requires a separate access-control/cache-invalidation design.
 
 **Errors:** `404`, `409` for conflicting operations not otherwise handled.
+
+### 4.10 Get job
+
+**`GET /v1/jobs/{jobId}`** — `200 OK`  
+**Path:** `jobId` required UUID  
+**Query/body:** None
+
+**Response `200`:** The job resource (Section 2.4).
+
+**Behavior:** Admin only. Intended for polling every ~5 seconds while `QUEUED` or `RUNNING`; stop polling on `SUCCEEDED` or `FAILED`. The video moves to `READY` when its job succeeds, and to `FAILED` when its job fails. No list endpoint exists in this MVP; use the video's `latestJobId` to recover a lost job ID.
+
+**Errors:** `401`, `403`, `404 JOB_NOT_FOUND`.
 
 ---
 
@@ -430,7 +455,7 @@ Thumbnails are part of the approved MVP. **Every successfully confirmed video up
 }
 ```
 
-**Behavior:** Verify admin and video not deleting; validate declared metadata against configured thumbnail specs, then issue a 15-minute signed PUT URL to a new **unique temporary thumbnail key**, tracking the active custom-upload attempt. Do not replace the active thumbnail on URL issuance or an R2 PUT alone. The source video may be `CREATED`, `UPLOADING`, `QUEUED`, `PROCESSING`, `READY`, or `FAILED`.
+**Behavior:** Verify admin and video not deleting; validate declared metadata against configured thumbnail specs, then issue a 15-minute signed PUT URL to a new **unique temporary thumbnail key**, tracking the active custom-upload attempt. Do not replace the active thumbnail on URL issuance or an R2 PUT alone. The source video may be `CREATED`, `UPLOADING`, `PROCESSING`, `READY`, or `FAILED`.
 
 **Errors:** `400 INVALID_THUMBNAIL_TYPE` / invalid metadata, `413`, `404`, `409`.
 
@@ -498,9 +523,9 @@ No manual endpoint is required to trigger generation. `complete-upload` creates 
 1. Admin `POST /videos` -> `CREATED` + video UUID.
 2. Admin `POST /videos/{id}:upload-url` -> `UPLOADING` + `uploadId` + presigned PUT.
 3. Browser `PUT` bytes **directly to R2** with returned headers.
-4. Browser `POST /videos/{id}:complete-upload` with `uploadId` -> `202 QUEUED`.
+4. Browser `POST /videos/{id}:complete-upload` with `uploadId` -> `202` job (`QUEUED`); video is `PROCESSING`.
 5. Dispatcher launches independent **HLS transcoding** and **generated thumbnail** jobs.
-6. UI polls `GET /videos/{id}` every ~5 seconds; transcode eventually `READY` or `FAILED`. Thumbnail status may change independently.
+6. UI polls `GET /jobs/{jobId}` every ~5 seconds until `SUCCEEDED` (video `READY`) or `FAILED` (video `FAILED`). Thumbnail status may change independently on the video.
 7. Admin `PATCH /videos/{id}` with `publicationStatus=PUBLISHED` after `READY`.
 8. Viewer `GET /videos/{id}/playback` receives CDN HLS master URL; HLS player downloads playlists and segments from CDN.
 
@@ -545,7 +570,7 @@ No manual endpoint is required to trigger generation. `complete-upload` creates 
 2. Duplicate `complete-upload` requests create only one transcoding attempt.
 3. Old upload URL/attempt cannot replace the active source after URL renewal.
 4. Invalid upload is rejected and cannot become `READY`.
-5. Processing crash is recorded and `retry` creates one new attempt.
+5. Processing crash is recorded on the job and `retry` creates one new job.
 6. Publishing before `READY` is rejected with `409`.
 7. Unpublished video is not discoverable/playable through viewer APIs.
 8. Cursor pagination has deterministic ordering and does not duplicate/skips records on static data.

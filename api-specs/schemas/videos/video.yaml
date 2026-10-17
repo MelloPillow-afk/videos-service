@@ -51,26 +51,14 @@ properties:
     $ref: ../shared/timestamp.yaml
   updated_at:
     $ref: ../shared/timestamp.yaml
-  processing_error:
-    type: object
-    required:
-      - code
-      - message
-    description: Processing failure details.
-    properties:
-      code:
-        type: string
-        description: Code identifying the processing failure.
-        examples:
-          - TRANSCODE_FAILED
-      message:
-        type: string
-        description: Readable explanation of the processing failure.
-        examples:
-          - Video processing failed.
-    examples:
-      - code: TRANSCODE_FAILED
-        message: Video processing failed.
+  latest_job_id:
+    type:
+      - string
+      - 'null'
+    format: uuid
+    description: >-
+      ID of the most recent processing job, or null before any upload is
+      confirmed. Shown to admins only.
 examples:
   - id: 550e8400-e29b-41d4-a716-446655440000
     title: Introduction to Faith

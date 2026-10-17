@@ -8,6 +8,8 @@ from pydantic import AfterValidator, Field
 
 from src.schemas.generated.schema_support import validate_format
 
+type JobsGetJobJobIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+
 type VideosListVideosCursorParameter = str
 
 type VideosListVideosLimitParameter = Annotated[int, Field(ge=1, le=100)]

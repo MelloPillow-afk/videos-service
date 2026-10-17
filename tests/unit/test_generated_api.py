@@ -9,6 +9,7 @@ from src.app import create_app
 from src.config import Settings
 from src.handlers.generated import (
     health,
+    jobs,
     playback,
     thumbnails,
     videos,
@@ -76,9 +77,17 @@ COLLECTION: dict[str, object] = {
 }
 SOURCE_UPLOAD_ID = "04d1790f-f941-4ba6-8d97-0e6830ca4394"
 THUMBNAIL_UPLOAD_ID = "50fd0382-794f-4c9b-9a12-60e92a89e008"
+JOB_ID = "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
+JOB_LOCATION = f"/v1/jobs/{JOB_ID}"
+JOB: dict[str, object] = {
+    "id": JOB_ID,
+    "status": "QUEUED",
+    "content_id": VIDEO_ID,
+    "message": None,
+}
 
 
-async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
+async def test_all_fourteen_operations_serve_exact_contract_examples() -> None:
     cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
         ("GET", "/ping", None, 200, {"status": "ok"}),
         ("GET", "/v1/videos", None, 200, COLLECTION),
@@ -108,12 +117,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
             f"{RESOURCE}:complete-upload",
             {"upload_id": SOURCE_UPLOAD_ID},
             202,
-            {
-                "video_id": VIDEO_ID,
-                "status": "QUEUED",
-                "processing_job_id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
-                "thumbnail_status": "PENDING",
-            },
+            JOB,
         ),
         (
             "GET",
@@ -133,12 +137,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
             f"{RESOURCE}:retry",
             None,
             202,
-            {
-                "video_id": VIDEO_ID,
-                "status": "QUEUED",
-                "attempt": 2,
-                "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
-            },
+            JOB,
         ),
         (
             "POST",
@@ -170,6 +169,7 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
             200,
             {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
         ),
+        ("GET", JOB_LOCATION, None, 200, JOB),
     ]
     app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
     async with AsyncClient(
@@ -182,6 +182,8 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
             assert response.json() == expected, (method, path)
             if status == 201:
                 assert response.headers["Location"] == RESOURCE
+            if path.endswith((":complete-upload", ":retry")) and "thumbnails" not in path:
+                assert response.headers["Location"] == JOB_LOCATION
 
 
 @pytest.mark.parametrize(
@@ -192,6 +194,8 @@ async def test_all_thirteen_operations_serve_exact_contract_examples() -> None:
         ("GET", "/v1/videos?limit=many", None),
         ("GET", "/v1/videos?publication_status=UNKNOWN", None),
         ("GET", "/v1/videos?status=UNKNOWN", None),
+        ("GET", "/v1/videos?status=QUEUED", None),
+        ("GET", "/v1/jobs/not-a-uuid", None),
         ("GET", f"/v1/videos?search={'x' * 201}", None),
         ("POST", "/v1/videos", None),
         ("POST", "/v1/videos", {}),
@@ -276,11 +280,11 @@ async def test_application_routes_keep_native_errors_and_preserved_lifecycle() -
 
 
 def test_generated_routes_keep_runtime_settings_without_contract_documentation() -> None:
-    modules = (health, playback, thumbnails, videos)
+    modules = (health, jobs, playback, thumbnails, videos)
     routes = [
         route for module in modules for route in module.router.routes if isinstance(route, APIRoute)
     ]
-    assert len(routes) == 13
+    assert len(routes) == 14
     for route in routes:
         assert route.response_model is not None
         assert route.response_model_exclude_unset is True

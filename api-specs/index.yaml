@@ -3,7 +3,8 @@ info:
   title: Pilgrims Videos Service API
   version: 1.0.0
   description: |
-    Manage videos, upload media, publish videos, and find playback links.
+    Manage videos, upload media, track processing jobs, publish videos, and
+    find playback links.
     All changes require admin access; viewers see ready, published videos.
     Viewer access may require authentication, depending on the service settings.
     JSON fields use snake_case. IDs are UUIDs and timestamps use UTC.
@@ -25,6 +26,8 @@ tags:
     description: Get video playback links.
   - name: Thumbnails
     description: Upload custom thumbnails or use generated thumbnails.
+  - name: Jobs
+    description: Check background processing jobs.
 x-unresolved-decisions:
   - Identity provider, admin role mapping, and whether viewer reads require authentication.
   - Maximum source upload bytes, effective size enforcement, and confirmed-source finalization.
@@ -52,6 +55,8 @@ paths:
     $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:complete-upload
   /videos/{id}/thumbnails:
     $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails
+  /jobs/{job_id}:
+    $ref: paths/jobs.yaml#/~1jobs~1{job_id}
 components:
   securitySchemes:
     bearer_auth:
@@ -61,6 +66,8 @@ components:
   parameters:
     id:
       $ref: parameters/id.yaml
+    job_id:
+      $ref: parameters/job_id.yaml
     limit:
       $ref: parameters/limit.yaml
     cursor:
@@ -74,6 +81,8 @@ components:
   headers:
     response_location:
       $ref: parameters/response_location.yaml
+    job_location:
+      $ref: parameters/job_location.yaml
   requestBodies:
     upload_completion:
       required: true
@@ -128,10 +137,10 @@ components:
       $ref: schemas/uploads/source_upload.yaml
     thumbnail_upload:
       $ref: schemas/thumbnails/thumbnail_upload.yaml
-    source_upload_processing:
-      $ref: schemas/uploads/source_upload_processing.yaml
-    video_retry:
-      $ref: schemas/videos/video_retry.yaml
+    job:
+      $ref: schemas/jobs/job.yaml
+    job_status:
+      $ref: schemas/jobs/job_status.yaml
     video_deletion:
       $ref: schemas/videos/video_deletion.yaml
     playback:
@@ -166,6 +175,10 @@ components:
       $ref: responses/forbidden.yaml
     video_not_found:
       $ref: responses/video_not_found.yaml
+    job_not_found:
+      $ref: responses/job_not_found.yaml
+    job_accepted:
+      $ref: responses/job_accepted.yaml
     conflict:
       $ref: responses/conflict.yaml
     file_too_large:

@@ -17,6 +17,8 @@ from src.core.generated.authentication import (
     require_authentication as _generator_require_authentication,
 )
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
+from src.schemas.generated.jobs import Job as _CompleteUploadResponse
+from src.schemas.generated.jobs import Job as _RetryProcessingResponse
 from src.schemas.generated.operations import (
     VideosCompleteUploadIdParameter as _CompleteUploadIdParameter,
 )
@@ -46,9 +48,6 @@ from src.schemas.generated.operations import (
 )
 from src.schemas.generated.uploads import SourceUpload as _UploadUrlResponse
 from src.schemas.generated.uploads import SourceUploadCreate as _UploadUrlBody
-from src.schemas.generated.uploads import (
-    SourceUploadProcessing as _CompleteUploadResponse,
-)
 from src.schemas.generated.uploads import UploadComplete as _CompleteUploadBody
 from src.schemas.generated.videos import (
     PublicationStatus as _ListVideosPublicationStatusParameter,
@@ -58,7 +57,6 @@ from src.schemas.generated.videos import Video as _GetVideoResponse
 from src.schemas.generated.videos import Video as _UpdateVideoResponse
 from src.schemas.generated.videos import VideoCreate as _CreateVideoBody
 from src.schemas.generated.videos import VideoDeletion as _DeleteVideoResponse
-from src.schemas.generated.videos import VideoRetry as _RetryProcessingResponse
 from src.schemas.generated.videos import Videos as _ListVideosResponse
 from src.schemas.generated.videos import VideoStatus as _ListVideosStatusParameter
 from src.schemas.generated.videos import VideoUpdate as _UpdateVideoBody
@@ -257,13 +255,15 @@ async def complete_upload(
         _generator_Path(alias="id", description="Video ID."),
     ],
     body: _generator_Annotated[_CompleteUploadBody, _generator_Body()],
+    response: _generator_Response,
 ) -> _CompleteUploadResponse:
+    response.headers["Location"] = "/v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
     return _generator_TypeAdapter(_CompleteUploadResponse).validate_python(
         {
-            "processing_job_id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
+            "content_id": "550e8400-e29b-41d4-a716-446655440000",
+            "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
+            "message": None,
             "status": "QUEUED",
-            "thumbnail_status": "PENDING",
-            "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },
     )
 
@@ -282,13 +282,15 @@ async def retry_processing(
         _RetryProcessingIdParameter,
         _generator_Path(alias="id", description="Video ID."),
     ],
+    response: _generator_Response,
 ) -> _RetryProcessingResponse:
+    response.headers["Location"] = "/v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
     return _generator_TypeAdapter(_RetryProcessingResponse).validate_python(
         {
-            "attempt": 2,
-            "processing_job_id": "ac9afc7e-d6d1-4b5d-b0f2-fdb591862ea5",
+            "content_id": "550e8400-e29b-41d4-a716-446655440000",
+            "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
+            "message": None,
             "status": "QUEUED",
-            "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },
     )
 

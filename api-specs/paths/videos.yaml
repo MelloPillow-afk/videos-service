@@ -81,7 +81,7 @@
       - Videos
     operationId: videos.get_video
     summary: Get Video
-    description: Get video details and processing status.
+    description: Get video details and lifecycle status.
     security:
       - bearer_auth: []
       - {}
@@ -223,17 +223,13 @@
       - Uploads
     operationId: videos.complete_upload
     summary: Confirm Video Upload
-    description: Confirm an upload and start video and thumbnail processing.
+    description: Confirm an upload, start processing, and return the video job.
     x-required-role: admin
     requestBody:
       $ref: ../index.yaml#/components/requestBodies/upload_completion
     responses:
       '202':
-        description: Upload accepted for processing.
-        content:
-          application/json:
-            schema:
-              $ref: ../schemas/uploads/source_upload_processing.yaml
+        $ref: ../responses/job_accepted.yaml
       '400':
         $ref: ../responses/bad_request.yaml
       '401':
@@ -305,15 +301,11 @@
       - Videos
     operationId: videos.retry_processing
     summary: Retry Video Processing
-    description: Retry failed video processing.
+    description: Retry failed video processing with a new job.
     x-required-role: admin
     responses:
       '202':
-        description: Video processing retry requested.
-        content:
-          application/json:
-            schema:
-              $ref: ../schemas/videos/video_retry.yaml
+        $ref: ../responses/job_accepted.yaml
       '400':
         $ref: ../responses/bad_request.yaml
       '401':

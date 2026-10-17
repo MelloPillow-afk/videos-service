@@ -1,5 +1,5 @@
 {
-  "cases": 29,
+  "cases": 32,
   "skipped": [
     "videos.list_videos: query cursor has no applicable invalid parameter case",
     "videos.delete_video: DELETE 202 success status is outside MVP coverage",
