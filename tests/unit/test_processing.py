@@ -4,7 +4,7 @@ import pytest
 
 from src.providers.ffmpeg import MediaInfo, Rendition
 from src.services.processing import renditions
-from src.worker import main
+from src.workers.media import main
 
 
 def media(width: int, height: int) -> MediaInfo:

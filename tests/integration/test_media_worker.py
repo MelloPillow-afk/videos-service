@@ -11,7 +11,7 @@ from psycopg import AsyncConnection
 
 from src.config import Settings
 from src.providers import cloudflare, ffmpeg
-from src.worker import run
+from src.workers.media import run
 from tests.fakes import FakeStorage
 from tests.rows import insert_video
 

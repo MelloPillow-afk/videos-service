@@ -1,6 +1,6 @@
-"""Worker process: runs one background job, then exits.
+"""Media worker: runs one video-processing or thumbnail job, then exits.
 
-Usage: python -m src.worker <job_id>
+Usage: python -m src.workers.media <job_id>
 """
 
 import asyncio
@@ -27,7 +27,7 @@ async def run(job_id: UUID, settings: Settings) -> None:
 def main(arguments: list[str]) -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     if len(arguments) != 1:
-        sys.exit("usage: python -m src.worker <job_id>")
+        sys.exit("usage: python -m src.workers.media <job_id>")
     asyncio.run(run(UUID(arguments[0]), Settings()))
 
 

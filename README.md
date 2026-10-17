@@ -54,9 +54,9 @@ and roll back operations that raise an exception.
 `make db-down` stops the databases while keeping the dev database volume.
 The test database uses temporary storage and runs separately on port 5433.
 
-### Worker
+### Media worker
 
-Completing an upload queues a video job and a thumbnail job. `python -m src.worker <job_id>`
+Completing an upload queues a video job and a thumbnail job. `python -m src.workers.media <job_id>`
 runs one job and exits: it downloads the source from the raw bucket, checks it with
 FFprobe, and publishes HLS renditions (360p, 720p, and 1080p, never upscaled) or a
 1280 × 720 thumbnail to the processed bucket. A failed job records a readable message;
@@ -89,6 +89,9 @@ src/
     database.py
     migrate.py
   domain/              # Shared domain models (empty initially)
+  providers/           # Outgoing clients: auth, R2, Cloud Run, FFmpeg
+  workers/             # Job process entrypoints, like app.py for HTTP
+    media.py           # python -m src.workers.media <job_id>
 migrations/            # Future Yoyo SQL migrations
 tests/
   unit/                # Reachability and settings checks

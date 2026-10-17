@@ -22,7 +22,7 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 USER app
-ENTRYPOINT ["python", "-m", "src.worker"]
+ENTRYPOINT ["python", "-m", "src.workers.media"]
 
 FROM base AS api
 # Cloud Run supplies PORT.
