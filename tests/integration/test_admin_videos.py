@@ -204,3 +204,34 @@ async def test_invalid_edits_are_rejected(
     response = await client.patch(f"/v1/admin/videos/{video_id}", json=body)
 
     assert response.status_code == 422
+
+
+async def test_deleted_video_is_gone_but_kept_for_cleanup(
+    client: AsyncClient, db: AsyncConnection
+) -> None:
+    video_id = await insert_video(db, status="READY")
+    await db.execute(
+        "INSERT INTO jobs (video_id, kind, status) VALUES (%s, 'VIDEO_PROCESSING', 'SUCCEEDED')",
+        (video_id,),
+    )
+    path = f"/v1/admin/videos/{video_id}"
+
+    response = await client.delete(path)
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert (await client.get(path)).status_code == 404
+    assert (await client.delete(path)).status_code == 404
+    cursor = await db.execute(
+        "SELECT deleted_at IS NOT NULL, (SELECT count(*) FROM jobs WHERE video_id = videos.id) "
+        "FROM videos WHERE id = %s",
+        (video_id,),
+    )
+    assert await cursor.fetchone() == (True, 1)
+
+
+async def test_missing_video_cannot_be_deleted(client: AsyncClient) -> None:
+    response = await client.delete(f"/v1/admin/videos/{uuid4()}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "The video was not found."}

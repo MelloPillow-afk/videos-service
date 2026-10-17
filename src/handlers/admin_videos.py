@@ -9,6 +9,7 @@ from fastapi import HTTPException, Path, Response
 
 from src.domain import videos as domain
 from src.schemas.generated.operations import (
+    AdminVideosDeleteVideoIdParameter,
     AdminVideosGetVideoIdParameter,
     AdminVideosUpdateVideoIdParameter,
 )
@@ -58,6 +59,16 @@ async def update_video(
     except domain.VideoNotReady:
         raise HTTPException(status_code=409, detail="The video is not ready.") from None
     return _video(video)
+
+
+async def delete_video(
+    *,
+    id: Annotated[AdminVideosDeleteVideoIdParameter, Path(alias="id", description="Video ID.")],
+) -> None:
+    try:
+        await videos_service.delete_video(UUID(id))
+    except domain.VideoNotFound:
+        raise HTTPException(status_code=404, detail="The video was not found.") from None
 
 
 def _video(video: domain.Video) -> Video:

@@ -118,6 +118,11 @@ async def arrange_admin_videos_get_video(api_case: APICase, db: AsyncConnection)
 
 
 @pytest_asyncio.fixture
+async def arrange_admin_videos_delete_video(api_case: APICase, db: AsyncConnection) -> None:
+    await insert_video(db, id=api_case.path_params["id"])
+
+
+@pytest_asyncio.fixture
 async def arrange_admin_videos_update_video(api_case: APICase, db: AsyncConnection) -> None:
     await insert_example_video(api_case, db)
     # The update stamps updated_at with now(); pin it to the example instead.

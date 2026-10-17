@@ -38,3 +38,8 @@ async def update_video(video: Video) -> Video:
     if updated is None:
         raise VideoNotFound(video.id)  # Deleted after it was read.
     return updated
+
+
+async def delete_video(video_id: UUID) -> None:
+    if not await videos_repository.delete_video(video_id):
+        raise VideoNotFound(video_id)

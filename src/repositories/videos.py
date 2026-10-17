@@ -60,6 +60,18 @@ async def update_video(video: Video) -> Video | None:
     return None if row is None else _video(row)
 
 
+async def delete_video(video_id: UUID) -> bool:
+    """Mark a video deleted; its media and row are removed later by cleanup."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET deleted_at = now() "
+            "WHERE id = %s AND deleted_at IS NULL RETURNING id",
+            (video_id,),
+        )
+        row = await cursor.fetchone()
+    return row is not None
+
+
 def _video(row: TupleRow) -> Video:
     (
         id_,
