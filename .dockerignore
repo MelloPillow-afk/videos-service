@@ -1,0 +1,14 @@
+.venv
+.git
+.github
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage*
+coverage.xml
+htmlcov
+.env
+.env.*
+tests
+api-specs
+docs

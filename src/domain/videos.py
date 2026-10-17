@@ -69,3 +69,11 @@ class UploadMissing(Exception):
 
 class UploadSizeMismatch(Exception):
     """The uploaded file's size differs from the size declared for the upload."""
+
+
+class InvalidMedia(Exception):
+    """The uploaded file is not a video the service accepts; the message says why."""
+
+
+class VideoChanged(Exception):
+    """The video was deleted or its job finished while a worker processed it."""

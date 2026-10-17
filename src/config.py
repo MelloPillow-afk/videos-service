@@ -32,11 +32,13 @@ class Settings(BaseSettings):
     r2_endpoint_url: str = "http://localhost:9000"
     r2_access_key_id: SecretStr = SecretStr("minioadmin")
     r2_secret_access_key: SecretStr = SecretStr("minioadmin")
-    # Private uploads; viewers fetch processed media from MEDIA_BASE_URL.
+    # Private uploads, and the processed media viewers fetch from MEDIA_BASE_URL.
     r2_raw_bucket: str = Field(default="videos-raw", min_length=1)
+    r2_processed_bucket: str = Field(default="videos-processed", min_length=1)
     media_base_url: str = "http://localhost:9000/videos-processed"
     max_upload_bytes: int = Field(default=104_857_600, ge=1)
     upload_url_ttl_seconds: int = Field(default=900, ge=60, le=604_800)
+    max_duration_seconds: float = Field(default=300, gt=0)
 
     # Cloud Run job that runs the worker; required in prod.
     gcp_project: str | None = None

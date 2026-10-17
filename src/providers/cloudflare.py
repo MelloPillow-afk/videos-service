@@ -1,15 +1,22 @@
 """Cloudflare R2 object storage, through its S3-compatible API."""
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from mypy_boto3_s3 import S3Client
 
 from src.config import Settings
+
+# Stubs are a development dependency.
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +72,31 @@ async def uploaded_size(key: str) -> int | None:
             return None
         raise
     return head["ContentLength"]
+
+
+async def download_source(key: str, path: Path) -> None:
+    """Save an uploaded file from the private upload bucket to a local path."""
+    client, settings = _storage()
+    await asyncio.to_thread(client.download_file, settings.r2_raw_bucket, key, str(path))
+
+
+async def upload_media(path: Path, key: str) -> None:
+    """Publish a processed file to the public media bucket."""
+    client, settings = _storage()
+    await asyncio.to_thread(
+        client.upload_file,
+        str(path),
+        settings.r2_processed_bucket,
+        key,
+        ExtraArgs={"ContentType": _MEDIA_TYPES[path.suffix]},
+    )
+
+
+_MEDIA_TYPES = {
+    ".m3u8": "application/vnd.apple.mpegurl",
+    ".ts": "video/mp2t",
+    ".jpg": "image/jpeg",
+}
 
 
 def media_url(key: str) -> str:

@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from psycopg import AsyncConnection
 from psycopg.rows import TupleRow
 
 from src.domain.jobs import JobKind, JobStatus
@@ -153,6 +154,51 @@ async def accept_upload(video: Video) -> dict[JobKind, UUID] | None:
         )
         rows = await cursor.fetchall()
     return {JobKind(kind): job_id for kind, job_id in rows}
+
+
+async def finish_processing(video: Video, job_id: UUID) -> bool:
+    """Save processed media and succeed the running video job together. False when the
+    video is no longer processing the same upload, or the job is no longer running."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET status = %s, playback_key = %s, duration_seconds = %s, "
+            "updated_at = now() "
+            "WHERE id = %s AND upload_id = %s AND deleted_at IS NULL AND status = 'PROCESSING' "
+            "RETURNING id",
+            (
+                video.status.value,
+                video.playback_key,
+                video.duration_seconds,
+                video.id,
+                video.upload_id,
+            ),
+        )
+        return await cursor.fetchone() is not None and await _succeed_job(conn, job_id)
+
+
+async def finish_thumbnail(video: Video, job_id: UUID) -> bool:
+    """Save a generated thumbnail and succeed the running thumbnail job together. False
+    when the video's upload changed or it was deleted, or the job is no longer running."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET generated_thumbnail_key = %s, updated_at = now() "
+            "WHERE id = %s AND upload_id = %s AND deleted_at IS NULL RETURNING id",
+            (video.generated_thumbnail_key, video.id, video.upload_id),
+        )
+        return await cursor.fetchone() is not None and await _succeed_job(conn, job_id)
+
+
+async def _succeed_job(conn: AsyncConnection[TupleRow], job_id: UUID) -> bool:
+    cursor = await conn.execute(
+        "UPDATE jobs SET status = 'SUCCEEDED', updated_at = now() "
+        "WHERE id = %s AND status = 'RUNNING' RETURNING id",
+        (job_id,),
+    )
+    if await cursor.fetchone() is None:
+        # Keep the video unchanged when its job was already finished.
+        await conn.rollback()
+        return False
+    return True
 
 
 async def delete_video(video_id: UUID) -> bool:

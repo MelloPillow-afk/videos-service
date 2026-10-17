@@ -77,6 +77,8 @@ def storage(monkeypatch: pytest.MonkeyPatch) -> FakeStorage:
     fake = FakeStorage()
     monkeypatch.setattr(cloudflare, "presign_upload", fake.presign_upload)
     monkeypatch.setattr(cloudflare, "uploaded_size", fake.uploaded_size)
+    monkeypatch.setattr(cloudflare, "download_source", fake.download_source)
+    monkeypatch.setattr(cloudflare, "upload_media", fake.upload_media)
     return fake
 
 

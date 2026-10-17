@@ -54,6 +54,22 @@ and roll back operations that raise an exception.
 `make db-down` stops the databases while keeping the dev database volume.
 The test database uses temporary storage and runs separately on port 5433.
 
+### Worker
+
+Completing an upload queues a video job and a thumbnail job. `python -m src.worker <job_id>`
+runs one job and exits: it downloads the source from the raw bucket, checks it with
+FFprobe, and publishes HLS renditions (360p, 720p, and 1080p, never upscaled) or a
+1280 × 720 thumbnail to the processed bucket. A failed job records a readable message;
+a failed video job also fails the video. Workers need FFmpeg and the API's settings.
+
+With `API_ENV=prod`, the API starts each job as an execution of the Cloud Run job
+`WORKER_JOB_NAME`. In dev, jobs stay queued until a local launcher exists; run the
+worker by hand to process one.
+
+The `Dockerfile` builds both images: `docker build --target api .` and
+`docker build --target worker .`, which adds FFmpeg. Worker tests run real FFmpeg, so
+install it locally (`brew install ffmpeg`).
+
 ## Structure and layers
 
 ```text

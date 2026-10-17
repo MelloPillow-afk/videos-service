@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
 
 from src.providers.cloudflare import PresignedUpload
@@ -11,9 +12,10 @@ UPLOAD_EXPIRES_AT = datetime(2026, 10, 13, 14, 15, tzinfo=UTC)
 
 @dataclass
 class FakeStorage:
-    """Uploaded files by key, holding only their sizes."""
+    """Uploaded files and published media, by key."""
 
-    files: dict[str, int] = field(default_factory=dict[str, int])
+    files: dict[str, bytes] = field(default_factory=dict[str, bytes])
+    media: dict[str, bytes] = field(default_factory=dict[str, bytes])
 
     def presign_upload(self, key: str, _content_type: str) -> PresignedUpload:
         return PresignedUpload(
@@ -22,7 +24,14 @@ class FakeStorage:
         )
 
     async def uploaded_size(self, key: str) -> int | None:
-        return self.files.get(key)
+        file = self.files.get(key)
+        return None if file is None else len(file)
+
+    async def download_source(self, key: str, path: Path) -> None:
+        path.write_bytes(self.files[key])
+
+    async def upload_media(self, path: Path, key: str) -> None:
+        self.media[key] = path.read_bytes()
 
 
 @dataclass

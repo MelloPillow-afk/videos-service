@@ -30,7 +30,7 @@ jobs:
       - run: make check
 
   tests:
-    name: HTTP, database, and migrations
+    name: HTTP, database, migrations, and media
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -58,6 +58,8 @@ jobs:
         with:
           version: "0.12.4"
           enable-cache: true
+      # Worker tests run real FFmpeg.
+      - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends ffmpeg
       - run: uv sync --locked
       - run: make migrate
       - run: make coverage

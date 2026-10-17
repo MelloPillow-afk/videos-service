@@ -27,7 +27,7 @@ async def start_upload(client: AsyncClient, video_id: str, size: int = SIZE) -> 
 async def upload(client: AsyncClient, storage: FakeStorage, video_id: str, size: int = SIZE) -> str:
     """Start an upload and store its file; returns the upload ID."""
     upload_id = (await start_upload(client, video_id, size))["upload_id"]
-    storage.files[f"videos/{video_id}/uploads/{upload_id}/source.mp4"] = size
+    storage.files[f"videos/{video_id}/uploads/{upload_id}/source.mp4"] = bytes(size)
     return upload_id
 
 
@@ -196,7 +196,7 @@ async def test_uploaded_file_must_match_the_declared_size_and_limit(
 ) -> None:
     video_id = await insert_video(db)
     upload_id = await upload(client, storage, video_id)
-    storage.files[f"videos/{video_id}/uploads/{upload_id}/source.mp4"] = stored_size
+    storage.files[f"videos/{video_id}/uploads/{upload_id}/source.mp4"] = bytes(stored_size)
 
     response = await complete(client, video_id, upload_id)
 
