@@ -39,8 +39,15 @@ class Video:
     # Set by processing.
     duration_seconds: float | None
     playback_key: str | None
-    generated_thumbnail_key: str | None
+    # Where the generated thumbnail's sizes are stored.
+    generated_thumbnail_prefix: str | None
     thumbnail_job_status: JobStatus | None
+    # The current custom thumbnail upload; a new upload URL replaces it.
+    thumbnail_upload_id: UUID | None
+    thumbnail_upload_key: str | None
+    thumbnail_upload_size_bytes: int | None
+    # Set once the custom thumbnail's sizes are rendered; shown instead of the generated one.
+    custom_thumbnail_prefix: str | None
 
 
 class VideoNotFound(Exception):

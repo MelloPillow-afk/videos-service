@@ -6,7 +6,10 @@
       - Thumbnails
     operationId: admin.thumbnails.upload_url
     summary: Create Video Thumbnail Upload URL
-    description: Get a URL and instructions to upload a custom thumbnail.
+    description: >-
+      Get a URL and instructions to upload a custom thumbnail. The image must
+      be landscape 16:9 and at least 1280 × 720. A new upload URL replaces any
+      upload not yet confirmed.
     requestBody:
       required: true
       content:
@@ -49,16 +52,15 @@
       - Thumbnails
     operationId: admin.thumbnails.complete_upload
     summary: Confirm Video Thumbnail Upload
-    description: Confirm an upload and use it as the custom thumbnail.
+    description: >-
+      Confirm an upload and start rendering it at every thumbnail size; return
+      the job. The current thumbnail stays until the job succeeds. A failed job
+      explains why the image was rejected.
     requestBody:
       $ref: ../../index.yaml#/components/requestBodies/upload_completion
     responses:
-      '200':
-        description: The current thumbnail.
-        content:
-          application/json:
-            schema:
-              $ref: ../../schemas/thumbnails/thumbnail.yaml
+      '202':
+        $ref: ../../responses/job_accepted.yaml
       '400':
         $ref: ../../responses/bad_request.yaml
       '401':
@@ -92,7 +94,9 @@
       - Thumbnails
     operationId: admin.thumbnails.delete_thumbnail
     summary: Delete Video Thumbnail
-    description: Remove the custom thumbnail and use the generated image.
+    description: >-
+      Remove the custom thumbnail, and any upload not yet processed, and use
+      the generated image.
     responses:
       '200':
         description: The generated thumbnail or its current status.

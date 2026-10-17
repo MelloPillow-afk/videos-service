@@ -29,7 +29,7 @@ async def test_created_video_is_a_stored_draft(client: AsyncClient, db: AsyncCon
         "publication_status": "DRAFT",
         "size_bytes": None,
         "duration_seconds": None,
-        "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
+        "thumbnail": {"status": "PENDING", "source": "NONE", "url": None, "sizes": None},
         "published_at": None,
         "created_at": None,
         "updated_at": None,

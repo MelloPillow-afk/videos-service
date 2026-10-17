@@ -11,8 +11,15 @@ from fastapi import HTTPException
 from src.clients import cloudflare
 from src.domain.jobs import JobStatus
 from src.domain.videos import Video
+from src.libs.thumbnails import SIZES, size_key
 from src.schemas.generated.shared import Pagination
-from src.schemas.generated.thumbnails import ThumbnailImage, ThumbnailStatus
+from src.schemas.generated.thumbnails import (
+    ThumbnailImage,
+    ThumbnailSize,
+    ThumbnailSizesValue,
+    ThumbnailSource,
+    ThumbnailStatus,
+)
 
 type Position = tuple[datetime, UUID]
 
@@ -22,12 +29,31 @@ def timestamp(value: datetime) -> str:
 
 
 def thumbnail(video: Video) -> ThumbnailImage:
-    """The generated thumbnail once ready, with its generation job's progress."""
-    key = video.generated_thumbnail_key
+    """The custom thumbnail when one is rendered; otherwise the generated thumbnail once
+    ready, with its generation job's progress."""
+    if video.custom_thumbnail_prefix:
+        return _thumbnail_image("READY", "CUSTOM", video.custom_thumbnail_prefix)
+    prefix = video.generated_thumbnail_prefix
+    status = _THUMBNAIL_STATUS[video.thumbnail_job_status]
+    if prefix:
+        return _thumbnail_image(status, "GENERATED", prefix)
+    return ThumbnailImage(status=status, source="NONE", url=None, sizes=None)
+
+
+def _thumbnail_image(
+    status: ThumbnailStatus, source: ThumbnailSource, prefix: str
+) -> ThumbnailImage:
+    sizes = {
+        name: ThumbnailSize(
+            width=width, height=height, url=cloudflare.media_url(size_key(prefix, name))
+        )
+        for name, (width, height) in SIZES.items()
+    }
     return ThumbnailImage(
-        status=_THUMBNAIL_STATUS[video.thumbnail_job_status],
-        source="GENERATED" if key else "NONE",
-        url=cloudflare.media_url(key) if key else None,
+        status=status,
+        source=source,
+        url=sizes["xl"].url,
+        sizes=ThumbnailSizesValue.model_validate(sizes),
     )
 
 

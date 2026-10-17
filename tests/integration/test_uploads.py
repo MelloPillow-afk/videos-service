@@ -153,7 +153,7 @@ async def test_completed_upload_queues_and_launches_processing(
     video = (await client.get(f"/v1/admin/videos/{video_id}")).json()
     assert video["status"] == "PROCESSING"
     assert video["latest_job_id"] == job["id"]
-    assert video["thumbnail"] == {"status": "PENDING", "source": "NONE", "url": None}
+    assert video["thumbnail"] == {"status": "PENDING", "source": "NONE", "url": None, "sizes": None}
 
 
 async def test_completing_again_returns_the_same_job(
@@ -261,4 +261,4 @@ async def test_thumbnail_that_cannot_start_does_not_fail_the_video(
     assert response.json()["status"] == "QUEUED"
     video = (await client.get(f"/v1/admin/videos/{video_id}")).json()
     assert video["status"] == "PROCESSING"
-    assert video["thumbnail"] == {"status": "FAILED", "source": "NONE", "url": None}
+    assert video["thumbnail"] == {"status": "FAILED", "source": "NONE", "url": None, "sizes": None}

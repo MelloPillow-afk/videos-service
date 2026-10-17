@@ -176,11 +176,6 @@ MODULES = ["admin.thumbnails", "admin.videos", "health", "jobs", "playback", "vi
 
 
 @pytest.fixture
-def arrange_admin_thumbnails_complete_upload(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
 def arrange_admin_thumbnails_delete_thumbnail(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
 

@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     r2_processed_bucket: str = Field(default="videos-processed", min_length=1)
     media_base_url: str = "https://localhost:9443/videos-processed"
     max_upload_bytes: int = Field(default=104_857_600, ge=1)
+    max_thumbnail_bytes: int = Field(default=10_485_760, ge=1)
     upload_url_ttl_seconds: int = Field(default=900, ge=60, le=604_800)
     max_duration_seconds: float = Field(default=300, gt=0)
 

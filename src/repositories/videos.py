@@ -13,7 +13,8 @@ from src.repositories.connections import db_connection
 _COLUMNS = (
     "videos.id, title, description, videos.status, publication_status, published_at, "
     "videos.created_at, videos.updated_at, upload_id, source_key, size_bytes, "
-    "duration_seconds, playback_key, generated_thumbnail_key"
+    "duration_seconds, playback_key, generated_thumbnail_prefix, thumbnail_upload_id, "
+    "thumbnail_upload_key, thumbnail_upload_size_bytes, custom_thumbnail_prefix"
 )
 # Each video has at most one job of each kind.
 _JOBS = (
@@ -181,11 +182,99 @@ async def finish_thumbnail(video: Video, job_id: UUID) -> bool:
     when the video's upload changed or it was deleted, or the job is no longer running."""
     async with db_connection() as conn:
         cursor = await conn.execute(
-            "UPDATE videos SET generated_thumbnail_key = %s, updated_at = now() "
+            "UPDATE videos SET generated_thumbnail_prefix = %s, updated_at = now() "
             "WHERE id = %s AND upload_id = %s AND deleted_at IS NULL RETURNING id",
-            (video.generated_thumbnail_key, video.id, video.upload_id),
+            (video.generated_thumbnail_prefix, video.id, video.upload_id),
         )
         return await cursor.fetchone() is not None and await _succeed_job(conn, job_id)
+
+
+async def start_thumbnail_upload(video: Video) -> Video | None:
+    """Save a video's new current thumbnail upload, deleting the previous upload's job."""
+    async with db_connection() as conn:
+        await _delete_custom_thumbnail_job(conn, video.id)
+        cursor = await conn.execute(
+            "WITH updated AS ("
+            "UPDATE videos SET thumbnail_upload_id = %s, thumbnail_upload_key = %s, "
+            "thumbnail_upload_size_bytes = %s, updated_at = now() "
+            "WHERE id = %s AND deleted_at IS NULL RETURNING *"
+            ") "
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM updated AS videos {_JOBS}",
+            (
+                video.thumbnail_upload_id,
+                video.thumbnail_upload_key,
+                video.thumbnail_upload_size_bytes,
+                video.id,
+            ),
+        )
+        row = await cursor.fetchone()
+    return None if row is None else _video(row)
+
+
+async def accept_thumbnail_upload(video: Video) -> UUID | None:
+    """Save the uploaded thumbnail's size and queue its job together. None when the
+    current thumbnail upload changed or was already accepted."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET thumbnail_upload_size_bytes = %s, updated_at = now() "
+            "WHERE id = %s AND thumbnail_upload_id = %s AND deleted_at IS NULL RETURNING id",
+            (video.thumbnail_upload_size_bytes, video.id, video.thumbnail_upload_id),
+        )
+        if await cursor.fetchone() is None:
+            return None
+        cursor = await conn.execute(
+            "INSERT INTO jobs (video_id, kind) VALUES (%s, 'CUSTOM_THUMBNAIL_PROCESSING') "
+            "ON CONFLICT (video_id, kind) DO NOTHING RETURNING id",
+            (video.id,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            await conn.rollback()
+            return None
+    return row[0]
+
+
+async def finish_custom_thumbnail(video: Video, job_id: UUID) -> bool:
+    """Show a rendered custom thumbnail and succeed its running job together. False when
+    the thumbnail upload changed or was removed, the video was deleted, or the job is no
+    longer running."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET custom_thumbnail_prefix = %s, updated_at = now() "
+            "WHERE id = %s AND thumbnail_upload_id = %s AND deleted_at IS NULL RETURNING id",
+            (video.custom_thumbnail_prefix, video.id, video.thumbnail_upload_id),
+        )
+        return await cursor.fetchone() is not None and await _succeed_job(conn, job_id)
+
+
+async def remove_custom_thumbnail(video: Video) -> Video | None:
+    """Clear a video's custom thumbnail and its current upload, deleting the upload's job."""
+    async with db_connection() as conn:
+        await _delete_custom_thumbnail_job(conn, video.id)
+        cursor = await conn.execute(
+            "WITH updated AS ("
+            "UPDATE videos SET custom_thumbnail_prefix = %s, thumbnail_upload_id = %s, "
+            "thumbnail_upload_key = %s, thumbnail_upload_size_bytes = %s, updated_at = now() "
+            "WHERE id = %s AND deleted_at IS NULL RETURNING *"
+            ") "
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM updated AS videos {_JOBS}",
+            (
+                video.custom_thumbnail_prefix,
+                video.thumbnail_upload_id,
+                video.thumbnail_upload_key,
+                video.thumbnail_upload_size_bytes,
+                video.id,
+            ),
+        )
+        row = await cursor.fetchone()
+    return None if row is None else _video(row)
+
+
+async def _delete_custom_thumbnail_job(conn: AsyncConnection[TupleRow], video_id: UUID) -> None:
+    await conn.execute(
+        "DELETE FROM jobs WHERE video_id = %s AND kind = 'CUSTOM_THUMBNAIL_PROCESSING'",
+        (video_id,),
+    )
 
 
 async def _succeed_job(conn: AsyncConnection[TupleRow], job_id: UUID) -> bool:
@@ -233,7 +322,11 @@ def _video(row: TupleRow) -> Video:
         size_bytes,
         duration_seconds,
         playback_key,
-        generated_thumbnail_key,
+        generated_thumbnail_prefix,
+        thumbnail_upload_id,
+        thumbnail_upload_key,
+        thumbnail_upload_size_bytes,
+        custom_thumbnail_prefix,
         latest_job_id,
         thumbnail_job_status,
     ) = row
@@ -252,6 +345,10 @@ def _video(row: TupleRow) -> Video:
         size_bytes=size_bytes,
         duration_seconds=None if duration_seconds is None else float(duration_seconds),
         playback_key=playback_key,
-        generated_thumbnail_key=generated_thumbnail_key,
+        generated_thumbnail_prefix=generated_thumbnail_prefix,
         thumbnail_job_status=thumbnail_job_status and JobStatus(thumbnail_job_status),
+        thumbnail_upload_id=thumbnail_upload_id,
+        thumbnail_upload_key=thumbnail_upload_key,
+        thumbnail_upload_size_bytes=thumbnail_upload_size_bytes,
+        custom_thumbnail_prefix=custom_thumbnail_prefix,
     )

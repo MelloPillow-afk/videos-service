@@ -84,6 +84,7 @@ ignore_names = [
   # Handwritten handlers the generated routers select by operation ID.
   "upload_url",
   "get_playback",
+  "delete_thumbnail",
   # Enum members reached by value from database rows.
   "VIDEO_PROCESSING",
   "THUMBNAIL_GENERATION",

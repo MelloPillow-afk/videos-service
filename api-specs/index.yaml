@@ -34,9 +34,8 @@ tags:
 x-unresolved-decisions:
   - Whether viewer reads require authentication.
   - Maximum source upload bytes, effective size enforcement, and confirmed-source finalization.
-  - Approved thumbnail formats, dimensions, aspect ratio, byte limit, and cropping policy.
+  - On-demand image resizing through an image proxy instead of fixed rendered thumbnail sizes.
   - State retention following a rejected source confirmation.
-  - Active thumbnail representation after removing custom when generation has failed.
 paths:
   /ping:
     $ref: paths/health.yaml#/~1ping
@@ -118,6 +117,10 @@ components:
       $ref: schemas/shared/delivery_url.yaml
     thumbnail_image:
       $ref: schemas/thumbnails/thumbnail_image.yaml
+    thumbnail_sizes:
+      $ref: schemas/thumbnails/thumbnail_sizes.yaml
+    thumbnail_size:
+      $ref: schemas/thumbnails/thumbnail_size.yaml
     admin_video:
       $ref: schemas/videos/admin_video.yaml
     admin_video_create:

@@ -109,6 +109,49 @@ async def make_thumbnail(
     )  # fmt: skip
 
 
+@dataclass(frozen=True, slots=True)
+class ImageInfo:
+    codec: str
+    width: int
+    height: int
+
+
+async def probe_image(path: Path) -> ImageInfo | None:
+    """The file's first picture, or None when it holds none FFprobe can read."""
+    try:
+        output = await _run(
+            "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_streams",
+            "-of", "json", str(path),
+        )  # fmt: skip
+    except MediaToolError:
+        return None
+    streams: list[dict[str, Any]] = json.loads(output).get("streams", [])
+    if not streams:
+        return None
+    stream = streams[0]
+    return ImageInfo(codec=stream["codec_name"], width=stream["width"], height=stream["height"])
+
+
+async def crop_image(source: Path, output: Path, *, width: int, height: int) -> None:
+    """Write a JPEG that fills width x height, cropping the centered overflow."""
+    fill = (
+        f"scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},setsar=1"
+    )
+    await _run(
+        "ffmpeg", "-v", "error", "-y", "-i", str(source),
+        "-frames:v", "1", "-vf", fill, "-q:v", "3", str(output),
+    )  # fmt: skip
+
+
+async def resize_image(source: Path, output: Path, *, width: int, height: int) -> None:
+    """Write a JPEG scaled to exactly width x height."""
+    await _run(
+        "ffmpeg", "-v", "error", "-y", "-i", str(source),
+        "-frames:v", "1", "-vf", f"scale={width}:{height},setsar=1", "-q:v", "3", str(output),
+    )  # fmt: skip
+
+
 def _rotation(stream: dict[str, Any]) -> int:
     for side_data in stream.get("side_data_list", []):
         if "rotation" in side_data:

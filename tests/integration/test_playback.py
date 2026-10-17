@@ -6,12 +6,13 @@ import pytest
 from httpx import AsyncClient
 from psycopg import AsyncConnection
 
+from tests.media_urls import expected_sizes
 from tests.rows import insert_video
 
 pytestmark = pytest.mark.integration
 
 PLAYBACK_KEY = "videos/v/uploads/u/hls/master.m3u8"
-THUMBNAIL_KEY = "videos/v/uploads/u/thumbnail.jpg"
+THUMBNAIL_PREFIX = "videos/v/uploads/u/thumbnails"
 
 
 async def insert_processed_video(db: AsyncConnection, **values: object) -> str:
@@ -21,7 +22,7 @@ async def insert_processed_video(db: AsyncConnection, **values: object) -> str:
         size_bytes=1024,
         duration_seconds=12.5,
         playback_key=PLAYBACK_KEY,
-        generated_thumbnail_key=THUMBNAIL_KEY,
+        generated_thumbnail_prefix=THUMBNAIL_PREFIX,
         **values,
     )
     await db.execute(
@@ -43,7 +44,8 @@ async def test_processed_media_appears_on_the_admin_video(
     assert video["thumbnail"] == {
         "status": "READY",
         "source": "GENERATED",
-        "url": f"https://media.example.com/{THUMBNAIL_KEY}",
+        "url": f"https://media.example.com/{THUMBNAIL_PREFIX}/xl.jpg",
+        "sizes": expected_sizes(THUMBNAIL_PREFIX),
     }
 
 
@@ -57,7 +59,7 @@ async def test_processed_media_appears_in_the_catalog(
     (video,) = (await client.get("/v1/videos")).json()["data"]
 
     assert video["duration_seconds"] == 12.5
-    assert video["thumbnail"]["url"] == f"https://media.example.com/{THUMBNAIL_KEY}"
+    assert video["thumbnail"]["sizes"] == expected_sizes(THUMBNAIL_PREFIX)
 
 
 async def test_published_ready_video_plays(client: AsyncClient, db: AsyncConnection) -> None:

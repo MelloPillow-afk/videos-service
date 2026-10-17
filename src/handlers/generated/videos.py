@@ -53,9 +53,36 @@ async def list_videos(
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "published_at": "2026-10-13T15:00:00Z",
                     "thumbnail": {
+                        "sizes": {
+                            "lg": {
+                                "height": 540,
+                                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/lg.jpg",
+                                "width": 960,
+                            },
+                            "md": {
+                                "height": 360,
+                                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/md.jpg",
+                                "width": 640,
+                            },
+                            "sm": {
+                                "height": 180,
+                                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/sm.jpg",
+                                "width": 320,
+                            },
+                            "xl": {
+                                "height": 720,
+                                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xl.jpg",
+                                "width": 1280,
+                            },
+                            "xs": {
+                                "height": 90,
+                                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xs.jpg",
+                                "width": 160,
+                            },
+                        },
                         "source": "CUSTOM",
                         "status": "READY",
-                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/custom-v2.jpg",
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xl.jpg",
                     },
                     "title": "Introduction to Faith",
                 },

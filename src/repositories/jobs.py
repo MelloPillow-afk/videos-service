@@ -17,6 +17,17 @@ async def get_job(job_id: UUID) -> Job | None:
     return None if row is None else _job(row)
 
 
+async def find_job(video_id: UUID, kind: JobKind) -> Job | None:
+    """A video's job of one kind; each video has at most one."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            f"SELECT {_COLUMNS} FROM jobs WHERE video_id = %s AND kind = %s",
+            (video_id, kind.value),
+        )
+        row = await cursor.fetchone()
+    return None if row is None else _job(row)
+
+
 async def start_job(job_id: UUID) -> Job | None:
     """Mark a queued job running; None when it is not queued."""
     async with db_connection() as conn:

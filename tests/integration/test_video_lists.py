@@ -137,7 +137,7 @@ async def test_catalog_shows_only_ready_published_videos_newest_published_first(
                 "title": "Second Lesson",
                 "description": None,
                 "duration_seconds": None,
-                "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
+                "thumbnail": {"status": "PENDING", "source": "NONE", "url": None, "sizes": None},
                 "published_at": "2026-10-14T15:00:00Z",
             },
             {
@@ -145,7 +145,7 @@ async def test_catalog_shows_only_ready_published_videos_newest_published_first(
                 "title": "Introduction to Faith",
                 "description": "An introductory lesson",
                 "duration_seconds": None,
-                "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
+                "thumbnail": {"status": "PENDING", "source": "NONE", "url": None, "sizes": None},
                 "published_at": "2026-10-13T15:00:00Z",
             },
         ],

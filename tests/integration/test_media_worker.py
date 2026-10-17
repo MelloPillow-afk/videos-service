@@ -2,7 +2,7 @@
 
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, LiteralString, cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -11,11 +11,14 @@ from psycopg import AsyncConnection
 
 from src.clients import cloudflare, ffmpeg
 from src.config import Settings
+from src.libs.thumbnails import SIZES
 from src.workers.media import run
 from tests.fakes import FakeStorage
 from tests.rows import insert_video
 
 pytestmark = pytest.mark.integration
+
+FIXTURES = Path(__file__).parent.parent / "fixtures"
 
 
 def make_video(path: Path, size: str, seconds: int) -> bytes:
@@ -70,7 +73,7 @@ async def job_row(db: AsyncConnection, job_id: UUID) -> tuple[Any, ...] | None:
 
 async def video_media(db: AsyncConnection, video_id: str) -> tuple[Any, ...] | None:
     cursor = await db.execute(
-        "SELECT status, playback_key, duration_seconds::float, generated_thumbnail_key "
+        "SELECT status, playback_key, duration_seconds::float, generated_thumbnail_prefix "
         "FROM videos WHERE id = %s",
         (video_id,),
     )
@@ -97,7 +100,15 @@ async def test_video_job_publishes_hls_and_readies_the_video(
     assert await job_row(db, jobs["THUMBNAIL_GENERATION"]) == ("QUEUED", None)
 
 
-async def test_thumbnail_job_publishes_a_padded_frame(
+async def published_size(storage: FakeStorage, key: str, tmp_path: Path) -> tuple[int, int]:
+    image = tmp_path / "published.jpg"
+    image.write_bytes(storage.media[key])
+    info = await ffmpeg.probe_image(image)
+    assert info is not None and info.codec == "mjpeg"
+    return info.width, info.height
+
+
+async def test_thumbnail_job_publishes_a_frame_at_every_size(
     db: AsyncConnection,
     storage: FakeStorage,
     settings: Settings,
@@ -108,13 +119,11 @@ async def test_thumbnail_job_publishes_a_padded_frame(
 
     await run(jobs["THUMBNAIL_GENERATION"], settings)
 
-    key = f"videos/{video_id}/uploads/{upload_id}/thumbnail.jpg"
+    prefix = f"videos/{video_id}/uploads/{upload_id}/thumbnails"
     assert await job_row(db, jobs["THUMBNAIL_GENERATION"]) == ("SUCCEEDED", None)
-    assert await video_media(db, video_id) == ("PROCESSING", None, None, key)
-    image = tmp_path / "thumbnail.jpg"
-    image.write_bytes(storage.media[key])
-    info = await ffmpeg.probe(image)
-    assert info is not None and (info.width, info.height) == (1280, 720)
+    assert await video_media(db, video_id) == ("PROCESSING", None, None, prefix)
+    for name, size in SIZES.items():
+        assert await published_size(storage, f"{prefix}/{name}.jpg", tmp_path) == size
 
 
 async def test_portrait_video_is_thumbnailed_inside_a_padded_frame(
@@ -128,10 +137,8 @@ async def test_portrait_video_is_thumbnailed_inside_a_padded_frame(
 
     master = storage.media[f"videos/{video_id}/uploads/{upload_id}/hls/master.m3u8"]
     assert b"RESOLUTION=360x640" in master
-    image = tmp_path / "thumbnail.jpg"
-    image.write_bytes(storage.media[f"videos/{video_id}/uploads/{upload_id}/thumbnail.jpg"])
-    info = await ffmpeg.probe(image)
-    assert info is not None and (info.width, info.height) == (1280, 720)
+    key = f"videos/{video_id}/uploads/{upload_id}/thumbnails/xl.jpg"
+    assert await published_size(storage, key, tmp_path) == (1280, 720)
 
 
 async def test_file_that_is_not_a_video_fails_the_video(
@@ -247,3 +254,168 @@ async def test_unexpected_errors_fail_the_job(
     await run(jobs["VIDEO_PROCESSING"], settings)
 
     assert await job_row(db, jobs["VIDEO_PROCESSING"]) == ("FAILED", "Processing failed.")
+
+
+def make_image(path: Path, size: str) -> bytes:
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=size={size}",
+         "-frames:v", "1", str(path)],
+        check=True,
+    )  # fmt: skip
+    return path.read_bytes()
+
+
+async def accepted_thumbnail(
+    db: AsyncConnection, storage: FakeStorage, image: bytes
+) -> tuple[str, str, UUID]:
+    """A video whose custom thumbnail upload was accepted, with its queued job; returns
+    the video ID, where the rendered sizes go, and the job ID."""
+    video_id = str(uuid4())
+    upload_id = uuid4()
+    key = f"videos/{video_id}/thumbnails/{upload_id}/source"
+    await insert_video(
+        db,
+        id=video_id,
+        thumbnail_upload_id=upload_id,
+        thumbnail_upload_key=key,
+        thumbnail_upload_size_bytes=len(image),
+    )
+    storage.files[key] = image
+    cursor = await db.execute(
+        "INSERT INTO jobs (video_id, kind) VALUES (%s, 'CUSTOM_THUMBNAIL_PROCESSING') RETURNING id",
+        (video_id,),
+    )
+    row = await cursor.fetchone()
+    assert row is not None
+    return video_id, f"videos/{video_id}/thumbnails/{upload_id}", row[0]
+
+
+async def custom_prefix(db: AsyncConnection, video_id: str) -> str | None:
+    cursor = await db.execute(
+        "SELECT custom_thumbnail_prefix FROM videos WHERE id = %s", (video_id,)
+    )
+    row = await cursor.fetchone()
+    assert row is not None
+    return row[0]
+
+
+@pytest.mark.parametrize(
+    ("file_name", "size"),
+    # FFmpeg builds may lack a WebP encoder, so the WebP image is a fixture.
+    [("cover.png", "1920x1080"), ("cover.jpg", "1366x768"), ("cover-1280x720.webp", None)],
+)
+async def test_custom_thumbnail_is_rendered_at_every_size(
+    db: AsyncConnection,
+    storage: FakeStorage,
+    settings: Settings,
+    tmp_path: Path,
+    file_name: str,
+    size: str | None,
+) -> None:
+    image = (
+        (FIXTURES / file_name).read_bytes()
+        if size is None
+        else make_image(tmp_path / file_name, size)
+    )
+    video_id, prefix, job_id = await accepted_thumbnail(db, storage, image)
+
+    await run(job_id, settings)
+
+    assert await job_row(db, job_id) == ("SUCCEEDED", None)
+    assert await custom_prefix(db, video_id) == prefix
+    for name, dimensions in SIZES.items():
+        assert await published_size(storage, f"{prefix}/{name}.jpg", tmp_path) == dimensions
+
+
+@pytest.mark.parametrize(
+    ("file_name", "size", "message"),
+    [
+        ("cover.png", "1600x1200", "The image is not landscape 16:9."),
+        ("cover.png", "1080x1920", "The image is not landscape 16:9."),
+        ("cover.png", "640x360", "The image is smaller than 1280 × 720."),
+        ("cover.mp4", "1280x720", "The file is not a JPEG, PNG, or WebP image."),
+    ],
+)
+async def test_unsuitable_custom_thumbnail_fails_its_job(
+    db: AsyncConnection,
+    storage: FakeStorage,
+    settings: Settings,
+    tmp_path: Path,
+    file_name: str,
+    size: str,
+    message: str,
+) -> None:
+    image = make_image(tmp_path / file_name, size)
+    video_id, _, job_id = await accepted_thumbnail(db, storage, image)
+
+    await run(job_id, settings)
+
+    assert await job_row(db, job_id) == ("FAILED", message)
+    assert await custom_prefix(db, video_id) is None
+    assert storage.media == {}
+
+
+@pytest.mark.parametrize("audio", [False, True])
+async def test_file_that_is_not_an_image_fails_its_job(
+    db: AsyncConnection, storage: FakeStorage, settings: Settings, tmp_path: Path, audio: bool
+) -> None:
+    file = b"not an image"
+    if audio:  # Readable media, but without a picture.
+        sound = tmp_path / "cover.wav"
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=duration=1", str(sound)],
+            check=True,
+        )
+        file = sound.read_bytes()
+    video_id, _, job_id = await accepted_thumbnail(db, storage, file)
+
+    await run(job_id, settings)
+
+    assert await job_row(db, job_id) == ("FAILED", "The file is not a JPEG, PNG, or WebP image.")
+    assert await custom_prefix(db, video_id) is None
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "UPDATE videos SET thumbnail_upload_id = gen_random_uuid() WHERE id = %s",
+        "UPDATE videos SET thumbnail_upload_id = NULL, thumbnail_upload_key = NULL WHERE id = %s",
+    ],
+)
+async def test_replaced_or_removed_custom_thumbnail_is_not_shown(
+    db: AsyncConnection,
+    storage: FakeStorage,
+    settings: Settings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    change: str,
+) -> None:
+    image = make_image(tmp_path / "cover.png", "1280x720")
+    video_id, _, job_id = await accepted_thumbnail(db, storage, image)
+
+    async def upload_then_change_the_upload(path: Path, key: str) -> None:
+        await storage.upload_media(path, key)
+        await db.execute(cast(LiteralString, change), (video_id,))
+
+    monkeypatch.setattr(cloudflare, "upload_media", upload_then_change_the_upload)
+
+    await run(job_id, settings)
+
+    assert await job_row(db, job_id) == ("FAILED", "The video changed while it was processed.")
+    assert await custom_prefix(db, video_id) is None
+
+
+async def test_custom_thumbnail_removed_before_its_job_runs_is_not_rendered(
+    db: AsyncConnection, storage: FakeStorage, settings: Settings, tmp_path: Path
+) -> None:
+    image = make_image(tmp_path / "cover.png", "1280x720")
+    video_id, _, job_id = await accepted_thumbnail(db, storage, image)
+    await db.execute(
+        "UPDATE videos SET thumbnail_upload_id = NULL, thumbnail_upload_key = NULL WHERE id = %s",
+        (video_id,),
+    )
+
+    await run(job_id, settings)
+
+    assert await job_row(db, job_id) == ("FAILED", "The video changed while it was processed.")
+    assert storage.media == {}

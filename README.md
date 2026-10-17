@@ -56,10 +56,14 @@ The test database uses temporary storage and runs separately on port 5433.
 
 ### Media worker
 
-Completing an upload queues a video job and a thumbnail job. `python -m src.workers.media <job_id>`
-runs one job and exits: it downloads the source from the raw bucket, checks it with
+Completing an upload queues a video job and a thumbnail job; completing a custom
+thumbnail upload queues a custom thumbnail job. `python -m src.workers.media <job_id>`
+runs one job and exits: it downloads the upload from the raw bucket, checks it with
 FFprobe, and publishes HLS renditions (360p, 720p, and 1080p, never upscaled) or a
-1280 × 720 thumbnail to the processed bucket. A failed job records a readable message;
+thumbnail to the processed bucket. Thumbnails are published at five 16:9 sizes, from
+`xs` (160 × 90) to `xl` (1280 × 720), listed in `src/libs/thumbnails.py`. A custom
+thumbnail must be a JPEG, PNG, or WebP image within 1% of 16:9 and at least 1280 × 720;
+the worker crops the difference and replaces the shown thumbnail only when it succeeds. A failed job records a readable message;
 a failed video job also fails the video. Workers need FFmpeg and the API's settings.
 
 With `API_ENV=prod`, the API starts each job as an execution of the Cloud Run job
@@ -171,7 +175,8 @@ schema per test. They exercise jobs over HTTP, table constraints, statement
 timeouts, `make migrate`, and Yoyo apply/reapply/rollback of the service
 migrations. HTTP tests apply `migrations/` into their schema first.
 Migrations are added incrementally, one per feature slice; `0001_jobs` creates the
-`jobs` table, `0002_videos` the `videos` table, and `0003_video_listing` the list indexes. `make migrate` applies them in dev;
+`jobs` table, `0002_videos` the `videos` table, `0003_video_listing` the list indexes,
+`0004_video_media` upload and media columns, and `0005_thumbnails` custom thumbnails. `make migrate` applies them in dev;
 `make migrations` lists their status. These are explicit commands, separate
 from server startup.
 
@@ -348,12 +353,10 @@ The contract keeps the existing handoff gaps visible:
   Anonymous access requires an explicit deployment choice. Before implementing
   authorization, select the identity provider, admin role mapping, and viewer
   policy; narrow the security requirements if viewer authentication is mandatory.
-- Thumbnail format and size allowlists, dimensions, aspect ratio, and cropping
-  policy await the missing approved thumbnail specification. JPEG examples do
-  not establish the full allowlist. Source byte limits are configurable too.
+- Thumbnails are rendered at fixed sizes; resizing on demand through an image
+  proxy is a later option. Source and thumbnail byte limits are configurable.
 - Finalize accepted-source protection and effective upload-size enforcement;
-  decide state retention after failed source verification and the thumbnail
-  response when custom removal reveals a failed generated fallback.
+  decide state retention after failed source verification.
 - Database layout, job dispatch/reconciliation, encoding, resource limits,
   retention, CDN configuration, and cache policy remain implementation decisions.
 
@@ -390,5 +393,4 @@ operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
 assertions. `jobs.get_job`, `videos.list_videos`, `playback.get_playback`, the admin video
 create, list, get, update, and delete operations, and the source `upload-url` and
-`complete-upload` operations read PostgreSQL; the thumbnail operations still serve generated
-mocks. Tests replace R2 and worker launches with the fakes in `tests/fakes.py`.
+`complete-upload` operations, and the thumbnail operations, read PostgreSQL. Tests replace R2 and worker launches with the fakes in `tests/fakes.py`.

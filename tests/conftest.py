@@ -3,7 +3,7 @@
 from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
-from typing import LiteralString, cast
+from typing import Any, LiteralString, cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,13 +17,13 @@ from src.app import create_app
 from src.clients import cloudflare, gcp, local
 from src.clients.cloudflare import PresignedUpload
 from src.config import Settings
+from src.services import thumbnails as thumbnails_service
 from src.services import uploads as uploads_service
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 from tests.fakes import FakeLauncher, FakeStorage
 from tests.generated._support import APICase
+from tests.media_urls import MEDIA_BASE_URL, expected_sizes
 from tests.rows import insert_video
-
-MEDIA_BASE_URL = "https://media.example.com"
 
 MIGRATIONS = Path(__file__).parent.parent / "migrations"
 
@@ -206,12 +206,10 @@ async def arrange_videos_list_videos(api_case: APICase, db: AsyncConnection) -> 
         status="READY",
         publication_status="PUBLISHED",
         published_at=video["published_at"],
+        custom_thumbnail_prefix=thumbnail_prefix(video["thumbnail"]),
     )
-    # The example's video has a custom thumbnail, which uploads cannot add yet.
-    video |= {
-        "duration_seconds": None,
-        "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
-    }
+    # Processing, which sets the duration, is outside this operation.
+    video["duration_seconds"] = None
 
 
 @pytest_asyncio.fixture
@@ -231,6 +229,50 @@ async def arrange_admin_videos_upload_url(
         return example
 
     monkeypatch.setattr(cloudflare, "presign_upload", presign_upload)
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_thumbnails_upload_url(
+    api_case: APICase, db: AsyncConnection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await insert_video(db, id=api_case.path_params["id"])
+    upload = api_case.expected_body["upload"]
+    monkeypatch.setattr(thumbnails_service, "uuid4", lambda: UUID(upload["upload_id"]))
+    example = PresignedUpload(
+        url=upload["url"], expires_at=datetime.fromisoformat(upload["expires_at"])
+    )
+
+    def presign_upload(_key: str, _content_type: str) -> PresignedUpload:
+        return example
+
+    monkeypatch.setattr(cloudflare, "presign_upload", presign_upload)
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_thumbnails_delete_thumbnail(api_case: APICase, db: AsyncConnection) -> None:
+    # The example's custom thumbnail is removed, revealing the generated one.
+    generated_prefix = f"videos/{api_case.path_params['id']}/uploads/{uuid4()}/thumbnails"
+    await insert_video(
+        db,
+        id=api_case.path_params["id"],
+        generated_thumbnail_prefix=generated_prefix,
+        custom_thumbnail_prefix=thumbnail_prefix(api_case.expected_body["thumbnail"]),
+    )
+    await db.execute(
+        "INSERT INTO jobs (video_id, kind, status) VALUES (%s, 'THUMBNAIL_GENERATION', 'SUCCEEDED')",
+        (api_case.path_params["id"],),
+    )
+    api_case.expected_body["thumbnail"] |= {
+        "source": "GENERATED",
+        "url": f"{MEDIA_BASE_URL}/{generated_prefix}/xl.jpg",
+        "sizes": expected_sizes(generated_prefix),
+    }
+
+
+def thumbnail_prefix(thumbnail: dict[str, Any]) -> str:
+    """The stored prefix of an example thumbnail's sizes."""
+    url: str = thumbnail["url"]
+    return url.removeprefix(f"{MEDIA_BASE_URL}/").removesuffix("/xl.jpg")
 
 
 @pytest_asyncio.fixture
