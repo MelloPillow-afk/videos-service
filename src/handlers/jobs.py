@@ -7,13 +7,13 @@ from fastapi import HTTPException, Path
 
 from src.domain.jobs import JobNotFound
 from src.schemas.generated.jobs import Job
-from src.schemas.generated.operations import AdminJobsGetJobJobIdParameter
+from src.schemas.generated.operations import JobsGetJobJobIdParameter
 from src.services import jobs as jobs_service
 
 
 async def get_job(
     *,
-    job_id: Annotated[AdminJobsGetJobJobIdParameter, Path(alias="job_id", description="Job ID.")],
+    job_id: Annotated[JobsGetJobJobIdParameter, Path(alias="job_id", description="Job ID.")],
 ) -> Job:
     try:
         job = await jobs_service.get_job(UUID(job_id))

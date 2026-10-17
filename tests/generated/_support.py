@@ -172,12 +172,7 @@ async def api_case(
     return case
 
 
-MODULES = ["admin_jobs", "admin_thumbnails", "admin_videos", "health", "playback", "videos"]
-
-
-@pytest.fixture
-def arrange_admin_jobs_get_job(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
+MODULES = ["admin.thumbnails", "admin.videos", "health", "jobs", "playback", "videos"]
 
 
 @pytest.fixture
@@ -222,6 +217,11 @@ def arrange_admin_videos_upload_url(api_case: APICase) -> None:
 
 @pytest.fixture
 def arrange_health_ping(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_jobs_get_job(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
 
 

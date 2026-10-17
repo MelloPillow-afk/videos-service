@@ -48,7 +48,7 @@ router = _generator_APIRouter(prefix="/v1/admin")
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.create_video")
+@_generator_select_endpoint("admin.videos.create_video")
 async def create_video(
     *,
     body: _generator_Annotated[_CreateVideoBody, _generator_Body()],
@@ -79,7 +79,7 @@ async def create_video(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.delete_video")
+@_generator_select_endpoint("admin.videos.delete_video")
 async def delete_video(
     *,
     id: _generator_Annotated[
@@ -97,7 +97,7 @@ async def delete_video(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.get_video")
+@_generator_select_endpoint("admin.videos.get_video")
 async def get_video(
     *,
     id: _generator_Annotated[
@@ -130,7 +130,7 @@ async def get_video(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.update_video")
+@_generator_select_endpoint("admin.videos.update_video")
 async def update_video(
     *,
     id: _generator_Annotated[
@@ -164,7 +164,7 @@ async def update_video(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.complete_upload")
+@_generator_select_endpoint("admin.videos.complete_upload")
 async def complete_upload(
     *,
     id: _generator_Annotated[
@@ -174,7 +174,7 @@ async def complete_upload(
     body: _generator_Annotated[_CompleteUploadBody, _generator_Body()],
     response: _generator_Response,
 ) -> _CompleteUploadResponse:
-    response.headers["Location"] = "/v1/admin/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
+    response.headers["Location"] = "/v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
     return _generator_TypeAdapter(_CompleteUploadResponse).validate_python(
         {
             "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
@@ -192,7 +192,7 @@ async def complete_upload(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_videos.upload_url")
+@_generator_select_endpoint("admin.videos.upload_url")
 async def upload_url(
     *,
     id: _generator_Annotated[

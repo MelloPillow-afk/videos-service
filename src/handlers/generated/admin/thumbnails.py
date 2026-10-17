@@ -37,7 +37,7 @@ router = _generator_APIRouter(prefix="/v1/admin/videos")
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_thumbnails.delete_thumbnail")
+@_generator_select_endpoint("admin.thumbnails.delete_thumbnail")
 async def delete_thumbnail(
     *,
     id: _generator_Annotated[
@@ -64,7 +64,7 @@ async def delete_thumbnail(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_thumbnails.complete_upload")
+@_generator_select_endpoint("admin.thumbnails.complete_upload")
 async def complete_upload(
     *,
     id: _generator_Annotated[
@@ -92,7 +92,7 @@ async def complete_upload(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_thumbnails.upload_url")
+@_generator_select_endpoint("admin.thumbnails.upload_url")
 async def upload_url(
     *,
     id: _generator_Annotated[

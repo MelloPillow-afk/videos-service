@@ -1,7 +1,7 @@
 {
-  "cases": 36,
+  "cases": 35,
   "skipped": [
-    "admin_videos.complete_upload: POST 202 success status is outside MVP coverage",
+    "admin.videos.complete_upload: POST 202 success status is outside MVP coverage",
     "videos.list_videos: query cursor has no applicable invalid parameter case"
   ]
 }

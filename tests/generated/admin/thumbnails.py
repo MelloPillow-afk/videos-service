@@ -5,12 +5,12 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
-from ._support import APICase
+from .._support import APICase
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 _CASES: dict[str, dict[str, Any]] = {
-    "admin_thumbnails.complete_upload": {
+    "admin.thumbnails.complete_upload": {
         "authentication": "required",
         "body": {"upload_id": "04d1790f-f941-4ba6-8d97-0e6830ca4394"},
         "body_model": {
@@ -29,7 +29,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "POST",
-        "operation_id": "admin_thumbnails.complete_upload",
+        "operation_id": "admin.thumbnails.complete_upload",
         "parameters": [
             {
                 "attribute": "id",
@@ -46,7 +46,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": "src.schemas.generated.thumbnails.Thumbnail",
     },
-    "admin_thumbnails.delete_thumbnail": {
+    "admin.thumbnails.delete_thumbnail": {
         "authentication": "required",
         "body": None,
         "body_model": None,
@@ -60,7 +60,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "DELETE",
-        "operation_id": "admin_thumbnails.delete_thumbnail",
+        "operation_id": "admin.thumbnails.delete_thumbnail",
         "parameters": [
             {
                 "attribute": "id",
@@ -77,7 +77,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": "src.schemas.generated.thumbnails.Thumbnail",
     },
-    "admin_thumbnails.upload_url": {
+    "admin.thumbnails.upload_url": {
         "authentication": "required",
         "body": {"content_type": "image/jpeg", "file_name": "faith-cover.jpg", "size_bytes": 183420},
         "body_model": {
@@ -98,7 +98,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "POST",
-        "operation_id": "admin_thumbnails.upload_url",
+        "operation_id": "admin.thumbnails.upload_url",
         "parameters": [
             {
                 "attribute": "id",
@@ -122,7 +122,7 @@ _CASES: dict[str, dict[str, Any]] = {
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.delete_thumbnail"],
+    _CASES["admin.thumbnails.delete_thumbnail"],
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_delete_thumbnail")
 async def test_delete_thumbnail_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -137,7 +137,7 @@ async def test_delete_thumbnail_200(api_case: APICase, api_client: AsyncClient) 
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.delete_thumbnail"], unauthenticated=True,
+    _CASES["admin.thumbnails.delete_thumbnail"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_delete_thumbnail")
 async def test_delete_thumbnail_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -152,7 +152,7 @@ async def test_delete_thumbnail_401_missing_token(api_case: APICase, api_client:
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.delete_thumbnail"], mutation={
+    _CASES["admin.thumbnails.delete_thumbnail"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",
@@ -175,7 +175,7 @@ async def test_delete_thumbnail_422_path_id_invalid_format(api_case: APICase, ap
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.complete_upload"],
+    _CASES["admin.thumbnails.complete_upload"],
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_complete_upload")
 async def test_complete_upload_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -190,7 +190,7 @@ async def test_complete_upload_200(api_case: APICase, api_client: AsyncClient) -
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.complete_upload"], unauthenticated=True,
+    _CASES["admin.thumbnails.complete_upload"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_complete_upload")
 async def test_complete_upload_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -205,7 +205,7 @@ async def test_complete_upload_401_missing_token(api_case: APICase, api_client: 
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.complete_upload"], mutation={
+    _CASES["admin.thumbnails.complete_upload"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",
@@ -225,7 +225,7 @@ async def test_complete_upload_422_path_id_invalid_format(api_case: APICase, api
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.upload_url"],
+    _CASES["admin.thumbnails.upload_url"],
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_upload_url")
 async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -240,7 +240,7 @@ async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> Non
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.upload_url"], unauthenticated=True,
+    _CASES["admin.thumbnails.upload_url"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_thumbnails_upload_url")
 async def test_upload_url_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -255,7 +255,7 @@ async def test_upload_url_401_missing_token(api_case: APICase, api_client: Async
 
 
 @pytest.mark.api_case(
-    _CASES["admin_thumbnails.upload_url"], mutation={
+    _CASES["admin.thumbnails.upload_url"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",

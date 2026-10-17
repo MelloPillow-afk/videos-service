@@ -5,12 +5,12 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
-from ._support import APICase
+from .._support import APICase
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 _CASES: dict[str, dict[str, Any]] = {
-    "admin_videos.create_video": {
+    "admin.videos.create_video": {
         "authentication": "required",
         "body": {"description": "An introductory lesson", "title": "Introduction to Faith"},
         "body_model": {
@@ -35,21 +35,21 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 201,
         "method": "POST",
-        "operation_id": "admin_videos.create_video",
+        "operation_id": "admin.videos.create_video",
         "parameters": [],
         "path": "/v1/admin/videos",
         "path_params": {},
         "query": {},
         "response_model": "src.schemas.generated.videos.Video",
     },
-    "admin_videos.delete_video": {
+    "admin.videos.delete_video": {
         "authentication": "required",
         "body": None,
         "body_model": None,
         "expected_body": None,
         "expected_status": 204,
         "method": "DELETE",
-        "operation_id": "admin_videos.delete_video",
+        "operation_id": "admin.videos.delete_video",
         "parameters": [
             {
                 "attribute": "id",
@@ -66,7 +66,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": None,
     },
-    "admin_videos.get_video": {
+    "admin.videos.get_video": {
         "authentication": "required",
         "body": None,
         "body_model": None,
@@ -86,7 +86,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "GET",
-        "operation_id": "admin_videos.get_video",
+        "operation_id": "admin.videos.get_video",
         "parameters": [
             {
                 "attribute": "id",
@@ -103,7 +103,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": "src.schemas.generated.videos.Video",
     },
-    "admin_videos.update_video": {
+    "admin.videos.update_video": {
         "authentication": "required",
         "body": {
             "description": "An introductory lesson",
@@ -132,7 +132,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "PATCH",
-        "operation_id": "admin_videos.update_video",
+        "operation_id": "admin.videos.update_video",
         "parameters": [
             {
                 "attribute": "id",
@@ -149,7 +149,7 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": "src.schemas.generated.videos.Video",
     },
-    "admin_videos.upload_url": {
+    "admin.videos.upload_url": {
         "authentication": "required",
         "body": {"content_type": "video/mp4", "file_name": "introduction.mp4", "size_bytes": 524288000},
         "body_model": {
@@ -171,7 +171,7 @@ _CASES: dict[str, dict[str, Any]] = {
         },
         "expected_status": 200,
         "method": "POST",
-        "operation_id": "admin_videos.upload_url",
+        "operation_id": "admin.videos.upload_url",
         "parameters": [
             {
                 "attribute": "id",
@@ -195,7 +195,7 @@ _CASES: dict[str, dict[str, Any]] = {
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.delete_video"],
+    _CASES["admin.videos.delete_video"],
 )
 @pytest.mark.usefixtures("arrange_admin_videos_delete_video")
 async def test_delete_video_204(api_case: APICase, api_client: AsyncClient) -> None:
@@ -210,7 +210,7 @@ async def test_delete_video_204(api_case: APICase, api_client: AsyncClient) -> N
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.delete_video"], unauthenticated=True,
+    _CASES["admin.videos.delete_video"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_videos_delete_video")
 async def test_delete_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -225,7 +225,7 @@ async def test_delete_video_401_missing_token(api_case: APICase, api_client: Asy
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.delete_video"], mutation={
+    _CASES["admin.videos.delete_video"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",
@@ -248,7 +248,7 @@ async def test_delete_video_422_path_id_invalid_format(api_case: APICase, api_cl
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.get_video"],
+    _CASES["admin.videos.get_video"],
 )
 @pytest.mark.usefixtures("arrange_admin_videos_get_video")
 async def test_get_video_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -263,7 +263,7 @@ async def test_get_video_200(api_case: APICase, api_client: AsyncClient) -> None
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.get_video"], unauthenticated=True,
+    _CASES["admin.videos.get_video"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_videos_get_video")
 async def test_get_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -278,7 +278,7 @@ async def test_get_video_401_missing_token(api_case: APICase, api_client: AsyncC
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.get_video"], mutation={
+    _CASES["admin.videos.get_video"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",
@@ -301,7 +301,7 @@ async def test_get_video_422_path_id_invalid_format(api_case: APICase, api_clien
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.update_video"],
+    _CASES["admin.videos.update_video"],
 )
 @pytest.mark.usefixtures("arrange_admin_videos_update_video")
 async def test_update_video_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -316,7 +316,7 @@ async def test_update_video_200(api_case: APICase, api_client: AsyncClient) -> N
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.update_video"], unauthenticated=True,
+    _CASES["admin.videos.update_video"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_videos_update_video")
 async def test_update_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -331,7 +331,7 @@ async def test_update_video_401_missing_token(api_case: APICase, api_client: Asy
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.update_video"], mutation={
+    _CASES["admin.videos.update_video"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",
@@ -354,7 +354,7 @@ async def test_update_video_422_path_id_invalid_format(api_case: APICase, api_cl
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.create_video"],
+    _CASES["admin.videos.create_video"],
 )
 @pytest.mark.usefixtures("arrange_admin_videos_create_video")
 async def test_create_video_201(api_case: APICase, api_client: AsyncClient) -> None:
@@ -369,7 +369,7 @@ async def test_create_video_201(api_case: APICase, api_client: AsyncClient) -> N
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.create_video"], unauthenticated=True,
+    _CASES["admin.videos.create_video"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_videos_create_video")
 async def test_create_video_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -384,7 +384,7 @@ async def test_create_video_401_missing_token(api_case: APICase, api_client: Asy
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.upload_url"],
+    _CASES["admin.videos.upload_url"],
 )
 @pytest.mark.usefixtures("arrange_admin_videos_upload_url")
 async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> None:
@@ -399,7 +399,7 @@ async def test_upload_url_200(api_case: APICase, api_client: AsyncClient) -> Non
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.upload_url"], unauthenticated=True,
+    _CASES["admin.videos.upload_url"], unauthenticated=True,
 )
 @pytest.mark.usefixtures("arrange_admin_videos_upload_url")
 async def test_upload_url_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
@@ -414,7 +414,7 @@ async def test_upload_url_401_missing_token(api_case: APICase, api_client: Async
 
 
 @pytest.mark.api_case(
-    _CASES["admin_videos.upload_url"], mutation={
+    _CASES["admin.videos.upload_url"], mutation={
         "error_types": ["value_error"],
         "in": "path",
         "name": "id",

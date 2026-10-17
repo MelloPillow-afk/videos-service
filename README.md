@@ -150,7 +150,8 @@ null unions, reusable schemas and responses, and security declarations for the
 12 video and job operations. Video and job paths are relative to the `/v1` server base path.
 The unauthenticated health operation overrides the server path to `/`, preserving
 `GET /ping`. JSON fields and component names use snake_case; operation IDs use
-Pythonic `module.function` names. Resource operations name their noun explicitly,
+Pythonic `module.function` names, with a leading folder for admin operations
+(`admin.videos.create_video`). Resource operations name their noun explicitly,
 using singular names for one resource (`videos.get_video`) and plural names for
 lists (`videos.list_videos`). Custom methods use colon suffixes with hyphenated
 words, such as `/videos/{id}:upload-url` and
@@ -161,8 +162,8 @@ deleting the custom thumbnail restores the generated fallback.
 
 Background processing is tracked as a top-level job resource, following Google's
 long-running operation pattern (AIP-151). `:complete-upload` returns
-`202` with the new `Job` and a `Location: /v1/jobs/{job_id}` header; admins poll
-`GET /jobs/{job_id}` (`jobs.get_job`). A job has `id`, `status` (`QUEUED`,
+`202` with the new `Job` and a `Location: /v1/jobs/{job_id}` header; clients poll
+the public `GET /jobs/{job_id}` (`jobs.get_job`), which needs no token. A job has `id`, `status` (`QUEUED`,
 `RUNNING`, `SUCCEEDED`, `FAILED`), `content_id`, and a `message` that is set only
 when it fails. `content_id` is the ID of whatever resource the job
 processes, so later resource jobs can reuse the schema. `Video.latest_job_id` finds the most recent
@@ -171,9 +172,11 @@ generated thumbnails keep reporting through `Video.thumbnail.status`.
 
 `api-specs/index.yaml` holds API metadata and references to the contract files. Paths
 are grouped by resource, with collections, individual resources, and their HTTP
-methods kept together. [`videos.yaml`](api-specs/paths/videos.yaml) contains video paths,
-including uploads and playback. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
-contains thumbnail paths, and [`jobs.yaml`](api-specs/paths/jobs.yaml) contains job
+methods kept together. Path files follow operation-ID folders:
+[`admin/videos.yaml`](api-specs/paths/admin/videos.yaml) contains admin video and
+upload paths, [`admin/thumbnails.yaml`](api-specs/paths/admin/thumbnails.yaml) contains
+admin thumbnail paths, [`videos.yaml`](api-specs/paths/videos.yaml) contains viewer
+video and playback paths, and [`jobs.yaml`](api-specs/paths/jobs.yaml) contains job
 paths. Reusable responses live in
 `api-specs/responses/`; operation-specific responses stay in their path files. Examples
 are kept in schemas, reusable responses, parameters, and shared request bodies.
@@ -208,13 +211,15 @@ Generator input names are explicit:
 
 | Field | Meaning | Example |
 | --- | --- | --- |
-| `operationId` | Handler module and async function. | `videos.get_video` |
+| `operationId` | Handler module and async function; leading segments are folders. | `admin.videos.get_video` |
 | `x-python-module` | Generated schema module. | `videos` |
 | `x-python-name` | Named Python schema type. | `Video` |
 
 For example, `videos.get_video` targets `handlers/generated/videos.py` and
 its `get_video` function. A handwritten override uses the same function name
-in `handlers/videos.py`. A schema named `videos.Video` targets
+in `handlers/videos.py`. Likewise, `admin.videos.get_video` targets
+`handlers/generated/admin/videos.py`, with its override in `handlers/admin/videos.py`.
+Python names stay flat, such as `AdminVideosGetVideoIdParameter`. A schema named `videos.Video` targets
 `schemas/generated/videos.py`. These paths are relative to `src/`.
 Reusable schemas carry both naming extensions, including scalar schemas and the
 shared error schema. Nested inline properties do not need separate naming fields.
@@ -229,6 +234,7 @@ contract currently generates all 13 operations and their validated inline mocks.
 ### Handwritten implementations
 
 Generated routers select a matching async function in `src/handlers/<module>.py`
+(or `src/handlers/<folder>/<module>.py`)
 before registering the route. A missing module or function serves the fixed
 example. A broken import or incompatible signature fails application construction.
 Use the generated function's contract argument names, types, defaults, and return

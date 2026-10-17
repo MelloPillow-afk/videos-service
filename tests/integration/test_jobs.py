@@ -29,7 +29,7 @@ async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConn
         db, status="FAILED", message="The source is not a valid MP4 video."
     )
 
-    response = await client.get(f"/v1/admin/jobs/{job_id}")
+    response = await client.get(f"/v1/jobs/{job_id}")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -40,10 +40,22 @@ async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConn
     }
 
 
+async def test_anyone_can_poll_a_job_without_a_token(
+    client: AsyncClient, db: AsyncConnection
+) -> None:
+    job_id, _ = await insert_job(db)
+    client.headers.pop("Authorization")
+
+    response = await client.get(f"/v1/jobs/{job_id}")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "QUEUED"
+
+
 async def test_missing_job_is_not_found(client: AsyncClient, db: AsyncConnection) -> None:
     await insert_job(db)
 
-    response = await client.get(f"/v1/admin/jobs/{uuid4()}")
+    response = await client.get(f"/v1/jobs/{uuid4()}")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "The job was not found."}

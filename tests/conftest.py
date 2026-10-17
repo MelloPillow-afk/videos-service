@@ -85,7 +85,7 @@ async def api_app(migrated_database: tuple[str, str], signing_keys: LocalSigning
 
 
 @pytest_asyncio.fixture
-async def arrange_admin_jobs_get_job(api_case: APICase, db: AsyncConnection) -> None:
+async def arrange_jobs_get_job(api_case: APICase, db: AsyncConnection) -> None:
     job = api_case.expected_body
     await insert_video(db, id=job["video_id"])
     await db.execute(

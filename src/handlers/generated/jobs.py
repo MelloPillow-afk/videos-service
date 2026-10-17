@@ -3,20 +3,16 @@
 from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
-from fastapi import Depends as _generator_Depends
 from fastapi import Path as _generator_Path
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
-from src.core.generated.authentication import (
-    require_authentication as _generator_require_authentication,
-)
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.jobs import Job as _GetJobResponse
 from src.schemas.generated.operations import (
-    AdminJobsGetJobJobIdParameter as _GetJobJobIdParameter,
+    JobsGetJobJobIdParameter as _GetJobJobIdParameter,
 )
 
-router = _generator_APIRouter(prefix="/v1/admin/jobs")
+router = _generator_APIRouter(prefix="/v1/jobs")
 
 
 @router.get(
@@ -24,9 +20,8 @@ router = _generator_APIRouter(prefix="/v1/admin/jobs")
     response_model=_GetJobResponse,
     status_code=200,
     response_model_exclude_unset=True,
-    dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("admin_jobs.get_job")
+@_generator_select_endpoint("jobs.get_job")
 async def get_job(
     *,
     job_id: _generator_Annotated[
