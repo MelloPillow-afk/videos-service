@@ -126,3 +126,81 @@ async def test_missing_or_deleted_video_is_not_found(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "The video was not found."}
+
+
+async def test_edits_change_only_supplied_fields(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_video(
+        db, description="An introductory lesson", updated_at="2026-10-13T14:00:00Z"
+    )
+
+    response = await client.patch(f"/v1/admin/videos/{video_id}", json={"title": "Renamed"})
+
+    assert response.status_code == 200
+    video = response.json()
+    assert (video["title"], video["description"]) == ("Renamed", "An introductory lesson")
+    assert video["updated_at"] > "2026-10-13T14:00:00Z"
+    assert (await client.get(f"/v1/admin/videos/{video_id}")).json() == video
+
+
+async def test_null_description_clears_it(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_video(db, description="An introductory lesson")
+
+    response = await client.patch(f"/v1/admin/videos/{video_id}", json={"description": None})
+
+    assert response.json()["description"] is None
+
+
+async def test_ready_video_can_be_published_and_unpublished(
+    client: AsyncClient, db: AsyncConnection
+) -> None:
+    video_id = await insert_video(db, status="READY")
+    path = f"/v1/admin/videos/{video_id}"
+
+    published = (await client.patch(path, json={"publication_status": "PUBLISHED"})).json()
+    republished = (await client.patch(path, json={"publication_status": "PUBLISHED"})).json()
+    unpublished = (await client.patch(path, json={"publication_status": "DRAFT"})).json()
+
+    assert published["publication_status"] == "PUBLISHED"
+    assert published["published_at"] is not None
+    assert republished["published_at"] == published["published_at"]
+    assert (unpublished["publication_status"], unpublished["published_at"]) == ("DRAFT", None)
+
+
+@pytest.mark.parametrize("status", ["CREATED", "UPLOADING", "PROCESSING", "FAILED"])
+async def test_only_ready_videos_can_be_published(
+    client: AsyncClient, db: AsyncConnection, status: str
+) -> None:
+    video_id = await insert_video(db, status=status)
+
+    response = await client.patch(
+        f"/v1/admin/videos/{video_id}", json={"publication_status": "PUBLISHED"}
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "The video is not ready."}
+    cursor = await db.execute("SELECT publication_status FROM videos WHERE id = %s", (video_id,))
+    assert await cursor.fetchone() == ("DRAFT",)
+
+
+@pytest.mark.parametrize("deleted", [False, True], ids=["missing", "deleted"])
+async def test_missing_or_deleted_video_cannot_be_edited(
+    client: AsyncClient, db: AsyncConnection, deleted: bool
+) -> None:
+    video_id = await insert_video(db, deleted_at="2026-10-14T09:00:00Z") if deleted else uuid4()
+
+    response = await client.patch(f"/v1/admin/videos/{video_id}", json={"title": "Renamed"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "body", [{}, {"color": "blue"}, {"title": None}, {"title": " "}, {"publication_status": None}]
+)
+async def test_invalid_edits_are_rejected(
+    client: AsyncClient, db: AsyncConnection, body: dict[str, Any]
+) -> None:
+    video_id = await insert_video(db)
+
+    response = await client.patch(f"/v1/admin/videos/{video_id}", json=body)
+
+    assert response.status_code == 422

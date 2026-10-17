@@ -114,6 +114,24 @@ async def arrange_admin_videos_create_video(api_case: APICase, db: AsyncConnecti
 
 @pytest_asyncio.fixture
 async def arrange_admin_videos_get_video(api_case: APICase, db: AsyncConnection) -> None:
+    await insert_example_video(api_case, db)
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_update_video(api_case: APICase, db: AsyncConnection) -> None:
+    await insert_example_video(api_case, db)
+    # The update stamps updated_at with now(); pin it to the example instead.
+    await db.execute(
+        sql.SQL(
+            "CREATE FUNCTION pin_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ "
+            "BEGIN NEW.updated_at := {updated_at}; RETURN NEW; END $$; "
+            "CREATE TRIGGER pin_updated_at BEFORE UPDATE ON videos "
+            "FOR EACH ROW EXECUTE FUNCTION pin_updated_at()"
+        ).format(updated_at=sql.Literal(api_case.expected_body["updated_at"]))
+    )
+
+
+async def insert_example_video(api_case: APICase, db: AsyncConnection) -> None:
     video = api_case.expected_body
     await insert_video(
         db,

@@ -37,6 +37,29 @@ async def get_video(video_id: UUID) -> Video | None:
     return None if row is None else _video(row)
 
 
+async def update_video(video: Video) -> Video | None:
+    """Save the editable fields of a video that has not been deleted."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "WITH updated AS ("
+            "UPDATE videos SET title = %s, description = %s, publication_status = %s, "
+            "published_at = %s, updated_at = now() "
+            "WHERE id = %s AND deleted_at IS NULL RETURNING *"
+            ") "
+            f"SELECT {_COLUMNS}, jobs.id FROM updated AS videos "
+            "LEFT JOIN jobs ON jobs.video_id = videos.id AND jobs.kind = 'VIDEO_PROCESSING'",
+            (
+                video.title,
+                video.description,
+                video.publication_status.value,
+                video.published_at,
+                video.id,
+            ),
+        )
+        row = await cursor.fetchone()
+    return None if row is None else _video(row)
+
+
 def _video(row: TupleRow) -> Video:
     (
         id_,

@@ -34,3 +34,7 @@ class Video:
 
 class VideoNotFound(Exception):
     """No video exists with the requested ID, or it has been deleted."""
+
+
+class VideoNotReady(Exception):
+    """Only a ready video can be published."""

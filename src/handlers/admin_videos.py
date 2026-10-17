@@ -1,5 +1,6 @@
 """HTTP handlers for managing videos."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -7,9 +8,12 @@ from uuid import UUID
 from fastapi import HTTPException, Path, Response
 
 from src.domain import videos as domain
-from src.schemas.generated.operations import AdminVideosGetVideoIdParameter
+from src.schemas.generated.operations import (
+    AdminVideosGetVideoIdParameter,
+    AdminVideosUpdateVideoIdParameter,
+)
 from src.schemas.generated.thumbnails import ThumbnailImage
-from src.schemas.generated.videos import Video, VideoCreate
+from src.schemas.generated.videos import Video, VideoCreate, VideoUpdate
 from src.services import videos as videos_service
 
 
@@ -27,6 +31,32 @@ async def get_video(
         video = await videos_service.get_video(UUID(id))
     except domain.VideoNotFound:
         raise HTTPException(status_code=404, detail="The video was not found.") from None
+    return _video(video)
+
+
+async def update_video(
+    *,
+    id: Annotated[AdminVideosUpdateVideoIdParameter, Path(alias="id", description="Video ID.")],
+    body: VideoUpdate,
+) -> Video:
+    # Only supplied fields change; unknown fields are ignored.
+    supplied = body.model_fields_set
+    try:
+        video = await videos_service.get_video(UUID(id))
+        video = await videos_service.update_video(
+            replace(
+                video,
+                title=body.title if "title" in supplied else video.title,
+                description=body.description if "description" in supplied else video.description,
+                publication_status=domain.PublicationStatus(body.publication_status)
+                if "publication_status" in supplied
+                else video.publication_status,
+            )
+        )
+    except domain.VideoNotFound:
+        raise HTTPException(status_code=404, detail="The video was not found.") from None
+    except domain.VideoNotReady:
+        raise HTTPException(status_code=409, detail="The video is not ready.") from None
     return _video(video)
 
 
