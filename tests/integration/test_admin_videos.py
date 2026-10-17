@@ -1,10 +1,13 @@
 """Admins manage videos stored in PostgreSQL through the real application."""
 
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
 from psycopg import AsyncConnection
+
+from tests.rows import insert_video
 
 pytestmark = pytest.mark.integration
 
@@ -72,3 +75,54 @@ async def test_invalid_videos_are_rejected(
     assert response.status_code == 422
     cursor = await db.execute("SELECT count(*) FROM videos")
     assert await cursor.fetchone() == (0,)
+
+
+async def test_created_video_can_be_read_back(client: AsyncClient) -> None:
+    created = (
+        await client.post("/v1/admin/videos", json={"title": "Introduction to Faith"})
+    ).json()
+
+    response = await client.get(f"/v1/admin/videos/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+async def test_video_reports_its_processing_job(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_video(db, status="PROCESSING")
+    cursor = await db.execute(
+        "INSERT INTO jobs (video_id, kind) VALUES (%s, 'VIDEO_PROCESSING'), "
+        "(%s, 'THUMBNAIL_GENERATION') RETURNING id, kind",
+        (video_id, video_id),
+    )
+    jobs = {kind: str(job_id) for job_id, kind in await cursor.fetchall()}
+
+    response = await client.get(f"/v1/admin/videos/{video_id}")
+
+    assert response.status_code == 200
+    assert response.json()["latest_job_id"] == jobs["VIDEO_PROCESSING"]
+
+
+async def test_published_video_reports_when(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_video(
+        db,
+        status="READY",
+        publication_status="PUBLISHED",
+        published_at="2026-10-13T15:00:00+00:00",
+    )
+
+    response = await client.get(f"/v1/admin/videos/{video_id}")
+
+    assert response.json()["published_at"] == "2026-10-13T15:00:00Z"
+
+
+@pytest.mark.parametrize("deleted", [False, True], ids=["missing", "deleted"])
+async def test_missing_or_deleted_video_is_not_found(
+    client: AsyncClient, db: AsyncConnection, deleted: bool
+) -> None:
+    video_id = await insert_video(db, deleted_at="2026-10-14T09:00:00Z") if deleted else uuid4()
+
+    response = await client.get(f"/v1/admin/videos/{video_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "The video was not found."}

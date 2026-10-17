@@ -30,3 +30,7 @@ class Video:
     created_at: datetime
     updated_at: datetime
     latest_job_id: UUID | None
+
+
+class VideoNotFound(Exception):
+    """No video exists with the requested ID, or it has been deleted."""

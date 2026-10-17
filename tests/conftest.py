@@ -110,3 +110,17 @@ async def arrange_admin_videos_create_video(api_case: APICase, db: AsyncConnecti
             updated_at=sql.Literal(video["updated_at"]),
         )
     )
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_get_video(api_case: APICase, db: AsyncConnection) -> None:
+    video = api_case.expected_body
+    await insert_video(
+        db,
+        **{
+            column: video[column]
+            for column in ("id", "title", "description", "status", "publication_status")
+        },
+        created_at=video["created_at"],
+        updated_at=video["updated_at"],
+    )

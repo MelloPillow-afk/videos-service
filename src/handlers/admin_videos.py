@@ -1,10 +1,13 @@
 """HTTP handlers for managing videos."""
 
 from datetime import UTC, datetime
+from typing import Annotated
+from uuid import UUID
 
-from fastapi import Response
+from fastapi import HTTPException, Path, Response
 
 from src.domain import videos as domain
+from src.schemas.generated.operations import AdminVideosGetVideoIdParameter
 from src.schemas.generated.thumbnails import ThumbnailImage
 from src.schemas.generated.videos import Video, VideoCreate
 from src.services import videos as videos_service
@@ -13,6 +16,17 @@ from src.services import videos as videos_service
 async def create_video(*, body: VideoCreate, response: Response) -> Video:
     video = await videos_service.create_video(body.title, body.description)
     response.headers["Location"] = f"/v1/admin/videos/{video.id}"
+    return _video(video)
+
+
+async def get_video(
+    *,
+    id: Annotated[AdminVideosGetVideoIdParameter, Path(alias="id", description="Video ID.")],
+) -> Video:
+    try:
+        video = await videos_service.get_video(UUID(id))
+    except domain.VideoNotFound:
+        raise HTTPException(status_code=404, detail="The video was not found.") from None
     return _video(video)
 
 
