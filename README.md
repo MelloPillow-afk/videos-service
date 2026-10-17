@@ -1,7 +1,7 @@
 # Videos service
 
 The Python backend for the videos domain. Its prepared OpenAPI contract generates
-all 14 HTTP operations: `/ping` and the 13 video and job operations under `/v1`. Generated
+all 13 HTTP operations: `/ping` and the 12 video and job operations under `/v1`. Generated
 handlers serve fixed, validated contract examples until a matching handwritten
 async implementation is added. Video business behavior and processing remain to
 be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
@@ -87,8 +87,11 @@ Uvicorn, and uv. No framework-specific tooling from the reference carries over.
 Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
-The app factory retains the repository resource lifecycle and registers the
-generated routers once. `/ping` and all fixed examples need no database
+Repositories and services are plain module functions: handlers import services,
+services import repositories, and only repositories touch the database. The
+service uses one process-wide pool in `src/repositories/database.py`; the app
+lifespan opens and closes it, and the app factory registers the generated
+routers once. `/ping` and all fixed examples need no database
 query. Add handwritten business models and operations when implementing features.
 The generated and service-runtime dependency groups join the existing project
 and dev dependencies in normal `uv sync` and a single `uv.lock`.
@@ -103,7 +106,7 @@ make test-integration   # Real PostgreSQL transaction, timeout, and migration ch
 make test-all           # Entire suite, with terminal and XML coverage reports
 ```
 
-The HTTP suite covers all 14 generated operations, exact paths, deterministic
+The HTTP suite covers all 13 generated operations, exact paths, deterministic
 example bodies, creation headers, native validation, and application-owned routes.
 The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
 executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
@@ -112,9 +115,10 @@ overrides, dependency injection, regeneration, and generation failures.
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
 schema per test. They exercise commits, rollbacks, statement timeouts, and
-Yoyo migration apply/reapply/rollback with a test-only table. There are no video
-tables or application migrations yet. `make migrate` initializes Yoyo's
-bookkeeping in dev and will apply migrations added to `migrations/`;
+Yoyo migration apply/reapply/rollback with both a test-only table and the
+service migrations. HTTP tests apply `migrations/` into their schema first.
+Migrations are added incrementally, one per feature slice; `0001_jobs` creates the
+`jobs` table. `make migrate` applies them in dev;
 `make migrations` lists their status. These are explicit commands, separate
 from server startup.
 
@@ -140,7 +144,7 @@ Development migrations remain manual through Make.
 The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
 It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
 null unions, reusable schemas and responses, and security declarations for the
-13 video and job operations. Video and job paths are relative to the `/v1` server base path.
+12 video and job operations. Video and job paths are relative to the `/v1` server base path.
 The unauthenticated health operation overrides the server path to `/`, preserving
 `GET /ping`. JSON fields and component names use snake_case; operation IDs use
 Pythonic `module.function` names. Resource operations name their noun explicitly,
@@ -153,19 +157,19 @@ The plural `/videos/{id}/thumbnails` path still represents one active thumbnail;
 deleting the custom thumbnail restores the generated fallback.
 
 Background processing is tracked as a top-level job resource, following Google's
-long-running operation pattern (AIP-151). `:complete-upload` and `:retry` return
+long-running operation pattern (AIP-151). `:complete-upload` returns
 `202` with the new `Job` and a `Location: /v1/jobs/{job_id}` header; admins poll
 `GET /jobs/{job_id}` (`jobs.get_job`). A job has `id`, `status` (`QUEUED`,
 `RUNNING`, `SUCCEEDED`, `FAILED`), `content_id`, and a `message` that is set only
-when it fails. `content_id` is currently always the video ID, so later
-resource jobs can reuse the schema. `Video.latest_job_id` finds the most recent
+when it fails. `content_id` is the ID of whatever resource the job
+processes, so later resource jobs can reuse the schema. `Video.latest_job_id` finds the most recent
 job without a list endpoint. Video `status` stays a coarse lifecycle state, and
 generated thumbnails keep reporting through `Video.thumbnail.status`.
 
 `api-specs/index.yaml` holds API metadata and references to the contract files. Paths
 are grouped by resource, with collections, individual resources, and their HTTP
 methods kept together. [`videos.yaml`](api-specs/paths/videos.yaml) contains video paths,
-including uploads, playback, and retries. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
+including uploads and playback. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
 contains thumbnail paths, and [`jobs.yaml`](api-specs/paths/jobs.yaml) contains job
 paths. Reusable responses live in
 `api-specs/responses/`; operation-specific responses stay in their path files. Examples
@@ -217,7 +221,7 @@ present. Required response headers need examples too. The creation response's
 `Location` header references `parameters/response_location.yaml`, a Header Object
 with an example and without the request-parameter `name` and `in` fields.
 These declarations control the generated interface. The complete prepared
-contract currently generates all 14 operations and their validated inline mocks.
+contract currently generates all 13 operations and their validated inline mocks.
 
 ### Handwritten implementations
 
@@ -320,4 +324,4 @@ Schema examples are authoritative for success assertions. Parameter validation k
 FastAPI's native 422 responses. The current generated suite has 32 cases; 202
 operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
-assertions. The service currently serves generated mocks for its 14 operations.
+assertions. `jobs.get_job` reads PostgreSQL; the other 12 operations still serve generated mocks.

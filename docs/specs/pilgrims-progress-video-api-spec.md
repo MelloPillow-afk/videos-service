@@ -18,7 +18,7 @@ This contract covers administrator video management, direct-to-R2 uploads, async
 - Upload URLs expire, can be renewed before confirmation, and cannot authorize overwriting a confirmed source.
 - `complete-upload` verifies the source object and durably queues processing; it never uploads file bytes or synchronously transcodes.
 - Processing runs in Cloud Run Jobs, with durable job dispatch/reconciliation.
-- Client polls `GET /jobs/{jobId}` for processing state; `complete-upload` and `retry` return the job.
+- Client polls `GET /jobs/{jobId}` for processing state; `complete-upload` returns the job.
 - Video publication is manual with a **separate, explicit `PUBLISHED` publication status**.
 - HLS assets are delivered from Cloudflare CDN; playback URLs are assembled server-side from storage keys.
 - Deletion is asynchronous; a deleting video must immediately become unavailable for playback.
@@ -46,7 +46,7 @@ This contract covers administrator video management, direct-to-R2 uploads, async
 | `UPLOADING` | Upload URL issued; upload not confirmed |
 | `PROCESSING` | Upload verified; processing job queued or running (see the job for detail) |
 | `READY` | Valid HLS output published to R2; playable when published |
-| `FAILED` | Video processing failed; eligible for retry if source remains valid |
+| `FAILED` | Video processing failed; recover by deleting and recreating the video |
 | `DELETING` | Delete accepted; further mutation and playback prohibited |
 
 `publicationStatus` (independent): `DRAFT` or `PUBLISHED`.
@@ -57,7 +57,7 @@ Rules:
 2. Only `READY` videos may transition to `PUBLISHED`.
 3. Unpublishing transitions to `DRAFT` and sets `publishedAt=null` (the system does not retain publication history in this API).
 4. A video is viewer-playable **only when** `status=READY AND publicationStatus=PUBLISHED`.
-5. Retry is allowed for `FAILED` videos, returns to `PROCESSING`, and creates a new job; publication remains `DRAFT` for such videos in this MVP.
+5. `FAILED` is terminal apart from deletion. The MVP has no explicit retry; transient worker failures are retried by Cloud Run Jobs task retries.
 6. `DELETING` is terminal for client-facing operations; completed deletion results in `404`.
 
 ### 2.2 Standard video resource
@@ -133,10 +133,10 @@ A job tracks one background processing run. Jobs are a top-level resource, follo
 |---|---|---|
 | `id` | UUID | Job ID |
 | `status` | enum | `QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` |
-| `contentId` | UUID | ID of the resource the job processes; currently always the video ID |
+| `contentId` | UUID | ID of the resource the job processes |
 | `message` | string or null | Human-readable failure explanation; set only when `FAILED` |
 
-Each confirmed upload and each retry creates exactly one job, which covers video transcoding only. Generated-thumbnail work stays independent of the job and reports through `thumbnail.status`. The custom-thumbnail flow is synchronous and creates no job. `message` never contains raw FFmpeg logs, credentials, internal keys, or stack traces.
+Each confirmed upload creates exactly one transcoding job, which covers video transcoding only. Generated-thumbnail work stays independent of the job and reports through `thumbnail.status`. The custom-thumbnail flow is synchronous and creates no job. `message` never contains raw FFmpeg logs, credentials, internal keys, or stack traces.
 
 ---
 
@@ -151,7 +151,6 @@ Each confirmed upload and each retry creates exactly one job, which covers video
 | `GET` | `/v1/videos/{id}/playback` | Eligible viewer | Obtain HLS URL |
 | `GET` | `/v1/videos` | Admin / viewer | Cursor-paginated video list |
 | `PATCH` | `/v1/videos/{id}` | Admin | Update metadata / publication |
-| `POST` | `/v1/videos/{id}:retry` | Admin | Retry failed transcoding |
 | `DELETE` | `/v1/videos/{id}` | Admin | Schedule video deletion |
 | `POST` | `/v1/videos/{id}/thumbnails:upload-url` | Admin | Issue custom thumbnail upload URL |
 | `POST` | `/v1/videos/{id}/thumbnails:complete-upload` | Admin | Validate and activate custom thumbnail |
@@ -374,17 +373,9 @@ Example: `GET /v1/videos?limit=20&status=READY&publicationStatus=PUBLISHED&searc
 
 **Errors:** `400`, `404`, `409 VIDEO_NOT_READY` / `INVALID_STATUS_TRANSITION`.
 
-### 4.8 Retry video processing
+### 4.8 Retry video processing (removed)
 
-**`POST /v1/videos/{id}:retry`** — `202 Accepted`\
-**Path:** `id` UUID  
-**Query/body:** None
-
-**Response `202`:** A new job resource (Section 2.4), with `Location: /v1/jobs/{jobId}`.
-
-**Behavior:** Only `FAILED` videos with a retained validated source may be retried. Create a fresh job with a unique HLS output prefix. Atomically change the video to `PROCESSING`, set `latestJobId`, and create the durable job request. Reject concurrent duplicate retries with `409` rather than launching multiple jobs. Previous jobs remain readable for debugging. Automatically generated thumbnail processing is not coupled to a transcode retry; its own recovery is handled by worker reconciliation. Publication remains `DRAFT` in this MVP retry path.
-
-**Errors:** `404`, `409 INVALID_STATUS_TRANSITION`, `503` if service unavailable before durable acceptance.
+Removed from the MVP on 2026-10-17. A `FAILED` video is recovered by deleting and recreating it; Cloud Run Jobs task retries cover transient worker failures.
 
 ### 4.9 Delete video
 
@@ -570,7 +561,7 @@ No manual endpoint is required to trigger generation. `complete-upload` creates 
 2. Duplicate `complete-upload` requests create only one transcoding attempt.
 3. Old upload URL/attempt cannot replace the active source after URL renewal.
 4. Invalid upload is rejected and cannot become `READY`.
-5. Processing crash is recorded on the job and `retry` creates one new job.
+5. Processing crash is recorded on the job as `FAILED` with a sanitized message.
 6. Publishing before `READY` is rejected with `409`.
 7. Unpublished video is not discoverable/playable through viewer APIs.
 8. Cursor pagination has deterministic ordering and does not duplicate/skips records on static data.

@@ -18,7 +18,6 @@ from src.core.generated.authentication import (
 )
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.jobs import Job as _CompleteUploadResponse
-from src.schemas.generated.jobs import Job as _RetryProcessingResponse
 from src.schemas.generated.operations import (
     VideosCompleteUploadIdParameter as _CompleteUploadIdParameter,
 )
@@ -36,9 +35,6 @@ from src.schemas.generated.operations import (
 )
 from src.schemas.generated.operations import (
     VideosListVideosSearchParameter as _ListVideosSearchParameter,
-)
-from src.schemas.generated.operations import (
-    VideosRetryProcessingIdParameter as _RetryProcessingIdParameter,
 )
 from src.schemas.generated.operations import (
     VideosUpdateVideoIdParameter as _UpdateVideoIdParameter,
@@ -259,33 +255,6 @@ async def complete_upload(
 ) -> _CompleteUploadResponse:
     response.headers["Location"] = "/v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
     return _generator_TypeAdapter(_CompleteUploadResponse).validate_python(
-        {
-            "content_id": "550e8400-e29b-41d4-a716-446655440000",
-            "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
-            "message": None,
-            "status": "QUEUED",
-        },
-    )
-
-
-@router.post(
-    "/videos/{id}:retry",
-    response_model=_RetryProcessingResponse,
-    status_code=202,
-    response_model_exclude_unset=True,
-    dependencies=[_generator_Depends(_generator_require_authentication)],
-)
-@_generator_select_endpoint("videos.retry_processing")
-async def retry_processing(
-    *,
-    id: _generator_Annotated[
-        _RetryProcessingIdParameter,
-        _generator_Path(alias="id", description="Video ID."),
-    ],
-    response: _generator_Response,
-) -> _RetryProcessingResponse:
-    response.headers["Location"] = "/v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0"
-    return _generator_TypeAdapter(_RetryProcessingResponse).validate_python(
         {
             "content_id": "550e8400-e29b-41d4-a716-446655440000",
             "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",

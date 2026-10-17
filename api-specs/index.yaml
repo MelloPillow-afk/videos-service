@@ -47,8 +47,6 @@ paths:
     $ref: paths/videos.yaml#/~1videos~1{id}:complete-upload
   /videos/{id}/playback:
     $ref: paths/videos.yaml#/~1videos~1{id}~1playback
-  /videos/{id}:retry:
-    $ref: paths/videos.yaml#/~1videos~1{id}:retry
   /videos/{id}/thumbnails:upload-url:
     $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:upload-url
   /videos/{id}/thumbnails:complete-upload:

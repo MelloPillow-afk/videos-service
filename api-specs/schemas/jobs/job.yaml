@@ -16,7 +16,7 @@ properties:
   content_id:
     type: string
     format: uuid
-    description: ID of the resource this job processes. Currently always a video ID.
+    description: ID of the resource this job processes.
   message:
     type:
       - string

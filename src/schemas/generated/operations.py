@@ -32,6 +32,4 @@ type ThumbnailsUploadUrlIdParameter = Annotated[str, AfterValidator(lambda value
 
 type VideosCompleteUploadIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
-type VideosRetryProcessingIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-
 type VideosUploadUrlIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

@@ -87,7 +87,8 @@ JOB: dict[str, object] = {
 }
 
 
-async def test_all_fourteen_operations_serve_exact_contract_examples() -> None:
+# jobs.get_job reads PostgreSQL; tests/integration/test_jobs.py covers it.
+async def test_unimplemented_operations_serve_exact_contract_examples() -> None:
     cases: list[tuple[str, str, dict[str, object] | None, int, dict[str, object]]] = [
         ("GET", "/ping", None, 200, {"status": "ok"}),
         ("GET", "/v1/videos", None, 200, COLLECTION),
@@ -134,13 +135,6 @@ async def test_all_fourteen_operations_serve_exact_contract_examples() -> None:
         ),
         (
             "POST",
-            f"{RESOURCE}:retry",
-            None,
-            202,
-            JOB,
-        ),
-        (
-            "POST",
             f"{RESOURCE}/thumbnails:upload-url",
             {"file_name": "cover.jpg", "content_type": "image/jpeg", "size_bytes": 183420},
             200,
@@ -169,7 +163,6 @@ async def test_all_fourteen_operations_serve_exact_contract_examples() -> None:
             200,
             {"video_id": VIDEO_ID, "thumbnail": CUSTOM_THUMBNAIL},
         ),
-        ("GET", JOB_LOCATION, None, 200, JOB),
     ]
     app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
     async with AsyncClient(
@@ -182,7 +175,7 @@ async def test_all_fourteen_operations_serve_exact_contract_examples() -> None:
             assert response.json() == expected, (method, path)
             if status == 201:
                 assert response.headers["Location"] == RESOURCE
-            if path.endswith((":complete-upload", ":retry")) and "thumbnails" not in path:
+            if path.endswith(":complete-upload") and "thumbnails" not in path:
                 assert response.headers["Location"] == JOB_LOCATION
 
 
@@ -284,7 +277,7 @@ def test_generated_routes_keep_runtime_settings_without_contract_documentation()
     routes = [
         route for module in modules for route in module.router.routes if isinstance(route, APIRoute)
     ]
-    assert len(routes) == 14
+    assert len(routes) == 13
     for route in routes:
         assert route.response_model is not None
         assert route.response_model_exclude_unset is True
