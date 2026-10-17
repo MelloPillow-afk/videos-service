@@ -7,8 +7,8 @@ import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
 
-from tests.api_client import running
-from tests.media_files import make_video
+from tests.utilities.api_client import running
+from tests.utilities.media_files import make_video
 
 
 @pytest_asyncio.fixture

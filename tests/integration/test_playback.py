@@ -6,8 +6,8 @@ import pytest
 from httpx import AsyncClient
 from psycopg import AsyncConnection
 
-from tests.media_urls import expected_sizes
-from tests.rows import insert_video
+from tests.utilities.media_urls import expected_sizes
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 

@@ -19,11 +19,11 @@ from src.clients.cloudflare import PresignedUpload
 from src.config import Settings
 from src.services import thumbnails as thumbnails_service
 from src.services import uploads as uploads_service
-from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
-from tests.fakes import FakeLauncher, FakeStorage
 from tests.generated._support import APICase
-from tests.media_urls import MEDIA_BASE_URL, expected_sizes
-from tests.rows import insert_video
+from tests.utilities.auth_provider import AUTH_SETTINGS, LocalSigningKeys
+from tests.utilities.fakes import FakeLauncher, FakeStorage
+from tests.utilities.media_urls import MEDIA_BASE_URL, expected_sizes
+from tests.utilities.rows import insert_video
 
 MIGRATIONS = Path(__file__).parent.parent / "migrations"
 

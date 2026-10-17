@@ -15,7 +15,7 @@ from pydantic import SecretStr
 from src.app import create_app
 from src.clients.auth import SigningKeys
 from src.config import Settings
-from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
+from tests.utilities.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 
 VIDEO = "/v1/admin/videos/550e8400-e29b-41d4-a716-446655440000"
 CATALOG = "/v1/videos"

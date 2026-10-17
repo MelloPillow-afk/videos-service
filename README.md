@@ -393,4 +393,4 @@ operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
 assertions. `jobs.get_job`, `videos.list_videos`, `playback.get_playback`, the admin video
 create, list, get, update, and delete operations, and the source `upload-url` and
-`complete-upload` operations, and the thumbnail operations, read PostgreSQL. Tests replace R2 and worker launches with the fakes in `tests/fakes.py`.
+`complete-upload` operations, and the thumbnail operations, read PostgreSQL. Tests replace R2 and worker launches with the fakes in `tests/utilities/fakes.py`.

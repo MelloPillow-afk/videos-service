@@ -1,5 +1,6 @@
 """Insert application rows directly when a test needs existing state."""
 
+from typing import LiteralString, cast
 from uuid import uuid4
 
 from psycopg import AsyncConnection
@@ -12,7 +13,7 @@ async def insert_video(db: AsyncConnection, **values: object) -> str:
     placeholders = ", ".join(["%s"] * (len(values) + 1))
     # Column names come from test code, not user input.
     await db.execute(
-        f"INSERT INTO videos ({columns}) VALUES ({placeholders})",
+        cast(LiteralString, f"INSERT INTO videos ({columns}) VALUES ({placeholders})"),
         (video_id, *values.values()),
     )
     return video_id

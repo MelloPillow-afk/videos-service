@@ -7,7 +7,7 @@ import pytest
 from httpx import AsyncClient
 from psycopg import AsyncConnection
 
-from tests.rows import insert_video
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 

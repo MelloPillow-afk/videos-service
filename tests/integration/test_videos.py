@@ -4,7 +4,7 @@ import psycopg
 import pytest
 from psycopg import AsyncConnection
 
-from tests.rows import insert_video
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 

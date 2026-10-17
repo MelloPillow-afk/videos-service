@@ -8,8 +8,8 @@ import pytest
 from httpx import AsyncClient
 from psycopg import AsyncConnection
 
-from tests.fakes import FakeLauncher, FakeStorage
-from tests.rows import insert_video
+from tests.utilities.fakes import FakeLauncher, FakeStorage
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 

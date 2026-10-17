@@ -35,16 +35,16 @@ migrations:
 check: lint format-check typecheck
 
 lint: lint-api dead-code
-	uv run --locked ruff check src tests/unit tests/integration tests/conftest.py tests/generated
+	uv run --locked ruff check src tests/unit tests/integration tests/utilities tests/conftest.py tests/generated
 
 format: format-src
-	uv run --locked ruff format tests/unit tests/integration tests/conftest.py tests/generated
+	uv run --locked ruff format tests/unit tests/integration tests/utilities tests/conftest.py tests/generated
 
 format-src:
 	uv run --locked ruff format src
 
 format-check:
-	uv run --locked ruff format --check src tests/unit tests/integration tests/conftest.py tests/generated
+	uv run --locked ruff format --check src tests/unit tests/integration tests/utilities tests/conftest.py tests/generated
 
 typecheck:
 	uv run --locked pyright

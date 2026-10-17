@@ -9,10 +9,10 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 from src.workers.media import run
-from tests.api_client import running
-from tests.fakes import FakeLauncher, FakeStorage
-from tests.media_files import make_image
-from tests.media_urls import MEDIA_BASE_URL, THUMBNAIL_SIZES
+from tests.utilities.api_client import running
+from tests.utilities.fakes import FakeLauncher, FakeStorage
+from tests.utilities.media_files import make_image
+from tests.utilities.media_urls import MEDIA_BASE_URL, THUMBNAIL_SIZES
 
 pytestmark = pytest.mark.integration
 

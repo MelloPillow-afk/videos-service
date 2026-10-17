@@ -26,7 +26,7 @@ Derive expected values from `api-specs/` or the requirement, never from a run of
 - **Persistence:** real PostgreSQL through the fixtures in `tests/conftest.py`.
 
 Fakes stand in only for what the service does not own: signing keys
-(`tests/auth_provider.py`) and the clock.
+(`tests/utilities/auth_provider.py`) and the clock.
 
 ## Exceptions
 

@@ -8,7 +8,7 @@ import pytest
 from src.clients import gcp, local
 from src.config import Settings
 from src.services import jobs as jobs_service
-from tests.fakes import FakeLauncher
+from tests.utilities.fakes import FakeLauncher
 
 DEV = Settings(auth_disabled=True)
 PROD = Settings(

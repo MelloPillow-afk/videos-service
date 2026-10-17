@@ -10,9 +10,9 @@ from fastapi import FastAPI
 from httpx import AsyncClient, Response
 from psycopg import AsyncConnection
 
-from tests.fakes import FakeLauncher, FakeStorage
-from tests.media_urls import MEDIA_BASE_URL, expected_sizes
-from tests.rows import insert_video
+from tests.utilities.fakes import FakeLauncher, FakeStorage
+from tests.utilities.media_urls import MEDIA_BASE_URL, expected_sizes
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 

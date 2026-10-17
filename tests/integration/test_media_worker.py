@@ -12,10 +12,10 @@ from psycopg import AsyncConnection
 from src.clients import cloudflare, ffmpeg
 from src.config import Settings
 from src.workers.media import run
-from tests.fakes import FakeStorage
-from tests.media_files import make_image, make_video
-from tests.media_urls import THUMBNAIL_SIZES
-from tests.rows import insert_video
+from tests.utilities.fakes import FakeStorage
+from tests.utilities.media_files import make_image, make_video
+from tests.utilities.media_urls import THUMBNAIL_SIZES
+from tests.utilities.rows import insert_video
 
 pytestmark = pytest.mark.integration
 
