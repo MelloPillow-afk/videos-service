@@ -12,6 +12,8 @@ dependencies = [
   "psycopg-pool>=3.2,<4",
   "uvicorn>=0.34,<1",
   "yoyo-migrations>=9,<10",
+  "boto3>=1.35,<2",
+  "google-cloud-run>=0.10,<1",
 ]
 
 [dependency-groups]
@@ -29,6 +31,7 @@ dev = [
   "ruff>=0.12,<1",
   "yamllint>=1.37,<2",
   "vulture>=2.14,<3",
+  "boto3-stubs[s3]>=1.35,<2",
 ]
 generated-runtime = [
   "fastapi>=0.115,<1",
@@ -78,6 +81,9 @@ ignore_names = [
   "authenticator",
   "verify",
   "arrange_*",
+  # Handwritten handlers the generated routers select by operation ID.
+  "upload_url",
+  "get_playback",
   # Enum members reached by value from database rows.
   "VIDEO_PROCESSING",
   "THUMBNAIL_GENERATION",

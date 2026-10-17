@@ -337,5 +337,7 @@ Schema examples are authoritative for success assertions. Parameter validation k
 FastAPI's native 422 responses. The current generated suite has 38 cases; 202
 operations are outside MVP coverage, and all gaps appear in
 `tests/generated/coverage.json`. Service-specific business effects require handwritten
-assertions. `jobs.get_job`, `videos.list_videos`, and the admin video create, list, get, update,
-and delete operations read PostgreSQL; the other operations still serve generated mocks.
+assertions. `jobs.get_job`, `videos.list_videos`, `playback.get_playback`, the admin video
+create, list, get, update, and delete operations, and the source `upload-url` and
+`complete-upload` operations read PostgreSQL; the thumbnail operations still serve generated
+mocks. Tests replace R2 and worker launches with the fakes in `tests/fakes.py`.

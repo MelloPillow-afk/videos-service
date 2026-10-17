@@ -1,9 +1,10 @@
 """Each integration test owns a temporary schema in a dedicated test database."""
 
 from collections.abc import AsyncIterator
+from datetime import datetime
 from pathlib import Path
 from typing import LiteralString, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
@@ -14,9 +15,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.app import create_app
 from src.config import Settings
+from src.providers import cloudflare, gcp, local
+from src.providers.cloudflare import PresignedUpload
+from src.services import uploads as uploads_service
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
+from tests.fakes import FakeLauncher, FakeStorage
 from tests.generated._support import APICase
 from tests.rows import insert_video
+
+MEDIA_BASE_URL = "https://media.example.com"
 
 MIGRATIONS = Path(__file__).parent.parent / "migrations"
 
@@ -64,6 +71,24 @@ async def db(migrated_database: tuple[str, str]) -> AsyncIterator[AsyncConnectio
         yield connection
 
 
+@pytest.fixture(autouse=True)
+def storage(monkeypatch: pytest.MonkeyPatch) -> FakeStorage:
+    """Every test uses in-memory storage in place of R2."""
+    fake = FakeStorage()
+    monkeypatch.setattr(cloudflare, "presign_upload", fake.presign_upload)
+    monkeypatch.setattr(cloudflare, "uploaded_size", fake.uploaded_size)
+    return fake
+
+
+@pytest.fixture(autouse=True)
+def launcher(monkeypatch: pytest.MonkeyPatch) -> FakeLauncher:
+    """Every test records worker launches instead of starting workers."""
+    fake = FakeLauncher()
+    monkeypatch.setattr(local, "run_job", fake.run_job)
+    monkeypatch.setattr(gcp, "run_job", fake.run_job)
+    return fake
+
+
 @pytest.fixture
 def signing_keys() -> LocalSigningKeys:
     return LocalSigningKeys()
@@ -79,7 +104,12 @@ async def api_app(migrated_database: tuple[str, str], signing_keys: LocalSigning
     """Generated HTTP tests use the real app, real JWT checks, and a fresh PostgreSQL schema."""
     url, schema = migrated_database
     return create_app(
-        Settings(database_url=SecretStr(url), db_schema=schema, **AUTH_SETTINGS),
+        Settings(
+            database_url=SecretStr(url),
+            db_schema=schema,
+            media_base_url=MEDIA_BASE_URL,
+            **AUTH_SETTINGS,
+        ),
         signing_keys=signing_keys,
     )
 
@@ -175,8 +205,40 @@ async def arrange_videos_list_videos(api_case: APICase, db: AsyncConnection) -> 
         publication_status="PUBLISHED",
         published_at=video["published_at"],
     )
-    # Duration and thumbnail come from processing, which is not implemented yet.
+    # The example's video has a custom thumbnail, which uploads cannot add yet.
     video |= {
         "duration_seconds": None,
         "thumbnail": {"status": "PENDING", "source": "NONE", "url": None},
     }
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_upload_url(
+    api_case: APICase, db: AsyncConnection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await insert_video(db, id=api_case.path_params["id"])
+    # The example's file is larger than the default size limit.
+    api_case.body["size_bytes"] = 1024
+    upload = api_case.expected_body["upload"]
+    monkeypatch.setattr(uploads_service, "uuid4", lambda: UUID(upload["upload_id"]))
+    example = PresignedUpload(
+        url=upload["url"], expires_at=datetime.fromisoformat(upload["expires_at"])
+    )
+
+    def presign_upload(_key: str, _content_type: str) -> PresignedUpload:
+        return example
+
+    monkeypatch.setattr(cloudflare, "presign_upload", presign_upload)
+
+
+@pytest_asyncio.fixture
+async def arrange_playback_get_playback(api_case: APICase, db: AsyncConnection) -> None:
+    playback_url: str = api_case.expected_body["playback"]["url"]
+    await insert_video(
+        db,
+        id=api_case.path_params["id"],
+        status="READY",
+        publication_status="PUBLISHED",
+        published_at="2026-10-13T14:00:00Z",
+        playback_key=playback_url.removeprefix(f"{MEDIA_BASE_URL}/"),
+    )

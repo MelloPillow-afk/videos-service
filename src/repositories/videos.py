@@ -5,21 +5,29 @@ from uuid import UUID
 
 from psycopg.rows import TupleRow
 
+from src.domain.jobs import JobKind, JobStatus
 from src.domain.videos import PublicationStatus, Video, VideoStatus
 from src.repositories.connections import db_connection
 
 _COLUMNS = (
     "videos.id, title, description, videos.status, publication_status, published_at, "
-    "videos.created_at, videos.updated_at"
+    "videos.created_at, videos.updated_at, upload_id, source_key, size_bytes, "
+    "duration_seconds, playback_key, generated_thumbnail_key"
 )
-_LATEST_JOB = "LEFT JOIN jobs ON jobs.video_id = videos.id AND jobs.kind = 'VIDEO_PROCESSING' "
+# Each video has at most one job of each kind.
+_JOBS = (
+    "LEFT JOIN jobs ON jobs.video_id = videos.id AND jobs.kind = 'VIDEO_PROCESSING' "
+    "LEFT JOIN jobs AS thumbnail_jobs ON thumbnail_jobs.video_id = videos.id "
+    "AND thumbnail_jobs.kind = 'THUMBNAIL_GENERATION' "
+)
+_JOB_COLUMNS = "jobs.id, thumbnail_jobs.status"
 
 
 async def create_video(title: str, description: str | None) -> Video:
     async with db_connection() as conn:
         cursor = await conn.execute(
-            # A new video has no processing job yet.
-            f"INSERT INTO videos (title, description) VALUES (%s, %s) RETURNING {_COLUMNS}, NULL",
+            # A new video has no jobs yet.
+            f"INSERT INTO videos (title, description) VALUES (%s, %s) RETURNING {_COLUMNS}, NULL, NULL",
             (title, description),
         )
         row = await cursor.fetchone()
@@ -30,7 +38,7 @@ async def create_video(title: str, description: str | None) -> Video:
 async def get_video(video_id: UUID) -> Video | None:
     async with db_connection() as conn:
         cursor = await conn.execute(
-            f"SELECT {_COLUMNS}, jobs.id FROM videos {_LATEST_JOB}"
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM videos {_JOBS}"
             "WHERE videos.id = %s AND videos.deleted_at IS NULL",
             (video_id,),
         )
@@ -46,7 +54,7 @@ async def list_videos(
     """Videos that have not been deleted, newest created first, after a (created_at, id)."""
     async with db_connection() as conn:
         cursor = await conn.execute(
-            f"SELECT {_COLUMNS}, jobs.id FROM videos {_LATEST_JOB}"
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM videos {_JOBS}"
             "WHERE videos.deleted_at IS NULL "
             "AND (%(publication_status)s::text IS NULL "
             "OR publication_status = %(publication_status)s) "
@@ -68,7 +76,7 @@ async def list_catalog_videos(after: tuple[datetime, UUID] | None, limit: int) -
     after a (published_at, id)."""
     async with db_connection() as conn:
         cursor = await conn.execute(
-            f"SELECT {_COLUMNS}, jobs.id FROM videos {_LATEST_JOB}"
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM videos {_JOBS}"
             "WHERE videos.deleted_at IS NULL AND publication_status = 'PUBLISHED' "
             "AND videos.status = 'READY' "
             "AND (%(after_at)s::timestamptz IS NULL "
@@ -89,7 +97,7 @@ async def update_video(video: Video) -> Video | None:
             "published_at = %s, updated_at = now() "
             "WHERE id = %s AND deleted_at IS NULL RETURNING *"
             ") "
-            f"SELECT {_COLUMNS}, jobs.id FROM updated AS videos {_LATEST_JOB}",
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM updated AS videos {_JOBS}",
             (
                 video.title,
                 video.description,
@@ -100,6 +108,51 @@ async def update_video(video: Video) -> Video | None:
         )
         row = await cursor.fetchone()
     return None if row is None else _video(row)
+
+
+async def start_upload(video: Video) -> Video | None:
+    """Save a video's new current upload, unless processing has already begun."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "WITH updated AS ("
+            "UPDATE videos SET status = %s, upload_id = %s, source_key = %s, size_bytes = %s, "
+            "updated_at = now() "
+            "WHERE id = %s AND deleted_at IS NULL AND status IN ('CREATED', 'UPLOADING') "
+            "RETURNING *"
+            ") "
+            f"SELECT {_COLUMNS}, {_JOB_COLUMNS} FROM updated AS videos {_JOBS}",
+            (
+                video.status.value,
+                video.upload_id,
+                video.source_key,
+                video.size_bytes,
+                video.id,
+            ),
+        )
+        row = await cursor.fetchone()
+    return None if row is None else _video(row)
+
+
+async def accept_upload(video: Video) -> dict[JobKind, UUID] | None:
+    """Move an uploading video to processing and queue its video and thumbnail jobs
+    together. None when its current upload changed or was already accepted."""
+    async with db_connection() as conn:
+        cursor = await conn.execute(
+            "UPDATE videos SET status = %s, size_bytes = %s, updated_at = now() "
+            "WHERE id = %s AND upload_id = %s AND deleted_at IS NULL AND status = 'UPLOADING' "
+            "RETURNING id",
+            (video.status.value, video.size_bytes, video.id, video.upload_id),
+        )
+        if await cursor.fetchone() is None:
+            return None
+        cursor = await conn.execute(
+            "INSERT INTO jobs (video_id, kind) "
+            "VALUES (%(id)s, 'VIDEO_PROCESSING'), (%(id)s, 'THUMBNAIL_GENERATION') "
+            "RETURNING kind, id",
+            {"id": video.id},
+        )
+        rows = await cursor.fetchall()
+    return {JobKind(kind): job_id for kind, job_id in rows}
 
 
 async def delete_video(video_id: UUID) -> bool:
@@ -129,7 +182,14 @@ def _video(row: TupleRow) -> Video:
         published_at,
         created_at,
         updated_at,
+        upload_id,
+        source_key,
+        size_bytes,
+        duration_seconds,
+        playback_key,
+        generated_thumbnail_key,
         latest_job_id,
+        thumbnail_job_status,
     ) = row
     return Video(
         id=id_,
@@ -141,4 +201,11 @@ def _video(row: TupleRow) -> Video:
         created_at=created_at,
         updated_at=updated_at,
         latest_job_id=latest_job_id,
+        upload_id=upload_id,
+        source_key=source_key,
+        size_bytes=size_bytes,
+        duration_seconds=None if duration_seconds is None else float(duration_seconds),
+        playback_key=playback_key,
+        generated_thumbnail_key=generated_thumbnail_key,
+        thumbnail_job_status=thumbnail_job_status and JobStatus(thumbnail_job_status),
     )

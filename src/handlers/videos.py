@@ -6,12 +6,11 @@ from typing import Annotated
 from fastapi import Query
 
 from src.domain import videos as domain
-from src.handlers.utilities import page, page_position, timestamp
+from src.handlers.utilities import page, page_position, thumbnail, timestamp
 from src.schemas.generated.operations import (
     VideosListVideosLimitParameter,
     VideosListVideosPageTokenParameter,
 )
-from src.schemas.generated.thumbnails import ThumbnailImage
 from src.schemas.generated.videos import Video, Videos
 from src.services import videos as videos_service
 
@@ -33,13 +32,12 @@ async def list_videos(
 
 
 def _video(video: domain.Video) -> Video:
-    # Duration and thumbnail come from processing, which comes later.
     return Video(
         id=str(video.id),
         title=video.title,
         description=video.description,
-        duration_seconds=None,
-        thumbnail=ThumbnailImage(status="PENDING", source="NONE", url=None),
+        duration_seconds=video.duration_seconds,
+        thumbnail=thumbnail(video),
         published_at=timestamp(_published_at(video)),
     )
 

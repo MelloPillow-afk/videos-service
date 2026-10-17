@@ -27,3 +27,8 @@ def test_unsafe_database_schema_is_rejected(schema: str) -> None:
 def test_non_postgresql_database_url_is_rejected(url: str) -> None:
     with pytest.raises(ValidationError, match="PostgreSQL"):
         Settings(database_url=SecretStr(url), auth_disabled=True)
+
+
+def test_prod_requires_the_worker_job() -> None:
+    with pytest.raises(ValidationError, match="WORKER_JOB_NAME"):
+        Settings(api_env="prod", gcp_project="p", gcp_region="r", auth_disabled=True)

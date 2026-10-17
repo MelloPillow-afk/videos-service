@@ -5,14 +5,22 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.config import Settings
+from src.providers import cloudflare, gcp
 from src.repositories.connections import close_database, open_database
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    await open_database(app.state.settings)
+    settings: Settings = app.state.settings
+    await open_database(settings)
+    cloudflare.open_storage(settings)
+    if settings.api_env == "prod":
+        gcp.open_jobs(settings)
     try:
         yield
     finally:
         # Close service resources here, including when the application fails.
+        await gcp.close_jobs()
+        cloudflare.close_storage()
         await close_database()

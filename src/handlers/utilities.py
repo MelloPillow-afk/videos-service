@@ -1,4 +1,4 @@
-"""Wire formats shared by handlers: UTC timestamps and list page tokens."""
+"""Wire formats shared by handlers: UTC timestamps, list page tokens, and thumbnails."""
 
 import base64
 import json
@@ -8,13 +8,37 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from src.domain.jobs import JobStatus
+from src.domain.videos import Video
+from src.providers import cloudflare
 from src.schemas.generated.shared import Pagination
+from src.schemas.generated.thumbnails import ThumbnailImage, ThumbnailStatus
 
 type Position = tuple[datetime, UUID]
 
 
 def timestamp(value: datetime) -> str:
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def thumbnail(video: Video) -> ThumbnailImage:
+    """The generated thumbnail once ready, with its generation job's progress."""
+    key = video.generated_thumbnail_key
+    return ThumbnailImage(
+        status=_THUMBNAIL_STATUS[video.thumbnail_job_status],
+        source="GENERATED" if key else "NONE",
+        url=cloudflare.media_url(key) if key else None,
+    )
+
+
+# Until generation is queued, or while it runs, the thumbnail is pending.
+_THUMBNAIL_STATUS: dict[JobStatus | None, ThumbnailStatus] = {
+    None: "PENDING",
+    JobStatus.QUEUED: "PENDING",
+    JobStatus.RUNNING: "PENDING",
+    JobStatus.SUCCEEDED: "READY",
+    JobStatus.FAILED: "FAILED",
+}
 
 
 def page_position(page_token: str | None) -> Position | None:

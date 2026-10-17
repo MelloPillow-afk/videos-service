@@ -26,3 +26,18 @@ async def get_job(job_id: UUID) -> Job | None:
         created_at=created_at,
         updated_at=updated_at,
     )
+
+
+async def fail_job(job_id: UUID, message: str) -> None:
+    """Fail a queued job; a failed video job also fails its processing video."""
+    async with db_connection() as conn:
+        await conn.execute(
+            "WITH failed AS ("
+            "UPDATE jobs SET status = 'FAILED', message = %s, updated_at = now() "
+            "WHERE id = %s AND status = 'QUEUED' RETURNING video_id, kind"
+            ") "
+            "UPDATE videos SET status = 'FAILED', updated_at = now() FROM failed "
+            "WHERE videos.id = failed.video_id AND failed.kind = 'VIDEO_PROCESSING' "
+            "AND videos.status = 'PROCESSING'",
+            (message, job_id),
+        )
