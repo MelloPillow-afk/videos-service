@@ -1,0 +1,6 @@
+# HTTPS in front of SeaweedFS, so local upload and media URLs match R2's https://.
+# Caddy's local CA signs the certificate; `make local-ca` copies its root out to trust.
+https://localhost:9443 {
+	tls internal
+	reverse_proxy seaweedfs:8333
+}

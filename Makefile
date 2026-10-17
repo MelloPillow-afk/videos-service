@@ -1,4 +1,4 @@
-.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration coverage dead-code
+.PHONY: install run db-up db-down test-db-up storage-up local-ca worker-build migrate migrations check lint lint-api format format-src format-check typecheck test test-integration coverage dead-code
 
 install:
 	uv sync --locked
@@ -14,6 +14,17 @@ db-down:
 
 test-db-up:
 	docker compose --profile test up -d --wait postgres-test
+
+storage-up:
+	docker compose up -d --wait seaweedfs storage-https
+	docker compose run --rm storage-buckets
+
+local-ca:
+	mkdir -p .local
+	docker compose cp storage-https:/data/caddy/pki/authorities/local/root.crt .local/caddy-root.crt
+
+worker-build:
+	docker compose build worker
 
 migrate:
 	uv run --locked python -m src.repositories.migrate apply

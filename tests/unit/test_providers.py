@@ -1,6 +1,8 @@
 """Storage and Cloud Run providers make the right outgoing calls, without the network."""
 
+import subprocess
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
@@ -16,6 +18,7 @@ from src.providers import cloudflare, gcp
 # Imported before the autouse fixtures replace them with fakes.
 from src.providers.cloudflare import presign_upload, uploaded_size
 from src.providers.gcp import run_job
+from src.providers.local import run_job as local_run_job
 
 
 @pytest.fixture
@@ -43,7 +46,7 @@ def test_upload_url_signs_a_put_to_the_raw_bucket() -> None:
 
     url = urlsplit(upload.url)
     assert f"{url.scheme}://{url.netloc}{url.path}" == (
-        "http://localhost:9000/videos-raw/videos/v/uploads/u/source.mp4"
+        "https://localhost:9443/videos-raw/videos/v/uploads/u/source.mp4"
     )
     query = parse_qs(url.query)
     assert query["X-Amz-Expires"] == ["600"]
@@ -113,3 +116,19 @@ async def test_run_job_starts_the_worker_with_the_job_id(monkeypatch: pytest.Mon
 async def test_cloud_run_must_be_open() -> None:
     with pytest.raises(RuntimeError, match="Cloud Run is not open"):
         await run_job(uuid4())
+
+
+async def test_local_run_job_starts_a_compose_worker(monkeypatch: pytest.MonkeyPatch) -> None:
+    started: list[tuple[list[str], dict[str, Any]]] = []
+
+    def popen(command: list[str], **options: Any) -> None:
+        started.append((command, options))
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    job_id = uuid4()
+
+    await local_run_job(job_id)
+
+    ((command, options),) = started
+    assert command == ["docker", "compose", "run", "--rm", "-T", "worker", str(job_id)]
+    assert (Path(options["cwd"]) / "compose.yaml").is_file()

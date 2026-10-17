@@ -63,8 +63,30 @@ FFprobe, and publishes HLS renditions (360p, 720p, and 1080p, never upscaled) or
 a failed video job also fails the video. Workers need FFmpeg and the API's settings.
 
 With `API_ENV=prod`, the API starts each job as an execution of the Cloud Run job
-`WORKER_JOB_NAME`. In dev, jobs stay queued until a local launcher exists; run the
-worker by hand to process one.
+`WORKER_JOB_NAME`; [docs/deployment.md](docs/deployment.md) sets it up. In dev, the API
+runs `docker compose run --rm -T worker <job_id>` for each job, so worker logs appear in
+the API's output. The worker container mounts `src/`, so code changes need no rebuild;
+run `make worker-build` after dependency changes.
+
+### Local storage
+
+SeaweedFS stands in for R2, behind Caddy so upload and media URLs are `https://` like
+R2's. With `.env` copied from `.env.example`:
+
+```sh
+make storage-up   # https://localhost:9443, buckets videos-raw and videos-processed
+make local-ca     # copies Caddy's CA certificate to .local/caddy-root.crt
+```
+
+`R2_CA_BUNDLE` points the API at that certificate. For a browser to upload and play,
+trust it once in the login keychain:
+
+```sh
+security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db .local/caddy-root.crt
+```
+
+`curl` needs `--cacert .local/caddy-root.crt`. The processed bucket allows anonymous
+reads; the raw bucket accepts only signed requests.
 
 The `Dockerfile` builds both images: `docker build --target api .` and
 `docker build --target worker .`, which adds FFmpeg. Worker tests run real FFmpeg, so

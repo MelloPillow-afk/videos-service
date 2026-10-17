@@ -28,14 +28,16 @@ class Settings(BaseSettings):
     auth_disabled: bool = False
     auth_disabled_subject: str = Field(default="dev-user", min_length=1)
 
-    # Cloudflare R2, or an S3-compatible store in development.
-    r2_endpoint_url: str = "http://localhost:9000"
-    r2_access_key_id: SecretStr = SecretStr("minioadmin")
-    r2_secret_access_key: SecretStr = SecretStr("minioadmin")
+    # Cloudflare R2, or local SeaweedFS behind Caddy's HTTPS in development.
+    r2_endpoint_url: str = "https://localhost:9443"
+    r2_access_key_id: SecretStr = SecretStr("videos")
+    r2_secret_access_key: SecretStr = SecretStr("videos-secret")
+    # A CA bundle that signs the endpoint's certificate, for local HTTPS.
+    r2_ca_bundle: str | None = None
     # Private uploads, and the processed media viewers fetch from MEDIA_BASE_URL.
     r2_raw_bucket: str = Field(default="videos-raw", min_length=1)
     r2_processed_bucket: str = Field(default="videos-processed", min_length=1)
-    media_base_url: str = "http://localhost:9000/videos-processed"
+    media_base_url: str = "https://localhost:9443/videos-processed"
     max_upload_bytes: int = Field(default=104_857_600, ge=1)
     upload_url_ttl_seconds: int = Field(default=900, ge=60, le=604_800)
     max_duration_seconds: float = Field(default=300, gt=0)

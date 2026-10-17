@@ -40,6 +40,7 @@ def open_storage(settings: Settings) -> None:
         aws_secret_access_key=settings.r2_secret_access_key.get_secret_value(),
         region_name="auto",
         config=Config(signature_version="s3v4"),
+        verify=settings.r2_ca_bundle or True,
     )
     _settings = settings
 

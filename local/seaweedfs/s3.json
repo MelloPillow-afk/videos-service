@@ -1,0 +1,13 @@
+{
+  "identities": [
+    {
+      "name": "dev",
+      "credentials": [{ "accessKey": "videos", "secretKey": "videos-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "anonymous",
+      "actions": ["Read:videos-processed"]
+    }
+  ]
+}

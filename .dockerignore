@@ -12,3 +12,6 @@ htmlcov
 tests
 api-specs
 docs
+.local
+api.env.yaml
+local

@@ -32,5 +32,67 @@ services:
       timeout: 3s
       retries: 15
 
+  # Local stand-in for Cloudflare R2: SeaweedFS's S3 API, behind Caddy for HTTPS.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.47
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "127.0.0.1:8333:8333"
+    volumes:
+      - seaweedfs-data:/data
+      - ./local/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      # Any S3 response, even access denied, means the API is up.
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8333/"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  storage-buckets:
+    image: chrislusf/seaweedfs:4.47
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        printf 's3.bucket.create -name videos-raw\ns3.bucket.create -name videos-processed\n'
+        | weed shell -master=seaweedfs:9333
+
+  storage-https:
+    image: caddy:2.11.7-alpine
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9443:9443"
+    volumes:
+      - ./local/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+
+  # Started per job by the dev launcher: docker compose run --rm worker <job_id>.
+  worker:
+    build:
+      context: .
+      target: worker
+    profiles: [worker]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://videos:videos@postgres:5432/videos_dev
+      R2_ENDPOINT_URL: http://seaweedfs:8333
+      R2_ACCESS_KEY_ID: videos
+      R2_SECRET_ACCESS_KEY: videos-secret
+      # The worker serves no HTTP, so it checks no tokens.
+      AUTH_DISABLED: "true"
+    volumes:
+      # Run the checkout's code without rebuilding the image.
+      - ./src:/app/src:ro
+
 volumes:
   postgres-data:
+  seaweedfs-data:
+  caddy-data:
