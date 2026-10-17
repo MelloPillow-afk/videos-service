@@ -1,5 +1,6 @@
 """Neon Auth verification, fail-fast configuration, and bearer enforcement over HTTP."""
 
+from pathlib import Path
 from typing import Any
 
 import jwt
@@ -97,6 +98,11 @@ async def test_routes_enforce_contract_security(keys: LocalSigningKeys) -> None:
         assert (await client.get("/ping", headers=expired)).status_code == 200
 
 
-def test_missing_auth_configuration_stops_app_construction() -> None:
+def test_missing_auth_configuration_stops_app_construction(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    for name in ("AUTH_ISSUER", "AUTH_JWKS_URL", "AUTH_AUDIENCE", "AUTH_DISABLED"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(tmp_path)
     with pytest.raises(ValidationError, match="AUTH_ISSUER"):
         create_app(Settings())
