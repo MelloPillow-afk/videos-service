@@ -41,6 +41,7 @@ examples:
         published_at: '2026-10-13T15:00:00Z'
         created_at: '2026-10-13T14:00:00Z'
         updated_at: '2026-10-13T15:00:00Z'
+        latest_job_id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
     pagination:
       next_page_token: example_next_page_token
       has_more: true

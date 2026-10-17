@@ -4,7 +4,7 @@ type: object
 required:
   - id
   - status
-  - content_id
+  - video_id
   - message
 description: Background processing job.
 properties:
@@ -13,10 +13,10 @@ properties:
     format: uuid
   status:
     $ref: ./job_status.yaml
-  content_id:
+  video_id:
     type: string
     format: uuid
-    description: ID of the resource this job processes.
+    description: ID of the video this job processes.
   message:
     type:
       - string
@@ -25,5 +25,5 @@ properties:
 examples:
   - id: e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
     status: QUEUED
-    content_id: 550e8400-e29b-41d4-a716-446655440000
+    video_id: 550e8400-e29b-41d4-a716-446655440000
     message: null

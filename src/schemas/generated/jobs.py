@@ -12,13 +12,13 @@ type JobStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED"]
 
 class Job(WireModel):
     model_config = ConfigDict(extra='allow')
-    content_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
-        description="ID of the resource this job processes.",
-    )
     id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
     message: str | None = Field(
         description="Readable explanation of a failed job; null otherwise.",
     )
     status: JobStatus = Field(
         description="Whether the job is queued, running, succeeded, or failed.",
+    )
+    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] = Field(
+        description="ID of the video this job processes.",
     )

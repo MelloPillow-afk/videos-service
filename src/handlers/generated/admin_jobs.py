@@ -13,10 +13,10 @@ from src.core.generated.authentication import (
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.jobs import Job as _GetJobResponse
 from src.schemas.generated.operations import (
-    JobsGetJobJobIdParameter as _GetJobJobIdParameter,
+    AdminJobsGetJobJobIdParameter as _GetJobJobIdParameter,
 )
 
-router = _generator_APIRouter(prefix="/v1/jobs")
+router = _generator_APIRouter(prefix="/v1/admin/jobs")
 
 
 @router.get(
@@ -26,7 +26,7 @@ router = _generator_APIRouter(prefix="/v1/jobs")
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("jobs.get_job")
+@_generator_select_endpoint("admin_jobs.get_job")
 async def get_job(
     *,
     job_id: _generator_Annotated[
@@ -36,9 +36,9 @@ async def get_job(
 ) -> _GetJobResponse:
     return _generator_TypeAdapter(_GetJobResponse).validate_python(
         {
-            "content_id": "550e8400-e29b-41d4-a716-446655440000",
             "id": "e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0",
             "message": None,
             "status": "QUEUED",
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },
     )

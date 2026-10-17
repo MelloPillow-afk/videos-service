@@ -13,6 +13,7 @@ required:
   - published_at
   - created_at
   - updated_at
+  - latest_job_id
 description: Video details.
 properties:
   id:
@@ -58,7 +59,7 @@ properties:
     format: uuid
     description: >-
       ID of the most recent processing job, or null before any upload is
-      confirmed. Shown to admins only.
+      confirmed.
 examples:
   - id: 550e8400-e29b-41d4-a716-446655440000
     title: Introduction to Faith
@@ -74,3 +75,4 @@ examples:
     published_at: null
     created_at: '2026-10-13T14:00:00Z'
     updated_at: '2026-10-13T14:00:00Z'
+    latest_job_id: null

@@ -13,13 +13,13 @@ from src.core.generated.authentication import (
 )
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.operations import (
-    ThumbnailsCompleteUploadIdParameter as _CompleteUploadIdParameter,
+    AdminThumbnailsCompleteUploadIdParameter as _CompleteUploadIdParameter,
 )
 from src.schemas.generated.operations import (
-    ThumbnailsDeleteThumbnailIdParameter as _DeleteThumbnailIdParameter,
+    AdminThumbnailsDeleteThumbnailIdParameter as _DeleteThumbnailIdParameter,
 )
 from src.schemas.generated.operations import (
-    ThumbnailsUploadUrlIdParameter as _UploadUrlIdParameter,
+    AdminThumbnailsUploadUrlIdParameter as _UploadUrlIdParameter,
 )
 from src.schemas.generated.thumbnails import Thumbnail as _CompleteUploadResponse
 from src.schemas.generated.thumbnails import Thumbnail as _DeleteThumbnailResponse
@@ -27,7 +27,7 @@ from src.schemas.generated.thumbnails import ThumbnailUpload as _UploadUrlRespon
 from src.schemas.generated.thumbnails import ThumbnailUploadCreate as _UploadUrlBody
 from src.schemas.generated.uploads import UploadComplete as _CompleteUploadBody
 
-router = _generator_APIRouter(prefix="/v1/videos")
+router = _generator_APIRouter(prefix="/v1/admin/videos")
 
 
 @router.delete(
@@ -37,7 +37,7 @@ router = _generator_APIRouter(prefix="/v1/videos")
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("thumbnails.delete_thumbnail")
+@_generator_select_endpoint("admin_thumbnails.delete_thumbnail")
 async def delete_thumbnail(
     *,
     id: _generator_Annotated[
@@ -64,7 +64,7 @@ async def delete_thumbnail(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("thumbnails.complete_upload")
+@_generator_select_endpoint("admin_thumbnails.complete_upload")
 async def complete_upload(
     *,
     id: _generator_Annotated[
@@ -92,7 +92,7 @@ async def complete_upload(
     response_model_exclude_unset=True,
     dependencies=[_generator_Depends(_generator_require_authentication)],
 )
-@_generator_select_endpoint("thumbnails.upload_url")
+@_generator_select_endpoint("admin_thumbnails.upload_url")
 async def upload_url(
     *,
     id: _generator_Annotated[

@@ -42,12 +42,12 @@ async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConn
         db, status="FAILED", message="The source is not a valid MP4 video."
     )
 
-    response = await client.get(f"/v1/jobs/{job_id}")
+    response = await client.get(f"/v1/admin/jobs/{job_id}")
 
     assert response.status_code == 200
     assert response.json() == {
         "id": job_id,
-        "content_id": content_id,
+        "video_id": content_id,
         "status": "FAILED",
         "message": "The source is not a valid MP4 video.",
     }
@@ -56,7 +56,7 @@ async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConn
 async def test_missing_job_is_not_found(client: AsyncClient, db: AsyncConnection) -> None:
     await insert_job(db)
 
-    response = await client.get(f"/v1/jobs/{uuid4()}")
+    response = await client.get(f"/v1/admin/jobs/{uuid4()}")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "The job was not found."}

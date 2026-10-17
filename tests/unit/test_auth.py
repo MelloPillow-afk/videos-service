@@ -14,7 +14,8 @@ from src.config import Settings
 from src.providers.auth import SigningKeys
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 
-VIDEO = "/v1/videos/550e8400-e29b-41d4-a716-446655440000"
+VIDEO = "/v1/admin/videos/550e8400-e29b-41d4-a716-446655440000"
+CATALOG = "/v1/videos"
 RENAME = {"title": "Renamed"}
 
 
@@ -80,10 +81,12 @@ async def test_routes_enforce_contract_security(keys: LocalSigningKeys) -> None:
         assert response.status_code == 401
         assert response.headers["WWW-Authenticate"] == 'Bearer error="invalid_token"'
         assert (await client.patch(VIDEO, json=RENAME, headers=valid)).status_code == 200
-        # Viewer reads accept anonymous callers but never an invalid token.
-        assert (await client.get(VIDEO)).status_code == 200
+        # Admin reads require a token.
+        assert (await client.get(VIDEO)).status_code == 401
         assert (await client.get(VIDEO, headers=valid)).status_code == 200
-        assert (await client.get(VIDEO, headers=expired)).status_code == 401
+        # Viewer reads accept anonymous callers but never an invalid token.
+        assert (await client.get(CATALOG)).status_code == 200
+        assert (await client.get(CATALOG, headers=expired)).status_code == 401
         assert (await client.get("/ping", headers=expired)).status_code == 200
 
 

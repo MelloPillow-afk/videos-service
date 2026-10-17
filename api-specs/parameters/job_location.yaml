@@ -3,4 +3,4 @@ required: true
 schema:
   type: string
   format: uri-reference
-example: /v1/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0
+example: /v1/admin/jobs/e9f1c6d0-4e8b-4a23-a52a-21a3d51127d0

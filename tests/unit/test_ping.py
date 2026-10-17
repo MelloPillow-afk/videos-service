@@ -30,7 +30,7 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
             assert response.status_code == 200
             assert response.json() == {"status": "ok"}
             # Database-backed routes fail without revealing why.
-            response = await client.get(f"/v1/jobs/{uuid4()}")
+            response = await client.get(f"/v1/admin/jobs/{uuid4()}")
             assert response.status_code == 500
             assert response.text == "Internal Server Error"
 

@@ -20,14 +20,9 @@ if TYPE_CHECKING:
 
 type PublicationStatus = Literal["DRAFT", "PUBLISHED"]
 
-class VideoDeletion(WireModel):
-    model_config = ConfigDict(extra='allow')
-    status: Literal["DELETING"]
-    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-
 type VideoDescription = Annotated[str, Field(max_length=5000)] | None
 
-type VideoStatus = Literal["CREATED", "UPLOADING", "PROCESSING", "READY", "FAILED", "DELETING"]
+type VideoStatus = Literal["CREATED", "UPLOADING", "PROCESSING", "READY", "FAILED"]
 
 type VideoTitle = Annotated[str, Field(min_length=1, max_length=200, pattern="\\S")]
 
@@ -40,8 +35,7 @@ class Video(WireModel):
     )
     id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
     latest_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] | None = Field(
-        default_factory=omitted,
-        description="ID of the most recent processing job, or null before any upload is confirmed. Shown to admins only.",
+        description="ID of the most recent processing job, or null before any upload is confirmed.",
     )
     publication_status: PublicationStatus = Field(
         description="Whether the video is a draft or published.",

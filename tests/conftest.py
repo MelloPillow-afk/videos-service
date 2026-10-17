@@ -84,10 +84,10 @@ async def api_app(migrated_database: tuple[str, str], signing_keys: LocalSigning
 
 
 @pytest_asyncio.fixture
-async def arrange_jobs_get_job(api_case: APICase, db: AsyncConnection) -> None:
+async def arrange_admin_jobs_get_job(api_case: APICase, db: AsyncConnection) -> None:
     job = api_case.expected_body
     await db.execute(
         "INSERT INTO jobs (id, content_id, kind, status, message) "
         "VALUES (%s, %s, 'VIDEO_PROCESSING', %s, %s)",
-        (job["id"], job["content_id"], job["status"], job["message"]),
+        (job["id"], job["video_id"], job["status"], job["message"]),
     )

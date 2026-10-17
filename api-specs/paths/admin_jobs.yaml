@@ -1,13 +1,12 @@
-/jobs/{job_id}:
+/admin/jobs/{job_id}:
   parameters:
     - $ref: ../parameters/job_id.yaml
   get:
     tags:
       - Jobs
-    operationId: jobs.get_job
+    operationId: admin_jobs.get_job
     summary: Get Job
     description: Get the status of a background processing job.
-    x-required-role: admin
     responses:
       '200':
         description: Job details.

@@ -7,7 +7,6 @@ enum:
   - PROCESSING
   - READY
   - FAILED
-  - DELETING
 description: Video lifecycle status. Processing progress is on the video's job.
 examples:
   - CREATED

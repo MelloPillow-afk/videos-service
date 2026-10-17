@@ -5,7 +5,8 @@ info:
   description: |
     Manage videos, upload media, track processing jobs, publish videos, and
     find playback links.
-    All changes require admin access; viewers see ready, published videos.
+    Admin endpoints live under /admin; any authenticated caller has admin
+    access for the MVP. Viewers see ready, published videos.
     Viewer access may require authentication, depending on the service settings.
     JSON fields use snake_case. IDs are UUIDs and timestamps use UTC.
     Unavailable values are null. Previously shared playback links may remain
@@ -29,7 +30,7 @@ tags:
   - name: Jobs
     description: Check background processing jobs.
 x-unresolved-decisions:
-  - Identity provider, admin role mapping, and whether viewer reads require authentication.
+  - Whether viewer reads require authentication.
   - Maximum source upload bytes, effective size enforcement, and confirmed-source finalization.
   - Approved thumbnail formats, dimensions, aspect ratio, byte limit, and cropping policy.
   - State retention following a rejected source confirmation.
@@ -39,28 +40,30 @@ paths:
     $ref: paths/health.yaml#/~1ping
   /videos:
     $ref: paths/videos.yaml#/~1videos
-  /videos/{id}:
-    $ref: paths/videos.yaml#/~1videos~1{id}
-  /videos/{id}:upload-url:
-    $ref: paths/videos.yaml#/~1videos~1{id}:upload-url
-  /videos/{id}:complete-upload:
-    $ref: paths/videos.yaml#/~1videos~1{id}:complete-upload
   /videos/{id}/playback:
     $ref: paths/videos.yaml#/~1videos~1{id}~1playback
-  /videos/{id}/thumbnails:upload-url:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:upload-url
-  /videos/{id}/thumbnails:complete-upload:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails:complete-upload
-  /videos/{id}/thumbnails:
-    $ref: paths/thumbnails.yaml#/~1videos~1{id}~1thumbnails
-  /jobs/{job_id}:
-    $ref: paths/jobs.yaml#/~1jobs~1{job_id}
+  /admin/videos:
+    $ref: paths/admin_videos.yaml#/~1admin~1videos
+  /admin/videos/{id}:
+    $ref: paths/admin_videos.yaml#/~1admin~1videos~1{id}
+  /admin/videos/{id}:upload-url:
+    $ref: paths/admin_videos.yaml#/~1admin~1videos~1{id}:upload-url
+  /admin/videos/{id}:complete-upload:
+    $ref: paths/admin_videos.yaml#/~1admin~1videos~1{id}:complete-upload
+  /admin/videos/{id}/thumbnails:upload-url:
+    $ref: paths/admin_thumbnails.yaml#/~1admin~1videos~1{id}~1thumbnails:upload-url
+  /admin/videos/{id}/thumbnails:complete-upload:
+    $ref: paths/admin_thumbnails.yaml#/~1admin~1videos~1{id}~1thumbnails:complete-upload
+  /admin/videos/{id}/thumbnails:
+    $ref: paths/admin_thumbnails.yaml#/~1admin~1videos~1{id}~1thumbnails
+  /admin/jobs/{job_id}:
+    $ref: paths/admin_jobs.yaml#/~1admin~1jobs~1{job_id}
 components:
   securitySchemes:
     bearer_auth:
       type: http
       scheme: bearer
-      description: Bearer token for authentication. Managing videos requires administrator access.
+      description: Bearer token for authentication.
   parameters:
     id:
       $ref: parameters/id.yaml
@@ -139,8 +142,6 @@ components:
       $ref: schemas/jobs/job.yaml
     job_status:
       $ref: schemas/jobs/job_status.yaml
-    video_deletion:
-      $ref: schemas/videos/video_deletion.yaml
     playback:
       $ref: schemas/playback/playback.yaml
     thumbnail:

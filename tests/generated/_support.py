@@ -172,16 +172,56 @@ async def api_case(
     return case
 
 
-MODULES = ["health", "jobs", "playback", "thumbnails", "videos"]
+MODULES = ["admin_jobs", "admin_thumbnails", "admin_videos", "health", "playback", "videos"]
 
 
 @pytest.fixture
-def arrange_health_ping(api_case: APICase) -> None:
+def arrange_admin_jobs_get_job(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
 
 
 @pytest.fixture
-def arrange_jobs_get_job(api_case: APICase) -> None:
+def arrange_admin_thumbnails_complete_upload(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_thumbnails_delete_thumbnail(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_thumbnails_upload_url(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_videos_create_video(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_videos_delete_video(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_videos_get_video(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_videos_update_video(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_admin_videos_upload_url(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
+def arrange_health_ping(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
 
 
@@ -191,40 +231,5 @@ def arrange_playback_get_playback(api_case: APICase) -> None:
 
 
 @pytest.fixture
-def arrange_thumbnails_complete_upload(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_thumbnails_delete_thumbnail(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_thumbnails_upload_url(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_videos_create_video(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_videos_get_video(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
 def arrange_videos_list_videos(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_videos_update_video(api_case: APICase) -> None:
-    """Override this fixture in tests/conftest.py to arrange the operation."""
-
-
-@pytest.fixture
-def arrange_videos_upload_url(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
