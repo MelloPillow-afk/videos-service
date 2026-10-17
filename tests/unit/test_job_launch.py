@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
+from src.clients import gcp, local
 from src.config import Settings
-from src.providers import gcp, local
 from src.services import jobs as jobs_service
 from tests.fakes import FakeLauncher
 
@@ -16,12 +16,12 @@ PROD = Settings(
 )
 
 
-@pytest.mark.parametrize(("settings", "provider"), [(DEV, local), (PROD, gcp)])
+@pytest.mark.parametrize(("settings", "client"), [(DEV, local), (PROD, gcp)])
 async def test_launch_uses_the_environment_launcher(
-    monkeypatch: pytest.MonkeyPatch, settings: Settings, provider: ModuleType
+    monkeypatch: pytest.MonkeyPatch, settings: Settings, client: ModuleType
 ) -> None:
     used = FakeLauncher()
-    monkeypatch.setattr(provider, "run_job", used.run_job)
+    monkeypatch.setattr(client, "run_job", used.run_job)
     job_id = uuid4()
 
     await jobs_service.launch(job_id, settings)

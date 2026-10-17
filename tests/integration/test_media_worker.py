@@ -9,8 +9,8 @@ import pytest
 from fastapi import FastAPI
 from psycopg import AsyncConnection
 
+from src.clients import cloudflare, ffmpeg
 from src.config import Settings
-from src.providers import cloudflare, ffmpeg
 from src.workers.media import run
 from tests.fakes import FakeStorage
 from tests.rows import insert_video

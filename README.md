@@ -111,7 +111,8 @@ src/
     database.py
     migrate.py
   domain/              # Shared domain models (empty initially)
-  providers/           # Outgoing clients: auth, R2, Cloud Run, FFmpeg
+  clients/             # One module per external service: auth, R2, Cloud Run, FFmpeg
+  libs/                # Pure helpers any layer may import
   workers/             # Job process entrypoints, like app.py for HTTP
     media.py           # python -m src.workers.media <job_id>
 migrations/            # Future Yoyo SQL migrations
@@ -129,7 +130,16 @@ Handlers reach storage through services. Services own business decisions and
 call repositories; repositories own SQL, database connections, and mapping
 stored data to domain models. Domain models hold shared data definitions.
 Repositories and services are plain module functions: handlers import services,
-services import repositories, and only repositories touch the database. The
+services import repositories, and only repositories touch the database.
+
+`clients/` holds one module per external service, wrapping its API; services
+import these directly. `libs/` holds pure helpers: they hold data and logic,
+make no database or API calls, and import nothing from `services/`,
+`repositories/`, `clients/`, or the entrypoints. Any layer may import them, the
+repository included, so a fixed mapping every layer needs (language tags to
+legacy locale codes, for example) belongs there. A helper that reads stored data
+or config belongs in a service; one that wraps an external API belongs in
+`clients/`. The
 service uses one process-wide pool in `src/repositories/database.py`; the app
 lifespan opens and closes it, and the app factory registers the generated
 routers once. `/ping` and all fixed examples need no database

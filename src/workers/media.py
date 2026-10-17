@@ -8,8 +8,8 @@ import logging
 import sys
 from uuid import UUID
 
+from src.clients import cloudflare
 from src.config import Settings
-from src.providers import cloudflare
 from src.repositories.connections import close_database, open_database
 from src.services import media as media_service
 

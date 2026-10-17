@@ -2,10 +2,10 @@
 
 from fastapi import FastAPI
 
+from src.clients.auth import DisabledAuth, NeonIdentity, SigningKeys
 from src.config import Settings
 from src.core.generated.routers import register_routers
 from src.extensions import lifespan
-from src.providers.auth import DisabledAuth, NeonIdentity, SigningKeys
 
 
 def create_app(

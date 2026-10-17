@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.clients import cloudflare, gcp
 from src.config import Settings
-from src.providers import cloudflare, gcp
 from src.repositories.connections import close_database, open_database
 
 

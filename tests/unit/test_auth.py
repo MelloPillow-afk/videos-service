@@ -10,8 +10,8 @@ from httpx import ASGITransport, AsyncClient, Response
 from jwt import PyJWK
 
 from src.app import create_app
+from src.clients.auth import SigningKeys
 from src.config import Settings
-from src.providers.auth import SigningKeys
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 
 VIDEO = "/v1/admin/videos/550e8400-e29b-41d4-a716-446655440000"

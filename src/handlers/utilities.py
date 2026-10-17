@@ -8,9 +8,9 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from src.clients import cloudflare
 from src.domain.jobs import JobStatus
 from src.domain.videos import Video
-from src.providers import cloudflare
 from src.schemas.generated.shared import Pagination
 from src.schemas.generated.thumbnails import ThumbnailImage, ThumbnailStatus
 

@@ -6,11 +6,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
 
+from src.clients import cloudflare, ffmpeg
+from src.clients.ffmpeg import MediaInfo, Rendition
 from src.config import Settings
 from src.domain.jobs import Job, JobKind
 from src.domain.videos import InvalidMedia, Video, VideoChanged, VideoNotFound, VideoStatus
-from src.providers import cloudflare, ffmpeg
-from src.providers.ffmpeg import MediaInfo, Rendition
 from src.repositories import jobs as jobs_repository
 from src.repositories import videos as videos_repository
 from src.services import videos as videos_service

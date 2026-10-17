@@ -3,6 +3,8 @@
 from dataclasses import replace
 from uuid import UUID, uuid4
 
+from src.clients import cloudflare
+from src.clients.cloudflare import PresignedUpload
 from src.config import Settings
 from src.domain.jobs import Job, JobKind
 from src.domain.videos import (
@@ -14,8 +16,6 @@ from src.domain.videos import (
     Video,
     VideoStatus,
 )
-from src.providers import cloudflare
-from src.providers.cloudflare import PresignedUpload
 from src.repositories import videos as videos_repository
 from src.services import jobs as jobs_service
 from src.services import videos as videos_service
@@ -42,7 +42,6 @@ async def create_upload(
         )
     )
     if started is None:
-        # Processing began, or the video was deleted, since it was read.
         raise UploadNotAllowed(video_id)
     return started, cloudflare.presign_upload(source_key, content_type)
 
@@ -57,14 +56,14 @@ async def complete_upload(video_id: UUID, upload_id: UUID, settings: Settings) -
         VideoStatus.CREATED,
         VideoStatus.UPLOADING,
     ):
-        assert video.latest_job_id is not None  # Accepting an upload queues its job.
+        assert video.latest_job_id is not None
         return await jobs_service.get_job(video.latest_job_id)
     if video.status is not VideoStatus.UPLOADING:
         raise UploadNotAllowed(video_id)
     if video.upload_id != upload_id:
         raise UploadNotCurrent(upload_id)
 
-    assert video.source_key is not None  # Every upload has a key.
+    assert video.source_key is not None
     size_bytes = await cloudflare.uploaded_size(video.source_key)
     if size_bytes is None:
         raise UploadMissing(upload_id)
@@ -77,9 +76,7 @@ async def complete_upload(video_id: UUID, upload_id: UUID, settings: Settings) -
         replace(video, status=VideoStatus.PROCESSING, size_bytes=size_bytes)
     )
     if job_ids is None:
-        # Another request accepted or replaced the upload first; answer as it left it.
         return await complete_upload(video_id, upload_id, settings)
     await jobs_service.launch(job_ids[JobKind.VIDEO_PROCESSING], settings)
     await jobs_service.launch(job_ids[JobKind.THUMBNAIL_GENERATION], settings)
-    # Re-read the video job: a failed launch has failed it.
     return await jobs_service.get_job(job_ids[JobKind.VIDEO_PROCESSING])

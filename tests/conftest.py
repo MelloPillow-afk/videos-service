@@ -14,9 +14,9 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.app import create_app
+from src.clients import cloudflare, gcp, local
+from src.clients.cloudflare import PresignedUpload
 from src.config import Settings
-from src.providers import cloudflare, gcp, local
-from src.providers.cloudflare import PresignedUpload
 from src.services import uploads as uploads_service
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 from tests.fakes import FakeLauncher, FakeStorage

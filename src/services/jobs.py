@@ -3,9 +3,9 @@
 import logging
 from uuid import UUID
 
+from src.clients import gcp, local
 from src.config import Settings
 from src.domain.jobs import Job, JobNotFound
-from src.providers import gcp, local
 from src.repositories import jobs as jobs_repository
 
 logger = logging.getLogger(__name__)

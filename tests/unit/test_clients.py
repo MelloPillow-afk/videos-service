@@ -1,4 +1,4 @@
-"""Storage and Cloud Run providers make the right outgoing calls, without the network."""
+"""Storage and Cloud Run clients make the right outgoing calls, without the network."""
 
 import subprocess
 from collections.abc import Iterator
@@ -12,13 +12,13 @@ import pytest
 from botocore.stub import Stubber
 from google.cloud import run_v2
 
-from src.config import Settings
-from src.providers import cloudflare, gcp
+from src.clients import cloudflare, gcp
 
 # Imported before the autouse fixtures replace them with fakes.
-from src.providers.cloudflare import presign_upload, uploaded_size
-from src.providers.gcp import run_job
-from src.providers.local import run_job as local_run_job
+from src.clients.cloudflare import presign_upload, uploaded_size
+from src.clients.gcp import run_job
+from src.clients.local import run_job as local_run_job
+from src.config import Settings
 
 
 @pytest.fixture

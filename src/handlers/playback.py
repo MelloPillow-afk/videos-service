@@ -5,8 +5,8 @@ from uuid import UUID
 
 from fastapi import HTTPException, Path
 
+from src.clients import cloudflare
 from src.domain import videos as domain
-from src.providers import cloudflare
 from src.schemas.generated.operations import PlaybackGetPlaybackIdParameter
 from src.schemas.generated.playback import Playback, PlaybackPlayback
 from src.services import videos as videos_service

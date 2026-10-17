@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
-from src.providers.cloudflare import PresignedUpload
+from src.clients.cloudflare import PresignedUpload
 
 UPLOAD_EXPIRES_AT = datetime(2026, 10, 13, 14, 15, tzinfo=UTC)
 
