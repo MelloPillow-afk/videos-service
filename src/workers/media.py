@@ -11,14 +11,14 @@ from uuid import UUID
 from src.config import Settings
 from src.providers import cloudflare
 from src.repositories.connections import close_database, open_database
-from src.services import processing as processing_service
+from src.services import media as media_service
 
 
 async def run(job_id: UUID, settings: Settings) -> None:
     await open_database(settings)
     cloudflare.open_storage(settings)
     try:
-        await processing_service.run_job(job_id, settings)
+        await media_service.run_job(job_id, settings)
     finally:
         cloudflare.close_storage()
         await close_database()

@@ -1,4 +1,4 @@
-"""Worker jobs: turning an accepted upload into HLS playback and a generated thumbnail."""
+"""A video's media: turning its accepted upload into HLS playback and a generated thumbnail."""
 
 import logging
 from dataclasses import replace

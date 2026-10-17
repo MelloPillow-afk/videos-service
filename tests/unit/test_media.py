@@ -3,7 +3,7 @@
 import pytest
 
 from src.providers.ffmpeg import MediaInfo, Rendition
-from src.services.processing import renditions
+from src.services.media import renditions
 from src.workers.media import main
 
 
