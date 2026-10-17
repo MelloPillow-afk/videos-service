@@ -1,4 +1,4 @@
-"""Background work tracked for a piece of content."""
+"""Background work tracked for a video."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,7 +22,7 @@ class JobStatus(StrEnum):
 @dataclass(frozen=True, slots=True)
 class Job:
     id: UUID
-    content_id: UUID
+    video_id: UUID
     kind: JobKind
     status: JobStatus
     message: str | None

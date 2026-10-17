@@ -11,7 +11,7 @@ from psycopg import AsyncConnection
 pytestmark = pytest.mark.integration
 
 MIGRATIONS = Path(__file__).parents[2] / "migrations"
-TABLES = ["jobs"]
+TABLES = ["videos", "jobs"]
 
 
 async def test_yoyo_apply_and_rollback(test_database: tuple[str, str], tmp_path: Path) -> None:

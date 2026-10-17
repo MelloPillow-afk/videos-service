@@ -16,6 +16,7 @@ from src.app import create_app
 from src.config import Settings
 from tests.auth_provider import AUTH_SETTINGS, LocalSigningKeys
 from tests.generated._support import APICase
+from tests.rows import insert_video
 
 MIGRATIONS = Path(__file__).parent.parent / "migrations"
 
@@ -86,8 +87,9 @@ async def api_app(migrated_database: tuple[str, str], signing_keys: LocalSigning
 @pytest_asyncio.fixture
 async def arrange_admin_jobs_get_job(api_case: APICase, db: AsyncConnection) -> None:
     job = api_case.expected_body
+    await insert_video(db, id=job["video_id"])
     await db.execute(
-        "INSERT INTO jobs (id, content_id, kind, status, message) "
+        "INSERT INTO jobs (id, video_id, kind, status, message) "
         "VALUES (%s, %s, 'VIDEO_PROCESSING', %s, %s)",
         (job["id"], job["video_id"], job["status"], job["message"]),
     )

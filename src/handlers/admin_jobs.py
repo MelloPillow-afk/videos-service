@@ -21,7 +21,7 @@ async def get_job(
         raise HTTPException(status_code=404, detail="The job was not found.") from None
     return Job(
         id=str(job.id),
-        video_id=str(job.content_id),
+        video_id=str(job.video_id),
         status=job.status.value,
         message=job.message,
     )

@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from psycopg import AsyncConnection
 
+from tests.rows import insert_video
+
 pytestmark = pytest.mark.integration
 
 
@@ -29,16 +31,17 @@ async def client(api_app: FastAPI, api_bearer_token: str) -> AsyncIterator[Async
 async def insert_job(
     db: AsyncConnection, *, kind: str = "VIDEO_PROCESSING", status: str = "QUEUED", **values: object
 ) -> tuple[str, str]:
-    job_id, content_id = str(values.get("id", uuid4())), str(values.get("content_id", uuid4()))
+    job_id = str(values.get("id", uuid4()))
+    video_id = str(values.get("video_id") or await insert_video(db))
     await db.execute(
-        "INSERT INTO jobs (id, content_id, kind, status, message) VALUES (%s, %s, %s, %s, %s)",
-        (job_id, content_id, kind, status, values.get("message")),
+        "INSERT INTO jobs (id, video_id, kind, status, message) VALUES (%s, %s, %s, %s, %s)",
+        (job_id, video_id, kind, status, values.get("message")),
     )
-    return job_id, content_id
+    return job_id, video_id
 
 
 async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConnection) -> None:
-    job_id, content_id = await insert_job(
+    job_id, video_id = await insert_job(
         db, status="FAILED", message="The source is not a valid MP4 video."
     )
 
@@ -47,7 +50,7 @@ async def test_failed_job_reports_its_message(client: AsyncClient, db: AsyncConn
     assert response.status_code == 200
     assert response.json() == {
         "id": job_id,
-        "video_id": content_id,
+        "video_id": video_id,
         "status": "FAILED",
         "message": "The source is not a valid MP4 video.",
     }
@@ -62,12 +65,26 @@ async def test_missing_job_is_not_found(client: AsyncClient, db: AsyncConnection
     assert response.json() == {"detail": "The job was not found."}
 
 
-async def test_content_has_one_job_of_each_kind(db: AsyncConnection) -> None:
-    _, content_id = await insert_job(db, kind="VIDEO_PROCESSING")
-    await insert_job(db, kind="THUMBNAIL_GENERATION", content_id=content_id)
+async def test_video_has_one_job_of_each_kind(db: AsyncConnection) -> None:
+    _, video_id = await insert_job(db, kind="VIDEO_PROCESSING")
+    await insert_job(db, kind="THUMBNAIL_GENERATION", video_id=video_id)
 
     with pytest.raises(psycopg.errors.UniqueViolation):
-        await insert_job(db, kind="VIDEO_PROCESSING", content_id=content_id)
+        await insert_job(db, kind="VIDEO_PROCESSING", video_id=video_id)
+
+
+async def test_jobs_belong_to_an_existing_video(db: AsyncConnection) -> None:
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        await insert_job(db, video_id=uuid4())
+
+
+async def test_removing_a_video_removes_its_jobs(db: AsyncConnection) -> None:
+    job_id, video_id = await insert_job(db)
+
+    await db.execute("DELETE FROM videos WHERE id = %s", (video_id,))
+
+    cursor = await db.execute("SELECT count(*) FROM jobs WHERE id = %s", (job_id,))
+    assert await cursor.fetchone() == (0,)
 
 
 @pytest.mark.parametrize(
@@ -85,8 +102,8 @@ async def test_jobs_reject_invalid_states(db: AsyncConnection, values: dict[str,
 
 async def test_new_jobs_default_to_queued(db: AsyncConnection) -> None:
     cursor = await db.execute(
-        "INSERT INTO jobs (content_id, kind) VALUES (%s, 'DELETION') "
+        "INSERT INTO jobs (video_id, kind) VALUES (%s, 'DELETION') "
         "RETURNING status, message, created_at = updated_at",
-        (uuid4(),),
+        (await insert_video(db),),
     )
     assert await cursor.fetchone() == ("QUEUED", None, True)
