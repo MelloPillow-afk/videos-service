@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from src.clients.cloudflare import PresignedUpload
@@ -22,6 +23,10 @@ class FakeStorage:
             url=f"https://uploads.example.com/{key}?signature=test",
             expires_at=UPLOAD_EXPIRES_AT,
         )
+
+    def put(self, upload_url: str, file: bytes) -> None:
+        """Upload a file to a URL from presign_upload, as an admin's browser does."""
+        self.files[urlsplit(upload_url).path.removeprefix("/")] = file
 
     async def uploaded_size(self, key: str) -> int | None:
         file = self.files.get(key)

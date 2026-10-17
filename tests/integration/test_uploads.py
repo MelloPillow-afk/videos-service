@@ -1,5 +1,6 @@
 """Admins upload a video's file directly to storage, then complete the upload to process it."""
 
+import asyncio
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -169,6 +170,20 @@ async def test_completing_again_returns_the_same_job(
     assert response.json() == first
     assert len(launcher.launched) == 2
     assert len(await jobs(db, video_id)) == 2
+
+
+async def test_concurrent_completions_start_processing_once(
+    client: AsyncClient, db: AsyncConnection, storage: FakeStorage, launcher: FakeLauncher
+) -> None:
+    video_id = await insert_video(db)
+    upload_id = await upload(client, storage, video_id)
+
+    responses = await asyncio.gather(*(complete(client, video_id, upload_id) for _ in range(5)))
+
+    assert [response.status_code for response in responses] == [202] * 5
+    assert len({response.json()["id"] for response in responses}) == 1
+    assert len(await jobs(db, video_id)) == 2
+    assert len(launcher.launched) == 2
 
 
 async def test_completing_without_an_uploaded_file_is_not_found(

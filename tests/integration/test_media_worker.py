@@ -11,30 +11,15 @@ from psycopg import AsyncConnection
 
 from src.clients import cloudflare, ffmpeg
 from src.config import Settings
-from src.libs.thumbnails import SIZES
 from src.workers.media import run
 from tests.fakes import FakeStorage
+from tests.media_files import make_image, make_video
+from tests.media_urls import THUMBNAIL_SIZES
 from tests.rows import insert_video
 
 pytestmark = pytest.mark.integration
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
-
-
-def make_video(path: Path, size: str, seconds: int) -> bytes:
-    subprocess.run(
-        ["ffmpeg", "-v", "error", "-y",
-         "-f", "lavfi", "-i", f"testsrc2=size={size}:rate=24:duration={seconds}",
-         "-f", "lavfi", "-i", f"sine=frequency=440:duration={seconds}",
-         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(path)],
-        check=True,
-    )  # fmt: skip
-    return path.read_bytes()
-
-
-@pytest.fixture(scope="session")
-def landscape_mp4(tmp_path_factory: pytest.TempPathFactory) -> bytes:
-    return make_video(tmp_path_factory.mktemp("media") / "landscape.mp4", "1280x720", 2)
 
 
 @pytest.fixture
@@ -122,7 +107,7 @@ async def test_thumbnail_job_publishes_a_frame_at_every_size(
     prefix = f"videos/{video_id}/uploads/{upload_id}/thumbnails"
     assert await job_row(db, jobs["THUMBNAIL_GENERATION"]) == ("SUCCEEDED", None)
     assert await video_media(db, video_id) == ("PROCESSING", None, None, prefix)
-    for name, size in SIZES.items():
+    for name, size in THUMBNAIL_SIZES.items():
         assert await published_size(storage, f"{prefix}/{name}.jpg", tmp_path) == size
 
 
@@ -256,15 +241,6 @@ async def test_unexpected_errors_fail_the_job(
     assert await job_row(db, jobs["VIDEO_PROCESSING"]) == ("FAILED", "Processing failed.")
 
 
-def make_image(path: Path, size: str) -> bytes:
-    subprocess.run(
-        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=size={size}",
-         "-frames:v", "1", str(path)],
-        check=True,
-    )  # fmt: skip
-    return path.read_bytes()
-
-
 async def accepted_thumbnail(
     db: AsyncConnection, storage: FakeStorage, image: bytes
 ) -> tuple[str, str, UUID]:
@@ -323,7 +299,7 @@ async def test_custom_thumbnail_is_rendered_at_every_size(
 
     assert await job_row(db, job_id) == ("SUCCEEDED", None)
     assert await custom_prefix(db, video_id) == prefix
-    for name, dimensions in SIZES.items():
+    for name, dimensions in THUMBNAIL_SIZES.items():
         assert await published_size(storage, f"{prefix}/{name}.jpg", tmp_path) == dimensions
 
 

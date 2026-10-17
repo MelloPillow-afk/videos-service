@@ -1,5 +1,7 @@
 """Neon Auth verification, fail-fast configuration, and bearer enforcement over HTTP."""
 
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +10,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient, Response
 from jwt import PyJWK
+from pydantic import SecretStr
 
 from src.app import create_app
 from src.clients.auth import SigningKeys
@@ -24,8 +27,8 @@ def keys() -> LocalSigningKeys:
     return LocalSigningKeys()
 
 
-def neon_app(keys: SigningKeys) -> FastAPI:
-    return create_app(Settings(db_pool_min_size=0, **AUTH_SETTINGS), signing_keys=keys)
+def neon_app(keys: SigningKeys, **settings: Any) -> FastAPI:
+    return create_app(Settings(db_pool_min_size=0, **AUTH_SETTINGS, **settings), signing_keys=keys)
 
 
 async def rename(app: FastAPI, token: str | None) -> Response:
@@ -70,11 +73,9 @@ async def test_unreachable_jwks_is_unavailable(keys: LocalSigningKeys) -> None:
     assert response.status_code == 503
 
 
-async def test_routes_enforce_contract_security(keys: LocalSigningKeys) -> None:
-    app = neon_app(keys)
-    valid = {"Authorization": f"Bearer {keys.token()}"}
+async def test_routes_reject_missing_and_invalid_tokens(keys: LocalSigningKeys) -> None:
     expired = {"Authorization": f"Bearer {keys.token(seconds=-60)}"}
-    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    transport = ASGITransport(app=neon_app(keys), raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.patch(VIDEO, json=RENAME)
         assert response.status_code == 401
@@ -82,21 +83,47 @@ async def test_routes_enforce_contract_security(keys: LocalSigningKeys) -> None:
         response = await client.patch(VIDEO, json=RENAME, headers=expired)
         assert response.status_code == 401
         assert response.headers["WWW-Authenticate"] == 'Bearer error="invalid_token"'
-        # Accepted requests pass authentication; without a database they may fail afterwards.
-        assert (await client.patch(VIDEO, json=RENAME, headers=valid)).status_code != 401
         # Admin reads require a token.
         assert (await client.get(VIDEO)).status_code == 401
-        assert (await client.get(VIDEO, headers=valid)).status_code != 401
         # Viewer reads accept anonymous callers but never an invalid token.
-        assert (await client.get(CATALOG)).status_code != 401
         assert (await client.get(CATALOG, headers=expired)).status_code == 401
         assert (await client.get("/ping", headers=expired)).status_code == 200
 
 
-async def test_disabled_auth_accepts_any_bearer_token() -> None:
-    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
-    assert (await rename(app, "anything")).status_code != 401
-    assert (await rename(app, None)).status_code == 401
+@pytest.fixture
+def database(migrated_database: tuple[str, str]) -> dict[str, Any]:
+    url, schema = migrated_database
+    return {"database_url": SecretStr(url), "db_schema": schema}
+
+
+@asynccontextmanager
+async def serving(app: FastAPI) -> AsyncGenerator[AsyncClient]:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+    ):
+        yield client
+
+
+@pytest.mark.integration
+async def test_routes_admit_the_callers_the_contract_allows(
+    keys: LocalSigningKeys, database: dict[str, Any]
+) -> None:
+    valid = {"Authorization": f"Bearer {keys.token()}"}
+    async with serving(neon_app(keys, **database)) as client:
+        # The video is missing, so a 404 shows the request got past authentication.
+        assert (await client.patch(VIDEO, json=RENAME, headers=valid)).status_code == 404
+        assert (await client.get(VIDEO, headers=valid)).status_code == 404
+        assert (await client.get(CATALOG)).status_code == 200
+
+
+@pytest.mark.integration
+async def test_disabled_auth_accepts_any_bearer_token(database: dict[str, Any]) -> None:
+    app = create_app(Settings(auth_disabled=True, **database))
+    async with serving(app) as client:
+        anything = {"Authorization": "Bearer anything"}
+        assert (await client.patch(VIDEO, json=RENAME, headers=anything)).status_code == 404
+        assert (await client.patch(VIDEO, json=RENAME)).status_code == 401
 
 
 @pytest.fixture

@@ -1,6 +1,7 @@
 """Admins upload a custom thumbnail directly to storage, complete the upload to render it,
 and remove it to show the generated thumbnail again."""
 
+import asyncio
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -171,6 +172,47 @@ async def test_completing_again_returns_the_same_job(
     assert response.json() == first
     assert len(await custom_jobs(db, video_id)) == 1
     assert launcher.launched == [UUID(first["id"])]
+
+
+async def test_thumbnail_that_cannot_start_fails_and_a_new_upload_can_retry(
+    client: AsyncClient, db: AsyncConnection, storage: FakeStorage, launcher: FakeLauncher
+) -> None:
+    video_id = await insert_video(db, status="READY")
+    path = f"/v1/admin/videos/{video_id}"
+    before = (await client.get(path)).json()["thumbnail"]
+    upload_id = await upload(client, storage, video_id)
+    launcher.failing = {0}
+
+    response = await complete(client, video_id, upload_id)
+
+    assert response.status_code == 202
+    job = response.json()
+    assert job == {
+        "id": job["id"],
+        "video_id": video_id,
+        "status": "FAILED",
+        "message": "The job could not be started.",
+    }
+    assert (await client.get(f"/v1/jobs/{job['id']}")).json() == job
+    assert (await client.get(path)).json()["thumbnail"] == before
+    retry = await upload(client, storage, video_id)
+    response = await complete(client, video_id, retry)
+    assert response.json()["status"] == "QUEUED"
+    assert launcher.launched == [UUID(response.json()["id"])]
+
+
+async def test_concurrent_completions_start_rendering_once(
+    client: AsyncClient, db: AsyncConnection, storage: FakeStorage, launcher: FakeLauncher
+) -> None:
+    video_id = await insert_video(db)
+    upload_id = await upload(client, storage, video_id)
+
+    responses = await asyncio.gather(*(complete(client, video_id, upload_id) for _ in range(5)))
+
+    assert [response.status_code for response in responses] == [202] * 5
+    assert len({response.json()["id"] for response in responses}) == 1
+    assert len(await custom_jobs(db, video_id)) == 1
+    assert len(launcher.launched) == 1
 
 
 async def test_new_upload_url_replaces_the_current_upload_and_its_job(
