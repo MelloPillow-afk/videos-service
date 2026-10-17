@@ -103,20 +103,22 @@ make check              # Contract checks, Ruff lint/format, strict Pyright
 make test               # HTTP/configuration and existing contract-tool tests; no database needed
 make test-db-up
 make test-integration   # Real PostgreSQL transaction, timeout, and migration checks
-make test-all           # Entire suite, with terminal and XML coverage reports
+make coverage           # Entire suite; fails under 95%, lists files under 100%, writes htmlcov/
+make dead-code          # Vulture scan for unused handwritten code (also runs in make lint)
 ```
 
-The HTTP suite covers all 13 generated operations, exact paths, deterministic
-example bodies, creation headers, native validation, and application-owned routes.
+The generated suite in `tests/generated` covers all 13 operations, their example
+bodies, and native validation; handwritten tests cover authentication, configuration,
+health, jobs, and migrations through HTTP, commands, and PostgreSQL.
 The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
 executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
 overrides, dependency injection, regeneration, and generation failures.
 
 `TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
 Integration tests default to the Compose test database and create an isolated
-schema per test. They exercise commits, rollbacks, statement timeouts, and
-Yoyo migration apply/reapply/rollback with both a test-only table and the
-service migrations. HTTP tests apply `migrations/` into their schema first.
+schema per test. They exercise jobs over HTTP, table constraints, statement
+timeouts, `make migrate`, and Yoyo apply/reapply/rollback of the service
+migrations. HTTP tests apply `migrations/` into their schema first.
 Migrations are added incrementally, one per feature slice; `0001_jobs` creates the
 `jobs` table. `make migrate` applies them in dev;
 `make migrations` lists their status. These are explicit commands, separate
@@ -125,14 +127,15 @@ from server startup.
 [GitHub Actions](.github/workflows/ci.yml) runs on pull requests and pushes to
 `main`. Two jobs run in parallel:
 
-- **Quality:** contract validation, Ruff lint/format checks, and Pyright.
+- **Quality:** contract validation, dead-code scan, Ruff lint/format checks, and Pyright.
 - **Tests:** initialize migrations against an ephemeral PostgreSQL 17 service,
   then run pytest, HTTP tests, database tests, and coverage together.
 
 Each job installs the locked dependencies once and caches uv downloads. CI
-uses one Python version and cancels superseded validation runs. Coverage is
-reported without a percentage gate. Ruff and Pyright cover the scaffold and
-its new tests; existing contract-validation code keeps its current tooling.
+uses one Python version and cancels superseded validation runs. Coverage of
+handwritten code must stay at 95% or more; generated packages are omitted.
+Ruff and Pyright cover the scaffold and its new tests; existing
+contract-validation code keeps its current tooling.
 
 Production provisioning, deployment, and production migrations are deferred.
 When those are added, run production migrations after validation passes as

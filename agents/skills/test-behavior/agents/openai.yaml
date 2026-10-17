@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Behavior"
+  short_description: "Write tests that pin observable behavior"
+  default_prompt: "Use $test-behavior to write or review tests for this change."

@@ -19,7 +19,8 @@ class NeonIdentity:
 
     def __init__(self, settings: Settings, signing_keys: SigningKeys | None = None) -> None:
         if not (settings.auth_issuer and settings.auth_jwks_url and settings.auth_audience):
-            raise ValueError("Neon Auth requires AUTH_ISSUER, AUTH_JWKS_URL, and AUTH_AUDIENCE")
+            # Settings rejects missing values first; this check only narrows their types.
+            raise ValueError("Neon Auth settings are incomplete")  # pragma: no cover
         self.issuer = settings.auth_issuer
         self.audience = settings.auth_audience
         self.keys = signing_keys or PyJWKClient(settings.auth_jwks_url, timeout=5, lifespan=300)

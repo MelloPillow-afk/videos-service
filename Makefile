@@ -1,4 +1,4 @@
-.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration test-all
+.PHONY: install run db-up db-down test-db-up migrate migrations check lint lint-api format format-src format-check typecheck test test-integration coverage dead-code
 
 install:
 	uv sync --locked
@@ -23,7 +23,7 @@ migrations:
 
 check: lint format-check typecheck
 
-lint: lint-api
+lint: lint-api dead-code
 	uv run --locked ruff check src tests/unit tests/integration tests/conftest.py tests/generated
 
 format: format-src
@@ -39,13 +39,17 @@ typecheck:
 	uv run --locked pyright
 
 test:
-	uv run --locked pytest -m 'not integration' --cov --cov-report=term-missing
+	uv run --locked pytest -m 'not integration'
 
 test-integration:
 	uv run --locked pytest -m integration
 
-test-all:
-	uv run --locked pytest --cov --cov-report=term-missing --cov-report=xml
+coverage:
+	uv run --locked pytest --cov --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html
+	@echo "HTML report: htmlcov/index.html"
+
+dead-code:
+	uv run --locked vulture
 
 lint-api:
 	uv run --locked yamllint api-specs

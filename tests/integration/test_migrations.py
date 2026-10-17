@@ -1,4 +1,4 @@
-"""Apply and roll back migrations through Yoyo in an isolated PostgreSQL schema."""
+"""Service migrations reapply cleanly and roll back completely through Yoyo."""
 
 import asyncio
 import os
@@ -10,22 +10,15 @@ from psycopg import AsyncConnection
 
 pytestmark = pytest.mark.integration
 
+MIGRATIONS = Path(__file__).parents[2] / "migrations"
+TABLES = ["jobs"]
 
-@pytest.mark.parametrize(
-    ("sources", "tables"),
-    [
-        (Path(__file__).parent / "migrations", ["migration_probe"]),
-        (Path(__file__).parents[2] / "migrations", ["jobs"]),
-    ],
-    ids=["probe", "service"],
-)
-async def test_yoyo_apply_and_rollback(
-    test_database: tuple[str, str], tmp_path: Path, sources: Path, tables: list[str]
-) -> None:
+
+async def test_yoyo_apply_and_rollback(test_database: tuple[str, str], tmp_path: Path) -> None:
     url, schema = test_database
     config = tmp_path / "yoyo.ini"
     config.write_text(
-        f"[DEFAULT]\nsources = {sources}\ndatabase = %(YOYO_DATABASE_URL)s\nbatch_mode = on\n"
+        f"[DEFAULT]\nsources = {MIGRATIONS}\ndatabase = %(YOYO_DATABASE_URL)s\nbatch_mode = on\n"
     )
     parsed = urlsplit(url)
     parameters = dict(parse_qsl(parsed.query))
@@ -57,6 +50,6 @@ async def test_yoyo_apply_and_rollback(
 
     await run_yoyo("apply")
     await run_yoyo("apply")
-    assert all([await exists(table) for table in tables])
+    assert all([await exists(table) for table in TABLES])
     await run_yoyo("rollback", "--all")
-    assert not any([await exists(table) for table in tables])
+    assert not any([await exists(table) for table in TABLES])

@@ -43,7 +43,7 @@ async def test_database() -> AsyncIterator[tuple[str, str]]:
 
 @pytest_asyncio.fixture
 async def migrated_database(test_database: tuple[str, str]) -> tuple[str, str]:
-    """Apply the service migrations in order; Yoyo itself is covered in test_migrations."""
+    """Apply the service migrations in order; test_migrations runs them through Yoyo."""
     url, schema = test_database
     async with await AsyncConnection.connect(url, autocommit=True) as connection:
         await connection.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))

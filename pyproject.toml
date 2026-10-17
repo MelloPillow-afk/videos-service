@@ -28,6 +28,7 @@ dev = [
   "pytest-cov>=6,<8",
   "ruff>=0.12,<1",
   "yamllint>=1.37,<2",
+  "vulture>=2.14,<3",
 ]
 generated-runtime = [
   "fastapi>=0.115,<1",
@@ -63,6 +64,30 @@ typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
 
+[tool.vulture]
+paths = ["src", "tests"]
+# Generated code is owned by the generator.
+exclude = ["*/generated/*"]
+min_confidence = 60
+# Registered or called by FastAPI and Pydantic.
+ignore_decorators = ["@app.*", "@model_validator"]
+ignore_names = [
+  # Read by Pydantic, pytest, or generated code rather than by name in this service.
+  "model_config",
+  "pytestmark",
+  "authenticator",
+  "verify",
+  "arrange_*",
+  # Enum members reached by value from database rows.
+  "VIDEO_PROCESSING",
+  "THUMBNAIL_GENERATION",
+  "DELETION",
+  "QUEUED",
+  "RUNNING",
+  "SUCCEEDED",
+  "FAILED",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
@@ -73,10 +98,14 @@ markers = ["integration: requires a running PostgreSQL test database"]
 
 [tool.coverage.run]
 source = ["src"]
+# The generator tests its own packages; coverage measures handwritten code.
+omit = ["*/generated/*"]
 branch = true
+patch = ["subprocess"]
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 95
 
 [tool.uv]
 default-groups = ["dev", "generated-runtime", "service-runtime", "generated-tests"]
