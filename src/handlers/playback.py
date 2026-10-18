@@ -5,10 +5,10 @@ from uuid import UUID
 
 from fastapi import HTTPException, Path
 
-from src.clients import cloudflare
 from src.domain import videos as domain
 from src.schemas.generated.operations import PlaybackGetPlaybackIdParameter
 from src.schemas.generated.playback import Playback, PlaybackPlayback
+from src.services import media as media_service
 from src.services import videos as videos_service
 
 
@@ -25,5 +25,5 @@ async def get_playback(
     assert video.playback_key is not None  # A playable video has processed media.
     return Playback(
         video_id=str(video.id),
-        playback=PlaybackPlayback(type="hls", url=cloudflare.media_url(video.playback_key)),
+        playback=PlaybackPlayback(type="hls", url=media_service.media_url(video.playback_key)),
     )

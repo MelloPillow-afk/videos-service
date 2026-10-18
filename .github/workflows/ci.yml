@@ -42,11 +42,11 @@ jobs:
       - run: make check
 
   tests:
-    name: HTTP, database, migrations, and media
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Each test migrates its own schema in this database.
     env:
-      DATABASE_URL: postgresql://videos:videos@localhost:5432/videos_test
       TEST_DATABASE_URL: postgresql://videos:videos@localhost:5432/videos_test
     services:
       postgres:
@@ -73,11 +73,6 @@ jobs:
       # Worker tests run real FFmpeg.
       - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends ffmpeg
       - run: uv sync --locked
-      # Settings require auth unless disabled; migrations never check tokens. Scoped to
-      # this step because the auth tests expect auth to be on.
-      - run: make migrate
-        env:
-          AUTH_DISABLED: "true"
       - run: make coverage
 
   images:
