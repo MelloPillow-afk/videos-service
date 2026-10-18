@@ -1,15 +1,14 @@
-"""The health handler stays reachable without a database."""
+"""The health route stays reachable without a database; documentation stays private."""
 
 import asyncio
 from pathlib import Path
+from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
-from psycopg_pool import PoolTimeout
 from pydantic import SecretStr
 
 from src.app import create_app
 from src.config import Settings
-from src.repositories import Database
 
 
 async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Path) -> None:
@@ -18,29 +17,27 @@ async def test_ping_remains_available_while_database_is_unreachable(tmp_path: Pa
         database_url=SecretStr(f"postgresql://videos:videos@/videos_test?host={tmp_path}"),
         db_pool_min_size=1,
         db_pool_timeout_seconds=0.05,
+        auth_disabled=True,
     )
     app = create_app(settings)
     async with asyncio.timeout(2), app.router.lifespan_context(app):
-        database = app.state.database
-        assert isinstance(database, Database)
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://test",
+            headers={"Authorization": "Bearer local"},
+        ) as client:
             response = await client.get("/ping")
             assert response.status_code == 200
             assert response.json() == {"status": "ok"}
-            assert (await client.get("/v1/videos")).status_code == 200
-        try:
-            async with database.connection():
-                raise AssertionError("Unexpected database connection")
-        except PoolTimeout:
-            pass
+            # Database-backed routes fail without revealing why.
+            response = await client.get(f"/v1/jobs/{uuid4()}")
+            assert response.status_code == 500
+            assert response.text == "Internal Server Error"
 
 
-def test_health_stays_at_root_and_documentation_remains_disabled() -> None:
-    app = create_app(Settings())
-    paths = app.openapi()["paths"]
-    assert "/ping" in paths
-    assert "/v1/ping" not in paths
-    assert paths["/ping"]["get"].get("security", []) == []
-    assert app.docs_url is None
-    assert app.redoc_url is None
-    assert app.openapi_url is None
+async def test_health_stays_at_root_and_documentation_remains_disabled() -> None:
+    app = create_app(Settings(db_pool_min_size=0, auth_disabled=True))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/ping")).status_code == 200
+        for path in ("/v1/ping", "/docs", "/redoc", "/openapi.json"):
+            assert (await client.get(path)).status_code == 404, path

@@ -4,6 +4,7 @@ __pycache__/
 dist/
 .env
 .env.*
+.envrc
 !.env.example
 .coverage
 .coverage.*
@@ -12,3 +13,5 @@ htmlcov/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+.local/
+api.env.yaml

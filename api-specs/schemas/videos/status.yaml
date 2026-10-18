@@ -4,11 +4,9 @@ type: string
 enum:
   - CREATED
   - UPLOADING
-  - QUEUED
   - PROCESSING
   - READY
   - FAILED
-  - DELETING
-description: Current video processing or deletion status.
+description: Video lifecycle status. Processing progress is on the video's job.
 examples:
   - CREATED

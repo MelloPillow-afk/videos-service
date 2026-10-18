@@ -1,311 +1,121 @@
 # Videos service
 
-The Python backend for the videos domain. Its prepared OpenAPI contract generates
-all 13 HTTP operations: `/ping` and the 12 video operations under `/v1`. Generated
-handlers serve fixed, validated contract examples until a matching handwritten
-async implementation is added. Video business behavior and processing remain to
-be implemented. Documentation endpoints remain disabled. The application owns lifecycle and
-documentation settings and may add handwritten routes or mounts.
+It's a FastAPI app on Python 3.13, backed by Postgres (Neon) and S3-compatible storage
+(Cloudflare R2). Sign-in is handled by Neon Auth.
 
-Regenerate from `api-specs/index.yaml` with the sibling Rust generator:
+## How it fits together
 
-```sh
-cargo run --locked --manifest-path ../api-code-generator/Cargo.toml -- .
-uv lock
-uv sync
-```
+- **The API** (`src/app.py`) handles HTTP. It never touches video bytes: it hands out
+  signed upload URLs, and browsers upload directly to the `videos-raw` bucket.
+- **Jobs**: when an upload completes, the API records a job and starts a **worker**
+  for it (`python -m src.workers.media <job_id>`). Locally that's a Docker Compose
+  container. In production it's a Cloud Run job execution.
+- **The worker** checks the upload with FFprobe, renders HLS and thumbnails with
+  FFmpeg, publishes them to the public `videos-processed` bucket, and records the
+  outcome. Clients poll `GET /v1/jobs/{id}` to follow along.
 
-`src/app.py` calls `register_routers(app)` from `src.core.generated.routers` once.
-Later contract changes renew its explicit router inclusions without handwritten
-per-operation wiring.
-Generated decorators contain runtime settings only; API documentation stays in
-`api-specs/`.
-Generation preserves configuration, lifecycle, domain/service/repository code,
-and handwritten handlers. Keep `.api-code-generator.json` with renewable output;
-do not edit files under generated packages.
+## Getting started
 
-## Local development
-
-Use Python 3.13 and [uv](https://docs.astral.sh/uv/). PostgreSQL runs through
-Docker Compose; the API runs on the host through Uvicorn.
+You'll need [uv](https://docs.astral.sh/uv/), Docker, and FFmpeg
+(`brew install ffmpeg`; the worker tests run it for real).
 
 ```sh
-make install
-cp .env.example .env
-make db-up
-make migrate
-make run
+make install          # Python 3.13 and locked dependencies
+cp .env.example .env  # local settings: fill in your Neon Auth origin
+make db-up            # Postgres in Docker
+make storage-up       # SeaweedFS + Caddy at https://localhost:9443, standing in for R2
+make local-ca         # copy Caddy's certificate to .local/ so the API trusts it
+make worker-build     # the worker image the API starts for each job
+make migrate          # create the tables
+make run              # http://127.0.0.1:8000
 ```
 
-Visit `http://127.0.0.1:8000/ping` or `/v1/videos`. To run contract mocks without
-background PostgreSQL connection attempts, use `DB_POOL_MIN_SIZE=0 make run`.
-The preserved database lifecycle opens and closes its pool, while mock handlers
-do not query it. The default pool still fills in the background when PostgreSQL
-is configured.
-Settings are read from `.env` and environment variables, with environment
-variables taking precedence. `.env` is ignored by Git.
+Check it's up with `curl http://127.0.0.1:8000/ping`. Admin routes need a bearer token:
 
-The pool defaults to 1–5 connections **per process**, with a 5-second acquisition
-timeout, a 5-second connection timeout, and 5-second statement and lock timeouts.
-The settings in `.env.example` control these defaults. Application shutdown
-closes the pool. Repository connection contexts commit successful operations
-and roll back operations that raise an exception.
+```sh
+TOKEN=$(uv run --locked python scripts/get_token.py --email you@example.com)
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/v1/admin/videos
+```
 
-`make db-down` stops the databases while keeping the dev database volume.
-The test database uses temporary storage and runs separately on port 5433.
+For a quick session without Neon, run `AUTH_DISABLED=true make run`, and any token is
+accepted. Keep it out of `.env`, though: the tests read `.env` too, and the auth tests
+expect auth to be on.
 
-## Structure and layers
+For a browser to upload to local storage and play the results, trust the local
+certificate once:
+
+```sh
+security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db .local/caddy-root.crt
+```
+
+Locally, the worker container mounts `src/`, so code changes need no rebuild. Rebuild
+with `make worker-build` only after dependency changes. Worker logs show up in the
+API's output.
+
+Settings come from `.env` and environment variables, and environment variables win.
+Everything is defined, with defaults, in [src/config.py](src/config.py).
+
+## Everyday commands
+
+| Command | What it does |
+|---|---|
+| `make run` | Run the API with reload |
+| `make check` | Lint the API contract, Ruff, format check, Pyright, and the dead-code scan |
+| `make format` | Format everything |
+| `make test` | Fast tests, no database needed |
+| `make test-db-up` | Start the throwaway test database (port 5433) |
+| `make test-integration` | Tests against real Postgres |
+| `make coverage` | Full suite with coverage; writes `htmlcov/` |
+| `make migrate` / `make migrations` | Apply / list migrations |
+| `make db-down` | Stop the databases (dev data is kept) |
+
+A change is done when `make check` passes and `make coverage` keeps handwritten code at
+95% or more. CI holds every pull request to the same bar.
+
+## Project layout
+
+I'll provide better docs on this later ... 
 
 ```text
 src/
-  app.py               # App factory and startup/shutdown lifecycle
-  config.py            # pydantic-settings configuration
-  handlers/            # HTTP input, service calls, response shaping
-    generated/         # Renewable contract handlers
-    ping.py            # Preserved old handler; no direct HTTP registration
-  schemas/             # Pydantic HTTP models
-    generated/         # Renewable wire models
-    ping.py            # Preserved handwritten schema
-  core/
-    generated/         # Renewable router composition and override selection
-  services/            # Business operations and orchestration (empty initially)
-  repositories/        # SQL, storage mapping, pooling, migration tooling
-    database.py
-    migrate.py
-  domain/              # Shared domain models (empty initially)
-migrations/            # Future Yoyo SQL migrations
-tests/
-  unit/                # Reachability and settings checks
-  integration/         # Real PostgreSQL and migration checks
+  app.py           # app factory and lifespan
+  config.py        # every setting, with defaults
+  handlers/        # HTTP in, service calls, HTTP out
+  services/        # business rules and orchestration
+  repositories/    # SQL, connection pool, migrations runner
+  domain/          # entities, enums, and domain errors only
+  clients/         # one module per outside service: R2, Cloud Run, FFmpeg, auth
+  libs/            # pure helpers any layer can use
+  workers/         # job entrypoints, like app.py is for HTTP
+  */generated/     # written by the code generator; don't edit
+migrations/        # Yoyo SQL migrations, applied in order
+api-specs/         # the OpenAPI contract
+tests/             # unit, integration, and generated HTTP tests
+deploy/            # production settings and one-time GCP setup
 ```
 
-The [Service & Repository Layering Standard](https://app.notion.com/p/3c3f1f2d1b9280e19e06cf88d0ddcc02)
-supplies the folder structure and layer responsibilities. This service uses its
-own stack: FastAPI, Pydantic v2, pydantic-settings, psycopg 3, psycopg_pool, Yoyo,
-Uvicorn, and uv. No framework-specific tooling from the reference carries over.
+Dependencies point one way: handlers call services, services call repositories and
+clients, and only repositories touch the database. Services and repositories are plain
+module functions.
 
-Handlers reach storage through services. Services own business decisions and
-call repositories; repositories own SQL, database connections, and mapping
-stored data to domain models. Domain models hold shared data definitions.
-The app factory retains the repository resource lifecycle and registers the
-generated routers once. `/ping` and all fixed examples need no database
-query. Add handwritten business models and operations when implementing features.
-The generated and service-runtime dependency groups join the existing project
-and dev dependencies in normal `uv sync` and a single `uv.lock`.
+## The API contract
 
-## Checks and CI
+[`api-specs/index.yaml`](api-specs/index.yaml) (OpenAPI 3.2) is the source of truth for
+every route and request and response shape. The sibling Rust generator turns it into
+the routers, schemas and HTTP tests under each `generated/` package. Handwritten
+handlers in `src/handlers/` override the generated ones.
+
+After changing the contract:
 
 ```sh
-make check              # Contract checks, Ruff lint/format, strict Pyright
-make test               # HTTP/configuration and existing contract-tool tests; no database needed
-make test-db-up
-make test-integration   # Real PostgreSQL transaction, timeout, and migration checks
-make test-all           # Entire suite, with terminal and XML coverage reports
-```
-
-The HTTP suite covers all 13 generated operations, exact paths, deterministic
-example bodies, creation headers, native validation, and application-owned routes.
-The [adoption acceptance record](docs/native-fastapi-acceptance.md) records the
-executed checks. The generator's CLI-to-HTTP acceptance suite additionally checks handwritten
-overrides, dependency injection, regeneration, and generation failures.
-
-`TEST_DATABASE_URL` selects the test database, independently of `DATABASE_URL`.
-Integration tests default to the Compose test database and create an isolated
-schema per test. They exercise commits, rollbacks, statement timeouts, and
-Yoyo migration apply/reapply/rollback with a test-only table. There are no video
-tables or application migrations yet. `make migrate` initializes Yoyo's
-bookkeeping in dev and will apply migrations added to `migrations/`;
-`make migrations` lists their status. These are explicit commands, separate
-from server startup.
-
-[GitHub Actions](.github/workflows/ci.yml) runs on pull requests and pushes to
-`main`. Two jobs run in parallel:
-
-- **Quality:** contract validation, Ruff lint/format checks, and Pyright.
-- **Tests:** initialize migrations against an ephemeral PostgreSQL 17 service,
-  then run pytest, HTTP tests, database tests, and coverage together.
-
-Each job installs the locked dependencies once and caches uv downloads. CI
-uses one Python version and cancels superseded validation runs. Coverage is
-reported without a percentage gate. Ruff and Pyright cover the scaffold and
-its new tests; existing contract-validation code keeps its current tooling.
-
-Production provisioning, deployment, and production migrations are deferred.
-When those are added, run production migrations after validation passes as
-part of the release workflow, using production environment configuration.
-Development migrations remain manual through Make.
-
-## API design targets
-
-The generated video HTTP contract is [`api-specs/index.yaml`](api-specs/index.yaml).
-It uses [OpenAPI 3.2.0](https://spec.openapis.org/oas/v3.2.0.html), with JSON Schema
-null unions, reusable schemas and responses, and security declarations for the
-12 video operations. Video paths are relative to the `/v1` server base path.
-The unauthenticated health operation overrides the server path to `/`, preserving
-`GET /ping`. JSON fields and component names use snake_case; operation IDs use
-Pythonic `module.function` names. Resource operations name their noun explicitly,
-using singular names for one resource (`videos.get_video`) and plural names for
-lists (`videos.list_videos`). Custom methods use colon suffixes with hyphenated
-words, such as `/videos/{id}:upload-url` and
-`/videos/{id}/thumbnails:complete-upload`, with operation IDs such as
-`videos.upload_url` and `thumbnails.complete_upload`.
-The plural `/videos/{id}/thumbnails` path still represents one active thumbnail;
-deleting the custom thumbnail restores the generated fallback.
-
-`api-specs/index.yaml` holds API metadata and references to the contract files. Paths
-are grouped by resource, with collections, individual resources, and their HTTP
-methods kept together. [`videos.yaml`](api-specs/paths/videos.yaml) contains video paths,
-including uploads, playback, and retries. [`thumbnails.yaml`](api-specs/paths/thumbnails.yaml)
-contains thumbnail paths. Reusable responses live in
-`api-specs/responses/`; operation-specific responses stay in their path files. Examples
-are kept in schemas, reusable responses, parameters, and shared request bodies.
-
-Schemas are grouped
-by purpose inside `api-specs/schemas/`. Each schema has one example. A single video uses
-[`videos/video.yaml`](api-specs/schemas/videos/video.yaml); a collection uses
-[`videos/videos.yaml`](api-specs/schemas/videos/videos.yaml).
-
-| Schema folder | Contents |
-| --- | --- |
-| `health/` | API reachability response. |
-| `videos/` | Video resources, collections, metadata, status, updates, retries, and deletion. |
-| `uploads/` | Video uploads, upload instructions, and completion or processing results. |
-| `thumbnails/` | Thumbnail resources, image status, and custom thumbnail uploads. |
-| `playback/` | Video playback links. |
-| `shared/` | Timestamps and media URLs. |
-
-Each query or path parameter has a definition in `api-specs/parameters/`. IDs, pagination,
-and search schemas are written directly in those files for readability. Video
-status filters reuse the status schemas in `api-specs/schemas/videos/`. Pass the collection's
-`next_page_token` as the `cursor` query parameter to request the next page.
-The HTTP-exception schema is defined in `api-specs/index.yaml`; native
-request-validation errors are documented in
-`api-specs/responses/validation_error.yaml`. Processing failure details are defined
-directly in `api-specs/schemas/videos/video.yaml`.
-
-### Generator naming and examples
-
-Generator input names are explicit:
-
-| Field | Meaning | Example |
-| --- | --- | --- |
-| `operationId` | Handler module and async function. | `videos.get_video` |
-| `x-python-module` | Generated schema module. | `videos` |
-| `x-python-name` | Named Python schema type. | `Video` |
-
-For example, `videos.get_video` targets `handlers/generated/videos.py` and
-its `get_video` function. A handwritten override uses the same function name
-in `handlers/videos.py`. A schema named `videos.Video` targets
-`schemas/generated/videos.py`. These paths are relative to `src/`.
-Reusable schemas carry both naming extensions, including scalar schemas and the
-shared error schema. Nested inline properties do not need separate naming fields.
-
-Schema examples supply inline mock values; response examples take precedence when
-present. Required response headers need examples too. The creation response's
-`Location` header references `parameters/response_location.yaml`, a Header Object
-with an example and without the request-parameter `name` and `in` fields.
-These declarations control the generated interface. The complete prepared
-contract currently generates all 13 operations and their validated inline mocks.
-
-### Handwritten implementations
-
-Generated routers select a matching async function in `src/handlers/<module>.py`
-before registering the route. A missing module or function serves the fixed
-example. A broken import or incompatible signature fails application construction.
-Use the generated function's contract argument names, types, defaults, and return
-annotation. Compatible signature-preserving decorators and additional native
-`Request`, `Response`, or `Depends` parameters are supported. FastAPI executes the
-selected function's dependency graph, including dependencies that raise HTTP errors.
-Security declarations document the contract; implementing authentication and
-administrator policy remains handwritten work.
-
-Return the generated Pydantic model directly. For example, a creation handler
-accepts `response: Response` and assigns `response.headers["Location"]` to the new
-resource URL. Response models handle serialization and omit unset optional fields;
-required nullable fields remain present. Required headers are checked by endpoint
-acceptance tests. Omitting a header does not trigger a generated server error.
-Reusable error responses describe behavior and do not create runtime error factories.
-
-## Validate the contract
-
-Install [uv](https://docs.astral.sh/uv/) and use Python 3.13. From this
-directory:
-
-```sh
-uv sync --locked
 make lint-api
+# yeah.. ill add this later
+uv lock && uv sync
 ```
 
-`uv.lock` fixes the resolved validation dependencies. `make lint-api` fails on
-YAML syntax/style issues, duplicate YAML keys, OpenAPI structure and reference
-errors, or examples that violate their schemas. It runs yamllint,
-[openapi-spec-validator](https://openapi-spec-validator.readthedocs.io/en/latest/cli.html)
-with the OpenAPI 3.2 schema, and a Python reference/example checker (including UUID,
-timestamp, and URI formats). YAML lint covers every contract file. The checker resolves
-references across local files without fetching remote documents. These checks validate
-the contract; the consolidated
-spec's REST API acceptance scenarios will validate runtime behavior during
-implementation. The same command can run in CI when the repository is set up.
+## Deploying
 
-Without Make, run the commands individually:
-
-```sh
-uv run --locked yamllint api-specs
-uv run --locked openapi-spec-validator --schema 3.2 api-specs/index.yaml
-uv run --locked python scripts/check_examples.py
-```
-
-## Requirements and unresolved decisions
-
-The source requirements are [`video-backend-spec.md`](../docs/video-backend-spec.md),
-its [consolidated specification](../.scratch/video-backend/spec.md), and the
-[approved API examples](../docs/pilgrims-progress-video-api-spec.md).
-`AGENTS.md` records the essential contract and generated-output conventions.
-
-The contract keeps the existing handoff gaps visible:
-
-- Viewer reads model authenticated and anonymous deployment alternatives.
-  Anonymous access requires an explicit deployment choice. Before implementing
-  authorization, select the identity provider, admin role mapping, and viewer
-  policy; narrow the security requirements if viewer authentication is mandatory.
-- Thumbnail format and size allowlists, dimensions, aspect ratio, and cropping
-  policy await the missing approved thumbnail specification. JPEG examples do
-  not establish the full allowlist. Source byte limits are configurable too.
-- Finalize accepted-source protection and effective upload-size enforcement;
-  decide state retention after failed source verification and the thumbnail
-  response when custom removal reveals a failed generated fallback.
-- Database layout, job dispatch/reconciliation, encoding, resource limits,
-  retention, CDN configuration, and cache policy remain implementation decisions.
-
-Invalid path, query, and body values use FastAPI's native HTTP 422 JSON response,
-with validation errors in `detail`. Deliberate application errors use standard
-`HTTPException` responses such as `{"detail": "The video was not found."}`. HTTP
-400 documents deliberate rejections such as unsupported media; request validation
-does not use 400. Unexpected failures and invalid response bodies use the normal
-production HTTP 500 text response, `Internal Server Error`.
-
-Uploads go directly to R2; the API accepts no media bytes. Publishing and deletion
-govern API discovery, while previously retrieved public CDN URLs may remain
-accessible until cache expiration or purge.
-
-
-## Generated HTTP integration tests
-
-`ag` generates one test module per handler module under `tests/generated/`.
-Tests use Arrange → Act → Assert, the real app lifespan and HTTP stack, and a fresh
-PostgreSQL schema per case. `tests/conftest.py` configures the app from
-`TEST_DATABASE_URL`; missing test infrastructure fails setup. The test database is
-still started with `make test-db-up`, and `make test-integration` or normal `pytest`
-runs the generated cases. `make test` continues to select non-integration tests.
-
-Customize operation fixtures such as `arrange_videos_get_video(api_case, api_app)`
-in `tests/conftest.py` as handlers are implemented. Arrange records and adjust
-`api_case.path_params`, `.query`, `.headers`, `.body`, or `.expected_body` before the
-request. Yield fixtures can inspect `.response`, assert stored effects, and clean up
-in `finally`. No hook or fixture belongs inside `tests/generated`.
-
-Schema examples are authoritative for success assertions. Parameter validation keeps
-FastAPI's native 422 responses. The current generated suite has 23 cases; 202
-operations are outside MVP coverage, and all gaps appear in
-`tests/generated/coverage.json`. Service-specific business effects require handwritten
-assertions. The service currently serves generated mocks for its 13 operations.
+Production runs on Google Cloud Run in the `videos-service` project. A push to `main`
+runs the checks, builds the images, runs new migrations after you approve them, and
+deploys. [docs/deployment.md](docs/deployment.md) covers the setup, manual deploys,
+smoke testing, and rollbacks. Secrets live in Secret Manager, never in the repo.

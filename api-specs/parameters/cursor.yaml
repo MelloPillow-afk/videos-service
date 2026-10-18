@@ -1,7 +1,0 @@
-name: cursor
-in: query
-description: Token from the previous page.
-schema:
-  type: string
-  examples:
-    - example_next_page_token

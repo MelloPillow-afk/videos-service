@@ -1,26 +1,17 @@
-"""ASGI application factory and shared-resource lifecycle."""
-
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+"""ASGI application factory."""
 
 from fastapi import FastAPI
 
+from src.clients.auth import DisabledAuth, NeonIdentity, SigningKeys
 from src.config import Settings
 from src.core.generated.routers import register_routers
-from src.repositories import Database
+from src.extensions import lifespan
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    database = Database(settings or Settings())
-
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-        await database.connect()
-        try:
-            yield
-        finally:
-            await database.close()
-
+def create_app(
+    settings: Settings | None = None, *, signing_keys: SigningKeys | None = None
+) -> FastAPI:
+    settings = settings or Settings()
     app = FastAPI(
         title="Videos service",
         lifespan=lifespan,
@@ -28,6 +19,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         openapi_url=None,
     )
-    app.state.database = database
+    app.state.settings = settings
+    app.state.authenticator = (
+        DisabledAuth(settings.auth_disabled_subject)
+        if settings.auth_disabled
+        else NeonIdentity(settings, signing_keys)
+    )
     register_routers(app)
     return app

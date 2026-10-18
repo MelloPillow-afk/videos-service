@@ -13,8 +13,11 @@ properties:
     description: Name of the image file.
   content_type:
     type: string
-    minLength: 1
-    description: Image media type, such as image/jpeg.
+    enum:
+      - image/jpeg
+      - image/png
+      - image/webp
+    description: Image media type.
     examples:
       - image/jpeg
   size_bytes:

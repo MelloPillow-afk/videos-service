@@ -2,4 +2,4 @@ description: Video details.
 content:
   application/json:
     schema:
-      $ref: ../schemas/videos/video.yaml
+      $ref: ../schemas/videos/admin_video.yaml

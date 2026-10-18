@@ -7,10 +7,13 @@ dependencies = [
   "fastapi>=0.115,<1",
   "pydantic>=2.10,<3",
   "pydantic-settings>=2.7,<3",
+  "pyjwt[crypto]>=2.10,<3",
   "psycopg[binary]>=3.2,<4",
   "psycopg-pool>=3.2,<4",
   "uvicorn>=0.34,<1",
   "yoyo-migrations>=9,<10",
+  "boto3>=1.35,<2",
+  "google-cloud-run>=0.10,<1",
 ]
 
 [dependency-groups]
@@ -27,6 +30,8 @@ dev = [
   "pytest-cov>=6,<8",
   "ruff>=0.12,<1",
   "yamllint>=1.37,<2",
+  "vulture>=2.14,<3",
+  "boto3-stubs[s3]>=1.35,<2",
 ]
 generated-runtime = [
   "fastapi>=0.115,<1",
@@ -56,11 +61,45 @@ line-length = 100
 select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
 
 [tool.pyright]
-include = ["src", "tests/unit", "tests/integration", "tests/conftest.py", "tests/generated"]
+include = ["src", "tests/unit", "tests/integration", "tests/utilities", "tests/conftest.py", "tests/generated"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
+
+[tool.vulture]
+paths = ["src", "tests"]
+# Generated code is owned by the generator.
+exclude = ["*/generated/*"]
+min_confidence = 60
+# Registered or called by FastAPI and Pydantic.
+ignore_decorators = ["@app.*", "@model_validator"]
+ignore_names = [
+  # Read by Pydantic, pytest, or generated code rather than by name in this service.
+  "model_config",
+  "pytestmark",
+  "authenticator",
+  "verify",
+  "arrange_*",
+  # Handwritten handlers the generated routers select by operation ID.
+  "upload_url",
+  "get_playback",
+  "delete_thumbnail",
+  # Enum members reached by value from database rows.
+  "VIDEO_PROCESSING",
+  "THUMBNAIL_GENERATION",
+  "DELETION",
+  "QUEUED",
+  "RUNNING",
+  "SUCCEEDED",
+  "FAILED",
+  "CREATED",
+  "UPLOADING",
+  "PROCESSING",
+  "READY",
+  "DRAFT",
+  "PUBLISHED",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -72,10 +111,14 @@ markers = ["integration: requires a running PostgreSQL test database"]
 
 [tool.coverage.run]
 source = ["src"]
+# The generator tests its own packages; coverage measures handwritten code.
+omit = ["*/generated/*"]
 branch = true
+patch = ["subprocess"]
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 95
 
 [tool.uv]
 default-groups = ["dev", "generated-runtime", "service-runtime", "generated-tests"]

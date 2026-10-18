@@ -20,30 +20,13 @@ if TYPE_CHECKING:
 
 type PublicationStatus = Literal["DRAFT", "PUBLISHED"]
 
-class VideoDeletion(WireModel):
-    model_config = ConfigDict(extra='allow')
-    status: Literal["DELETING"]
-    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-
 type VideoDescription = Annotated[str, Field(max_length=5000)] | None
 
-class VideoRetry(WireModel):
-    model_config = ConfigDict(extra='allow')
-    attempt: Annotated[int, Field(ge=2)] = Field(description="Processing attempt number.")
-    processing_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-    status: Literal["QUEUED"]
-    video_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-
-type VideoStatus = Literal["CREATED", "UPLOADING", "QUEUED", "PROCESSING", "READY", "FAILED", "DELETING"]
+type VideoStatus = Literal["CREATED", "UPLOADING", "PROCESSING", "READY", "FAILED"]
 
 type VideoTitle = Annotated[str, Field(min_length=1, max_length=200, pattern="\\S")]
 
-class VideoProcessingError(WireModel):
-    model_config = ConfigDict(extra='allow')
-    code: str = Field(description="Code identifying the processing failure.")
-    message: str = Field(description="Readable explanation of the processing failure.")
-
-class Video(WireModel):
+class AdminVideo(WireModel):
     model_config = ConfigDict(extra='allow')
     created_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
     description: VideoDescription = Field(description="Optional video description.")
@@ -51,9 +34,8 @@ class Video(WireModel):
         description="Video length in seconds.",
     )
     id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
-    processing_error: VideoProcessingError = Field(
-        default_factory=omitted,
-        description="Processing failure details.",
+    latest_job_id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))] | None = Field(
+        description="ID of the most recent processing job, or null before any upload is confirmed.",
     )
     publication_status: PublicationStatus = Field(
         description="Whether the video is a draft or published.",
@@ -64,14 +46,16 @@ class Video(WireModel):
     size_bytes: Annotated[int, Field(ge=1)] | None = Field(
         description="Uploaded file size in bytes.",
     )
-    status: VideoStatus = Field(description="Current video processing or deletion status.")
+    status: VideoStatus = Field(
+        description="Video lifecycle status. Processing progress is on the video's job.",
+    )
     thumbnail: _schema_thumbnails.ThumbnailImage = Field(
         description="The current thumbnail.",
     )
     title: VideoTitle = Field(description="Video title.")
     updated_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
 
-class VideoCreate(WireModel):
+class AdminVideoCreate(WireModel):
     model_config = ConfigDict(extra='allow')
     description: VideoDescription = Field(
         default_factory=omitted,
@@ -79,7 +63,7 @@ class VideoCreate(WireModel):
     )
     title: VideoTitle = Field(description="Video title.")
 
-class VideoUpdate(WireModel):
+class AdminVideoUpdate(WireModel):
     model_config = ConfigDict(
         extra='allow',
         json_schema_extra={
@@ -105,12 +89,29 @@ class VideoUpdate(WireModel):
     def _require_present(cls, value: object) -> object:
         return require_properties(value, [["title"], ["description"], ["publication_status"]])
 
-class VideosPagination(WireModel):
+class AdminVideos(WireModel):
     model_config = ConfigDict(extra='allow')
-    has_more: bool = Field(description="Whether another page of results is available.")
-    next_page_token: str | None = Field(description="Token for the next page.")
+    data: list[AdminVideo]
+    pagination: _schema_shared.Pagination = Field(
+        description="Where a page of results ends. Pass next_page_token as the page_token query parameter, with the same filters, to request the next page.",
+    )
+
+class Video(WireModel):
+    model_config = ConfigDict(extra='allow')
+    description: VideoDescription = Field(description="Optional video description.")
+    duration_seconds: Annotated[float, Field(ge=0)] | None = Field(
+        description="Video length in seconds.",
+    )
+    id: Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+    published_at: _schema_shared.Timestamp = Field(description="Date and time in UTC.")
+    thumbnail: _schema_thumbnails.ThumbnailImage = Field(
+        description="The current thumbnail.",
+    )
+    title: VideoTitle = Field(description="Video title.")
 
 class Videos(WireModel):
     model_config = ConfigDict(extra='allow')
     data: list[Video]
-    pagination: VideosPagination
+    pagination: _schema_shared.Pagination = Field(
+        description="Where a page of results ends. Pass next_page_token as the page_token query parameter, with the same filters, to request the next page.",
+    )

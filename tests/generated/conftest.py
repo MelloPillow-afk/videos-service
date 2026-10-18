@@ -23,10 +23,10 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_collect_file(
     file_path: Path, parent: pytest.Collector
 ) -> pytest.Module | None:
-    if (
-        file_path.parent != Path(__file__).parent
-        or file_path.stem not in _support.MODULES
-    ):
+    if not file_path.is_relative_to(Path(__file__).parent):
+        return None
+    module = file_path.relative_to(Path(__file__).parent).with_suffix("")
+    if ".".join(module.parts) not in _support.MODULES:
         return None
     # Let pytest collect conventional test_*.py names once through its normal hook.
     patterns = parent.config.getini("python_files")
