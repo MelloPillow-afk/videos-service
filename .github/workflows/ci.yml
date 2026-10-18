@@ -73,7 +73,11 @@ jobs:
       # Worker tests run real FFmpeg.
       - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends ffmpeg
       - run: uv sync --locked
+      # Settings require auth unless disabled; migrations never check tokens. Scoped to
+      # this step because the auth tests expect auth to be on.
       - run: make migrate
+        env:
+          AUTH_DISABLED: "true"
       - run: make coverage
 
   images:
