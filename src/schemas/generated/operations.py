@@ -22,6 +22,8 @@ type AdminVideosGetVideoIdParameter = Annotated[str, AfterValidator(lambda value
 
 type AdminVideosUpdateVideoIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
+type AdminVideosGetPlaybackIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+
 type AdminThumbnailsDeleteThumbnailIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
 
 type AdminThumbnailsCompleteUploadIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

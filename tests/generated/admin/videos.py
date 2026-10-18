@@ -66,6 +66,33 @@ _CASES: dict[str, dict[str, Any]] = {
         "query": {},
         "response_model": None,
     },
+    "admin.videos.get_playback": {
+        "authentication": "required",
+        "body": None,
+        "body_model": None,
+        "expected_body": {
+            "playback": {"type": "hls", "url": "https://media.example.com/videos/intro/hls/master.m3u8"},
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
+        },
+        "expected_status": 200,
+        "method": "GET",
+        "operation_id": "admin.videos.get_playback",
+        "parameters": [
+            {
+                "attribute": "id",
+                "description": "Video ID.",
+                "in": "path",
+                "model": "src.schemas.generated.operations.AdminVideosGetPlaybackIdParameter",
+                "name": "id",
+                "required": True,
+                "type": "string",
+            },
+        ],
+        "path": "/v1/admin/videos/{id}/playback",
+        "path_params": {"id": "550e8400-e29b-41d4-a716-446655440000"},
+        "query": {},
+        "response_model": "src.schemas.generated.playback.Playback",
+    },
     "admin.videos.get_video": {
         "authentication": "required",
         "body": None,
@@ -310,6 +337,56 @@ async def test_delete_video_422_path_id_invalid_format(api_case: APICase, api_cl
 
 
 # GET
+
+
+@pytest.mark.api_case(
+    _CASES["admin.videos.get_playback"],
+)
+@pytest.mark.usefixtures("arrange_admin_videos_get_playback")
+async def test_get_playback_200(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
+    _CASES["admin.videos.get_playback"], unauthenticated=True,
+)
+@pytest.mark.usefixtures("arrange_admin_videos_get_playback")
+async def test_get_playback_401_missing_token(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
+
+
+@pytest.mark.api_case(
+    _CASES["admin.videos.get_playback"], mutation={
+        "error_types": ["value_error"],
+        "in": "path",
+        "name": "id",
+        "value": "not a valid value",
+    },
+)
+@pytest.mark.usefixtures("arrange_admin_videos_get_playback")
+async def test_get_playback_422_path_id_invalid_format(api_case: APICase, api_client: AsyncClient) -> None:
+    # Arrange
+    request = api_case.prepare_request()
+
+    # Act
+    api_case.response = await api_client.request(**request)
+
+    # Assert
+    api_case.assert_response()
 
 
 @pytest.mark.api_case(

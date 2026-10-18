@@ -1,4 +1,5 @@
-"""Processed media appears on videos, and viewers play published, ready videos."""
+"""Processed media appears on videos; viewers play published, ready videos, and admins
+preview ready videos before publishing."""
 
 from uuid import uuid4
 
@@ -101,3 +102,52 @@ async def test_published_video_without_media_is_not_ready(
 
     assert response.status_code == 409
     assert response.json() == {"detail": "The video is not ready."}
+
+
+async def test_admin_previews_a_ready_draft(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_processed_video(db)
+
+    response = await client.get(f"/v1/admin/videos/{video_id}/playback")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "video_id": video_id,
+        "playback": {"type": "hls", "url": f"https://media.example.com/{PLAYBACK_KEY}"},
+    }
+
+
+async def test_admin_preview_of_an_unprocessed_video_is_not_ready(
+    client: AsyncClient, db: AsyncConnection
+) -> None:
+    video_id = await insert_video(db, status="PROCESSING")
+
+    response = await client.get(f"/v1/admin/videos/{video_id}/playback")
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "The video is not ready."}
+
+
+async def test_admin_cannot_preview_a_deleted_video(
+    client: AsyncClient, db: AsyncConnection
+) -> None:
+    video_id = await insert_processed_video(db, deleted_at="2026-10-14T09:00:00Z")
+
+    response = await client.get(f"/v1/admin/videos/{video_id}/playback")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "The video was not found."}
+
+
+async def test_admin_cannot_preview_a_missing_video(client: AsyncClient) -> None:
+    response = await client.get(f"/v1/admin/videos/{uuid4()}/playback")
+
+    assert response.status_code == 404
+
+
+async def test_admin_preview_requires_a_token(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_processed_video(db)
+    del client.headers["Authorization"]
+
+    response = await client.get(f"/v1/admin/videos/{video_id}/playback")
+
+    assert response.status_code == 401

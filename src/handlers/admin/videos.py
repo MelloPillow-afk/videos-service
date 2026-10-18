@@ -8,17 +8,20 @@ from fastapi import HTTPException, Path, Query, Request, Response
 
 from src.domain import videos as domain
 from src.handlers.jobs import job_resource
+from src.handlers.playback import playback_resource
 from src.handlers.utilities import page, page_position, thumbnail, timestamp
 from src.schemas.generated.jobs import Job
 from src.schemas.generated.operations import (
     AdminVideosCompleteUploadIdParameter,
     AdminVideosDeleteVideoIdParameter,
+    AdminVideosGetPlaybackIdParameter,
     AdminVideosGetVideoIdParameter,
     AdminVideosListVideosLimitParameter,
     AdminVideosListVideosPageTokenParameter,
     AdminVideosUpdateVideoIdParameter,
     AdminVideosUploadUrlIdParameter,
 )
+from src.schemas.generated.playback import Playback
 from src.schemas.generated.uploads import (
     SourceUpload,
     SourceUploadCreate,
@@ -80,6 +83,19 @@ async def get_video(
     except domain.VideoNotFound:
         raise HTTPException(status_code=404, detail=_NOT_FOUND) from None
     return _video(video)
+
+
+async def get_playback(
+    *,
+    id: Annotated[AdminVideosGetPlaybackIdParameter, Path(alias="id", description="Video ID.")],
+) -> Playback:
+    try:
+        video = await videos_service.get_previewable_video(UUID(id))
+    except domain.VideoNotFound:
+        raise HTTPException(status_code=404, detail=_NOT_FOUND) from None
+    except domain.VideoNotReady:
+        raise HTTPException(status_code=409, detail="The video is not ready.") from None
+    return playback_resource(video)
 
 
 async def update_video(
