@@ -60,7 +60,7 @@ Everything is defined, with defaults, in [src/config.py](src/config.py).
 | Command | What it does |
 |---|---|
 | `make run` | Run the API with reload |
-| `make check` | Lint the API contract, Ruff, format check, Pyright, and the dead-code scan |
+| `make check` | Lint the API contract, Ruff, format check, Pyright, the dead-code scan, and the layer contracts |
 | `make format` | Format everything |
 | `make test` | Fast tests, no database needed |
 | `make test-db-up` | Start the throwaway test database (port 5433) |
@@ -73,8 +73,6 @@ A change is done when `make check` passes and `make coverage` keeps handwritten 
 95% or more. CI holds every pull request to the same bar.
 
 ## Project layout
-
-I'll provide better docs on this later ... 
 
 ```text
 src/
@@ -94,9 +92,9 @@ tests/             # unit, integration, and generated HTTP tests
 deploy/            # production settings and one-time GCP setup
 ```
 
-Dependencies point one way: handlers call services, services call repositories and
-clients, and only repositories touch the database. Services and repositories are plain
-module functions.
+Imports point inward: handlers and workers call services, services call repositories and
+clients, and everything shares the `domain` entities. [docs/architecture/layers.md](docs/architecture/layers.md)
+has the principles and where new code goes; `make layers` checks the boundaries.
 
 ## The API contract
 

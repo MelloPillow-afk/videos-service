@@ -148,6 +148,11 @@ async def _inspect(source: Path, settings: Settings) -> MediaInfo:
     return media
 
 
+def media_url(key: str) -> str:
+    """Where viewers fetch a processed file."""
+    return cloudflare.media_url(key)
+
+
 def renditions(media: MediaInfo) -> list[Rendition]:
     """Each ladder size the source reaches, or one rendition at the source size."""
     short_side = min(media.width, media.height)

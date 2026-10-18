@@ -8,7 +8,6 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from src.clients import cloudflare
 from src.domain.jobs import JobStatus
 from src.domain.videos import Video
 from src.libs.thumbnails import SIZES, size_key
@@ -20,6 +19,7 @@ from src.schemas.generated.thumbnails import (
     ThumbnailSource,
     ThumbnailStatus,
 )
+from src.services import media as media_service
 
 type Position = tuple[datetime, UUID]
 
@@ -45,7 +45,7 @@ def _thumbnail_image(
 ) -> ThumbnailImage:
     sizes = {
         name: ThumbnailSize(
-            width=width, height=height, url=cloudflare.media_url(size_key(prefix, name))
+            width=width, height=height, url=media_service.media_url(size_key(prefix, name))
         )
         for name, (width, height) in SIZES.items()
     }

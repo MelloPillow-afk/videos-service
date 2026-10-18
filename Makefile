@@ -1,4 +1,4 @@
-.PHONY: install run db-up db-down test-db-up storage-up local-ca worker-build migrate migrations check lint lint-api format format-src format-check typecheck test test-integration coverage dead-code
+.PHONY: install run db-up db-down test-db-up storage-up local-ca worker-build migrate migrations check lint lint-api format format-src format-check typecheck test test-integration coverage dead-code layers
 
 install:
 	uv sync --locked
@@ -34,7 +34,7 @@ migrations:
 
 check: lint format-check typecheck
 
-lint: lint-api dead-code
+lint: lint-api dead-code layers
 	uv run --locked ruff check src tests/unit tests/integration tests/utilities tests/conftest.py tests/generated
 
 format: format-src
@@ -61,6 +61,9 @@ coverage:
 
 dead-code:
 	uv run --locked vulture
+
+layers:
+	uv run --locked lint-imports
 
 lint-api:
 	uv run --locked yamllint api-specs
