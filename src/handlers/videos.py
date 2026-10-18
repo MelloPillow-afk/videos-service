@@ -2,12 +2,14 @@
 
 from datetime import datetime
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import Query
+from fastapi import HTTPException, Path, Query
 
 from src.domain import videos as domain
 from src.handlers.utilities import page, page_position, thumbnail, timestamp
 from src.schemas.generated.operations import (
+    VideosGetVideoIdParameter,
     VideosListVideosLimitParameter,
     VideosListVideosPageTokenParameter,
 )
@@ -31,6 +33,17 @@ async def list_videos(
     return Videos(data=[_video(video) for video in videos], pagination=pagination)
 
 
+async def get_video(
+    *,
+    id: Annotated[VideosGetVideoIdParameter, Path(alias="id", description="Video ID.")],
+) -> Video:
+    try:
+        video = await videos_service.get_catalog_video(UUID(id))
+    except domain.VideoNotFound:
+        raise HTTPException(status_code=404, detail="The video was not found.") from None
+    return _video(video)
+
+
 def _video(video: domain.Video) -> Video:
     return Video(
         id=str(video.id),
@@ -43,6 +56,6 @@ def _video(video: domain.Video) -> Video:
 
 
 def _published_at(video: domain.Video) -> datetime:
-    # The catalog lists only published videos, and every published video has a time.
+    # The catalog shows only published videos, and every published video has a time.
     assert video.published_at is not None
     return video.published_at

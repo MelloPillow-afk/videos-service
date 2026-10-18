@@ -43,6 +43,8 @@ paths:
     $ref: paths/health.yaml#/~1ping
   /videos:
     $ref: paths/videos.yaml#/~1videos
+  /videos/{id}:
+    $ref: paths/videos.yaml#/~1videos~1{id}
   /videos/{id}/playback:
     $ref: paths/videos.yaml#/~1videos~1{id}~1playback
   /admin/videos:

@@ -57,6 +57,32 @@ pbpaste | gcloud secrets versions add <secret> --data-file=- --project $PROJECT
    - `videos-raw`: [r2-raw-cors.json](r2-raw-cors.json), with your client origins.
    - `videos-processed`: [r2-processed-cors.json](r2-processed-cors.json).
 
+The API's own CORS origins are `CORS_ALLOWED_ORIGINS` in
+[deploy/env.yaml](../deploy/env.yaml): the same frontend origin as `videos-raw`.
+
+## Neon Auth sign-up
+
+Reviewers sign in with accounts created in advance, so public sign-up stays off:
+
+```sh
+neon neon-auth config email-password update --disable-sign-up --project-id <id> --branch <branch>
+```
+
+Check both sides. With `AUTH_URL` the Auth URL (`AUTH_JWKS_URL` without
+`/.well-known/jwks.json`) and `ORIGIN` a trusted domain, a sign-up attempt fails:
+
+```sh
+curl -i -X POST "$AUTH_URL/sign-up/email" -H "Origin: $ORIGIN" -H 'Content-Type: application/json' \
+  -d '{"email": "new@example.com", "password": "not-an-account-1", "name": "New"}'
+```
+
+An account created in advance still signs in and reaches the admin API:
+
+```sh
+TOKEN=$(uv run --locked python scripts/get_token.py --email you@example.com --origin "$ORIGIN")
+curl -i -H "Authorization: Bearer $TOKEN" https://videos-api-749098550492.us-central1.run.app/v1/admin/videos
+```
+
 ## Service accounts
 
 | Account | Runs | Can |

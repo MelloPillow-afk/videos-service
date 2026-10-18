@@ -35,6 +35,17 @@ async def get_playable_video(video_id: UUID) -> Video:
     return video
 
 
+async def get_catalog_video(video_id: UUID) -> Video:
+    """A video the catalog lists: published, ready, and not deleted."""
+    video = await get_video(video_id)
+    if (
+        video.publication_status is not PublicationStatus.PUBLISHED
+        or video.status is not VideoStatus.READY
+    ):
+        raise VideoNotFound(video_id)
+    return video
+
+
 async def list_videos(
     publication_status: PublicationStatus | None,
     after: tuple[datetime, UUID] | None,

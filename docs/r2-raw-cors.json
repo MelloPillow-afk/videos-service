@@ -1,6 +1,6 @@
 [
   {
-    "AllowedOrigins": ["http://localhost:5173", "https://admin.example.com"],
+    "AllowedOrigins": ["http://localhost:5173", "https://sundays-best.huynh-richard-c.workers.dev"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["Content-Type"],
     "MaxAgeSeconds": 3600

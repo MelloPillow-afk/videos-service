@@ -1,7 +1,8 @@
-"""Admins and viewers page through video lists stored in PostgreSQL."""
+"""Admins and viewers page through video lists, and viewers open catalog videos, stored in PostgreSQL."""
 
 import base64
 import json
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -183,6 +184,63 @@ async def test_exactly_full_page_reports_no_more(client: AsyncClient, db: AsyncC
 
     assert len(body["data"]) == 2
     assert body["pagination"] == {"next_page_token": None, "has_more": False}
+
+
+async def test_viewer_opens_a_catalog_video(client: AsyncClient, db: AsyncConnection) -> None:
+    video_id = await insert_published(
+        db,
+        "2026-10-13T15:00:00Z",
+        title="Introduction to Faith",
+        description="An introductory lesson",
+    )
+    del client.headers["Authorization"]
+
+    response = await client.get(f"{CATALOG}/{video_id}")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": video_id,
+        "title": "Introduction to Faith",
+        "description": "An introductory lesson",
+        "duration_seconds": None,
+        "thumbnail": {"status": "PENDING", "source": "NONE", "url": None, "sizes": None},
+        "published_at": "2026-10-13T15:00:00Z",
+    }
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"status": "READY"},
+        {
+            "status": "PROCESSING",
+            "publication_status": "PUBLISHED",
+            "published_at": "2026-10-13T15:00:00Z",
+        },
+        {
+            "status": "READY",
+            "publication_status": "PUBLISHED",
+            "published_at": "2026-10-13T15:00:00Z",
+            "deleted_at": "2026-10-14T09:00:00Z",
+        },
+    ],
+    ids=["draft", "not ready", "deleted"],
+)
+async def test_videos_outside_the_catalog_are_not_found(
+    client: AsyncClient, db: AsyncConnection, values: dict[str, str]
+) -> None:
+    video_id = await insert_video(db, **values)
+
+    response = await client.get(f"{CATALOG}/{video_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "The video was not found."}
+
+
+async def test_missing_catalog_video_is_not_found(client: AsyncClient) -> None:
+    response = await client.get(f"{CATALOG}/{uuid4()}")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.parametrize("path", [ADMIN_LIST, CATALOG])
