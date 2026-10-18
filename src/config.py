@@ -1,9 +1,15 @@
 """Environment configuration for local development and deployed processes."""
 
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, SecretStr, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BeforeValidator, Field, SecretStr, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+def _split_origins(value: object) -> object:
+    if isinstance(value, str):
+        return [origin.strip() for origin in value.split(",") if origin.strip()]
+    return value
 
 
 class Settings(BaseSettings):
@@ -19,6 +25,11 @@ class Settings(BaseSettings):
     db_pool_timeout_seconds: float = Field(default=5, gt=0)
     db_connect_timeout_seconds: int = Field(default=5, ge=2)
     db_statement_timeout_ms: int = Field(default=5000, ge=1)
+
+    # Browser origins allowed to call the API, comma-separated.
+    cors_allowed_origins: Annotated[list[str], NoDecode, BeforeValidator(_split_origins)] = [
+        "http://localhost:5173"
+    ]
 
     # Neon Auth: the issuer and audience are the Auth URL origin.
     auth_issuer: str | None = None

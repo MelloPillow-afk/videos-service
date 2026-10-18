@@ -4,6 +4,7 @@ from typing import Annotated as _generator_Annotated
 
 from fastapi import APIRouter as _generator_APIRouter
 from fastapi import Depends as _generator_Depends
+from fastapi import Path as _generator_Path
 from fastapi import Query as _generator_Query
 from pydantic import TypeAdapter as _generator_TypeAdapter
 
@@ -12,11 +13,15 @@ from src.core.generated.authentication import (
 )
 from src.core.generated.overrides import select_endpoint as _generator_select_endpoint
 from src.schemas.generated.operations import (
+    VideosGetVideoIdParameter as _GetVideoIdParameter,
+)
+from src.schemas.generated.operations import (
     VideosListVideosLimitParameter as _ListVideosLimitParameter,
 )
 from src.schemas.generated.operations import (
     VideosListVideosPageTokenParameter as _ListVideosPageTokenParameter,
 )
+from src.schemas.generated.videos import Video as _GetVideoResponse
 from src.schemas.generated.videos import Videos as _ListVideosResponse
 
 router = _generator_APIRouter(prefix="/v1")
@@ -88,5 +93,63 @@ async def list_videos(
                 },
             ],
             "pagination": {"has_more": False, "next_page_token": None},
+        },
+    )
+
+
+@router.get(
+    "/videos/{id}",
+    response_model=_GetVideoResponse,
+    status_code=200,
+    response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_optional_authentication)],
+)
+@_generator_select_endpoint("videos.get_video")
+async def get_video(
+    *,
+    id: _generator_Annotated[
+        _GetVideoIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _GetVideoResponse:
+    return _generator_TypeAdapter(_GetVideoResponse).validate_python(
+        {
+            "description": "An introductory lesson",
+            "duration_seconds": 1475.5,
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "published_at": "2026-10-13T15:00:00Z",
+            "thumbnail": {
+                "sizes": {
+                    "lg": {
+                        "height": 540,
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/lg.jpg",
+                        "width": 960,
+                    },
+                    "md": {
+                        "height": 360,
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/md.jpg",
+                        "width": 640,
+                    },
+                    "sm": {
+                        "height": 180,
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/sm.jpg",
+                        "width": 320,
+                    },
+                    "xl": {
+                        "height": 720,
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xl.jpg",
+                        "width": 1280,
+                    },
+                    "xs": {
+                        "height": 90,
+                        "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xs.jpg",
+                        "width": 160,
+                    },
+                },
+                "source": "CUSTOM",
+                "status": "READY",
+                "url": "https://media.example.com/videos/550e8400-e29b-41d4-a716-446655440000/thumbnails/50fd0382-794f-4c9b-9a12-60e92a89e008/xl.jpg",
+            },
+            "title": "Introduction to Faith",
         },
     )

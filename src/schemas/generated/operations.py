@@ -38,4 +38,6 @@ type VideosListVideosLimitParameter = Annotated[int, Field(ge=1, le=100)]
 
 type VideosListVideosPageTokenParameter = str
 
+type VideosGetVideoIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]
+
 type PlaybackGetPlaybackIdParameter = Annotated[str, AfterValidator(lambda value: validate_format(value, 'uuid'))]

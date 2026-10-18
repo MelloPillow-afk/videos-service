@@ -198,6 +198,15 @@ async def arrange_admin_videos_list_videos(api_case: APICase, db: AsyncConnectio
 @pytest_asyncio.fixture
 async def arrange_videos_list_videos(api_case: APICase, db: AsyncConnection) -> None:
     (video,) = api_case.expected_body["data"]
+    await insert_catalog_example(db, video)
+
+
+@pytest_asyncio.fixture
+async def arrange_videos_get_video(api_case: APICase, db: AsyncConnection) -> None:
+    await insert_catalog_example(db, api_case.expected_body)
+
+
+async def insert_catalog_example(db: AsyncConnection, video: dict[str, Any]) -> None:
     await insert_video(
         db,
         id=video["id"],
