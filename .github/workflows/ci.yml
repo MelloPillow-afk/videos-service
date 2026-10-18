@@ -19,7 +19,7 @@ env:
   PROJECT: videos-service
   REGION: us-central1
   IMAGES: us-central1-docker.pkg.dev/videos-service/videos
-  WIF_PROVIDER: projects/749098550492/locations/global/workloadIdentityPools/github/providers/videos-service
+  WIF_PROVIDER: projects/${{ vars.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/videos-service
   DEPLOYER: github-deployer@videos-service.iam.gserviceaccount.com
   RUNTIME_SECRETS: DATABASE_URL=videos-database-url:latest,R2_ACCESS_KEY_ID=videos-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=videos-r2-secret-access-key:latest
   DEPLOYING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -169,13 +169,18 @@ jobs:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.DEPLOYER }}
       - uses: google-github-actions/setup-gcloud@v3
+      # deploy/env.yaml plus the account-specific settings kept in repository variables.
+      - name: Write the env file
+        env:
+          VARS: ${{ toJSON(vars) }}
+        run: echo "$VARS" | deploy/render-env.sh > "$RUNNER_TEMP/env.yaml"
       - run: |
           gcloud run jobs deploy videos-migrate --project "$PROJECT" --region "$REGION" \
             --image="$IMAGES/api:$GITHUB_SHA" \
             --service-account="videos-migrate@$PROJECT.iam.gserviceaccount.com" \
             --command=python --args=-m,src.repositories.migrate,apply \
             --tasks=1 --max-retries=0 --task-timeout=10m \
-            --env-vars-file=deploy/env.yaml \
+            --env-vars-file="$RUNNER_TEMP/env.yaml" \
             --set-secrets=DATABASE_URL=videos-migrate-database-url:latest \
             --labels="commit-sha=$GITHUB_SHA" \
             --execute-now --wait
@@ -201,13 +206,18 @@ jobs:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.DEPLOYER }}
       - uses: google-github-actions/setup-gcloud@v3
+      # deploy/env.yaml plus the account-specific settings kept in repository variables.
+      - name: Write the env file
+        env:
+          VARS: ${{ toJSON(vars) }}
+        run: echo "$VARS" | deploy/render-env.sh > "$RUNNER_TEMP/env.yaml"
       - name: Deploy worker job
         run: |
           gcloud run jobs deploy videos-worker --project "$PROJECT" --region "$REGION" \
             --image="$IMAGES/worker:$GITHUB_SHA" \
             --service-account="videos-worker@$PROJECT.iam.gserviceaccount.com" \
             --tasks=1 --max-retries=0 --task-timeout=30m --cpu=2 --memory=4Gi \
-            --env-vars-file=deploy/env.yaml --set-secrets="$RUNTIME_SECRETS" \
+            --env-vars-file="$RUNNER_TEMP/env.yaml" --set-secrets="$RUNTIME_SECRETS" \
             --labels="commit-sha=$GITHUB_SHA"
       # Keeps the service's public access as is; changing it needs more than run.developer.
       - name: Deploy API
@@ -216,7 +226,7 @@ jobs:
             --image="$IMAGES/api:$GITHUB_SHA" \
             --service-account="videos-api@$PROJECT.iam.gserviceaccount.com" \
             --max-instances=10 \
-            --env-vars-file=deploy/env.yaml --set-secrets="$RUNTIME_SECRETS" \
+            --env-vars-file="$RUNNER_TEMP/env.yaml" --set-secrets="$RUNTIME_SECRETS" \
             --labels="commit-sha=$GITHUB_SHA"
       - name: Check the API
         run: |

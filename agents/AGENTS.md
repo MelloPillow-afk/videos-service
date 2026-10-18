@@ -12,7 +12,8 @@ Python backend for the videos domain.
 
 - Pushes to `main` deploy through `.github/workflows/ci.yml`; `docs/deployment.md` explains the pipeline.
 - Never commit secrets or put them in `.env.example`. Production secrets live in Secret Manager;
-  plain production settings go in `deploy/env.yaml`.
+  settings that name our Neon or Cloudflare accounts are GitHub repository variables, rendered
+  by `deploy/render-env.sh`; other plain production settings go in `deploy/env.yaml`.
 - Migrations must keep the running code working: add in one release, remove in a later one.
 
 ## Verification

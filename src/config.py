@@ -86,4 +86,6 @@ class Settings(BaseSettings):
             raise ValueError(
                 "GCP_PROJECT, GCP_REGION, and WORKER_JOB_NAME are required when API_ENV=prod"
             )
+        if self.api_env == "prod" and self.auth_disabled:
+            raise ValueError("AUTH_DISABLED is for local development, not API_ENV=prod")
         return self
