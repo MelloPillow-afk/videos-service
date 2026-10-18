@@ -7,6 +7,13 @@ Python backend for the videos domain.
 - The generator owns generated packages; handwritten handlers live outside those packages.
 - Run `make lint-api` after contract changes.
 
+## Deployment and secrets
+
+- Pushes to `main` deploy through `.github/workflows/ci.yml`; `docs/deployment.md` explains the pipeline.
+- Never commit secrets or put them in `.env.example`. Production secrets live in Secret Manager;
+  plain production settings go in `deploy/env.yaml`.
+- Migrations must keep the running code working: add in one release, remove in a later one.
+
 ## Verification
 
 Done means both pass with the PostgreSQL test database running (`make test-db-up`):

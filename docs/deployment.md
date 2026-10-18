@@ -1,73 +1,130 @@
 # Deploying to Cloud Run with Cloudflare R2
 
-The API runs as a Cloud Run **service**. Each media job runs as one execution of a Cloud
-Run **job**, which the API starts directly (no queue). Both images come from the
-`Dockerfile`. Commands below assume these shell variables:
+The API runs as the Cloud Run **service** `videos-api`. Each media job runs as one
+execution of the Cloud Run **job** `videos-worker`, which the API starts directly (no
+queue). Migrations run as the job `videos-migrate`. All three come from the
+`Dockerfile`: `api` (also used for migrations) and `worker` (adds FFmpeg).
+
+Pushes to `main` deploy through GitHub Actions ([CI](../.github/workflows/ci.yml)); see
+[Pipeline](#pipeline). The sections below record the one-time setup and the equivalent
+manual commands. They assume:
 
 ```sh
-PROJECT=your-project
+PROJECT=videos-service
 REGION=us-central1
-REPO=$REGION-docker.pkg.dev/$PROJECT/videos
-TAG=$(git rev-parse --short HEAD)
+IMAGES=$REGION-docker.pkg.dev/$PROJECT/videos
+TAG=$(git rev-parse HEAD)
 ```
 
-## 1. Cloudflare R2
+## Configuration
+
+Plain settings live in [deploy/env.yaml](../deploy/env.yaml) and are reviewed like code.
+Secrets live in Secret Manager:
+
+| Secret | Holds | Read by |
+|---|---|---|
+| `videos-database-url` | Neon **direct** URL as `videos_runtime` (rows only) | `videos-api`, `videos-worker` |
+| `videos-migrate-database-url` | Neon **direct** URL as `neondb_owner` (schema changes) | `videos-migrate` |
+| `videos-r2-access-key-id`, `videos-r2-secret-access-key` | R2 API token | `videos-api`, `videos-worker` |
+
+Both database URLs use Neon's direct host, not `-pooler`: the app sets session options
+when it connects, and the pooler rejects them. See
+[ADR 0001](adr/0001-direct-database-connections.md). `--max-instances=10` on the API keeps
+the connection count well under Neon's direct-connection limit.
+
+`videos_runtime` can't change the schema. Tables the owner creates grant it row access
+automatically, through a one-time setting:
+
+```sql
+ALTER DEFAULT PRIVILEGES FOR ROLE neondb_owner IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO videos_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE neondb_owner IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO videos_runtime;
+```
+
+To store or rotate a secret, copy the value and run:
+
+```sh
+pbpaste | gcloud secrets versions add <secret> --data-file=- --project $PROJECT
+```
+
+## Cloudflare R2
 
 1. Buckets: `videos-raw` (private uploads) and `videos-processed` (public media).
-2. Give `videos-processed` public access through a custom domain (or `r2.dev` for
-   testing). That origin is `MEDIA_BASE_URL`, for example `https://media.example.com`.
-3. Create an R2 API token with **Object Read & Write** on both buckets. Its access key
-   ID and secret are `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; the S3 endpoint
-   `https://<account-id>.r2.cloudflarestorage.com` is `R2_ENDPOINT_URL`.
+2. `videos-processed` is public through its `r2.dev` origin, which is `MEDIA_BASE_URL`.
+3. The R2 API token has **Object Read & Write** on both buckets.
 4. CORS. Browsers upload straight to `videos-raw` and play from `videos-processed`:
    - `videos-raw`: [r2-raw-cors.json](r2-raw-cors.json), with your client origins.
    - `videos-processed`: [r2-processed-cors.json](r2-processed-cors.json).
 
-## 2. Images
+## Service accounts
+
+| Account | Runs | Can |
+|---|---|---|
+| `videos-api` | the API | read its secrets; start `videos-worker` executions with overrides |
+| `videos-worker` | the worker | read its secrets |
+| `videos-migrate` | migrations | read `videos-migrate-database-url` |
+| `github-deployer` | GitHub Actions on `main` | push images; deploy and run Cloud Run services and jobs as the three accounts above |
+
+`github-deployer` has no stored key. GitHub Actions gets it through Workload Identity
+Federation, limited to this repository's `main` branch.
+[deploy/setup-wif.sh](../deploy/setup-wif.sh) records how that was set up.
+
+## Pipeline
+
+[CI](../.github/workflows/ci.yml) runs on every pull request and every push to `main`:
+
+1. **Checks**: lint, format, types, tests, and an `api` and `worker` image build.
+   Pull requests stop here.
+2. **Images**: on `main`, both images are pushed as `api:<sha>` and `worker:<sha>`.
+3. **Find new migrations**: compares `migrations/` between the commit the API runs
+   (its `commit-sha` label) and the pushed commit.
+4. **Apply migrations**: only when step 3 finds changes. It waits for approval on the
+   `production` GitHub environment, then runs `videos-migrate`. Migrations must keep
+   the running code working: add first, remove in a later release.
+5. **Deploy**: the worker job, then the API, both labelled `commit-sha=<sha>`, then a
+   `/ping` check.
+
+## Manual deploy
+
+Build and push:
 
 ```sh
-gcloud artifacts repositories create videos --repository-format=docker --location=$REGION
 gcloud auth configure-docker $REGION-docker.pkg.dev
-docker buildx build --platform linux/amd64 --target api -t $REPO/api:$TAG --push .
-docker buildx build --platform linux/amd64 --target worker -t $REPO/worker:$TAG --push .
+docker buildx build --platform linux/amd64 --target api -t $IMAGES/api:$TAG --push .
+docker buildx build --platform linux/amd64 --target worker -t $IMAGES/worker:$TAG --push .
 ```
 
-## 3. Secrets and service accounts
+Migrations, when there are new ones:
 
 ```sh
-printf %s "$DATABASE_URL" | gcloud secrets create database-url --data-file=-
-printf %s "$R2_ACCESS_KEY_ID" | gcloud secrets create r2-access-key-id --data-file=-
-printf %s "$R2_SECRET_ACCESS_KEY" | gcloud secrets create r2-secret-access-key --data-file=-
-
-gcloud iam service-accounts create videos-api
-gcloud iam service-accounts create videos-worker
-for account in videos-api videos-worker; do
-  for secret in database-url r2-access-key-id r2-secret-access-key; do
-    gcloud secrets add-iam-policy-binding $secret \
-      --member=serviceAccount:$account@$PROJECT.iam.gserviceaccount.com \
-      --role=roles/secretmanager.secretAccessor
-  done
-done
+gcloud run jobs deploy videos-migrate --image=$IMAGES/api:$TAG --region=$REGION \
+  --service-account=videos-migrate@$PROJECT.iam.gserviceaccount.com \
+  --command=python --args=-m,src.repositories.migrate,apply \
+  --tasks=1 --max-retries=0 --task-timeout=10m \
+  --env-vars-file=deploy/env.yaml \
+  --set-secrets=DATABASE_URL=videos-migrate-database-url:latest \
+  --labels=commit-sha=$TAG --execute-now --wait
 ```
 
-## 4. Worker job
-
-One task, no Cloud Run retries (a failed job records its message instead), and a
-timeout that covers a 300-second source at three renditions.
+The worker job runs one task with no Cloud Run retries (a failed job records its
+message instead). Its timeout covers a 300-second source at three renditions:
 
 ```sh
-gcloud run jobs deploy videos-worker \
-  --image=$REPO/worker:$TAG --region=$REGION \
+SECRETS=DATABASE_URL=videos-database-url:latest,R2_ACCESS_KEY_ID=videos-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=videos-r2-secret-access-key:latest
+
+gcloud run jobs deploy videos-worker --image=$IMAGES/worker:$TAG --region=$REGION \
   --service-account=videos-worker@$PROJECT.iam.gserviceaccount.com \
   --tasks=1 --max-retries=0 --task-timeout=30m --cpu=2 --memory=4Gi \
-  --set-env-vars=R2_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com,AUTH_DISABLED=true \
-  --set-secrets=DATABASE_URL=database-url:latest,R2_ACCESS_KEY_ID=r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=r2-secret-access-key:latest
+  --env-vars-file=deploy/env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
+
+gcloud run deploy videos-api --image=$IMAGES/api:$TAG --region=$REGION \
+  --service-account=videos-api@$PROJECT.iam.gserviceaccount.com \
+  --max-instances=10 \
+  --env-vars-file=deploy/env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
 ```
 
-The worker serves no HTTP, so `AUTH_DISABLED=true` only skips token settings it never
-uses. The API passes each execution its job ID as the container argument.
-
-Let the API start executions with that argument:
+The API passes each worker execution its job ID as the container argument, which needs:
 
 ```sh
 gcloud run jobs add-iam-policy-binding videos-worker --region=$REGION \
@@ -75,39 +132,28 @@ gcloud run jobs add-iam-policy-binding videos-worker --region=$REGION \
   --role=roles/run.jobsExecutorWithOverrides
 ```
 
-## 5. API service
+## Smoke test
+
+[scripts/smoke.py](../scripts/smoke.py) runs one video through a deployed service:
+upload, processing, thumbnail, publishing, and HLS playback. It then deletes the video.
+It writes to production, so run it by hand rather than on every deploy:
 
 ```sh
-gcloud run deploy videos-api \
-  --image=$REPO/api:$TAG --region=$REGION --allow-unauthenticated \
-  --service-account=videos-api@$PROJECT.iam.gserviceaccount.com \
-  --env-vars-file=api.env.yaml \
-  --set-secrets=DATABASE_URL=database-url:latest,R2_ACCESS_KEY_ID=r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=r2-secret-access-key:latest
+TOKEN=$(uv run --locked python scripts/get_token.py --email you@example.com)
+TOKEN=$TOKEN uv run --locked python scripts/smoke.py https://videos-api-749098550492.us-central1.run.app
 ```
 
-`api.env.yaml` (not committed) holds the plain settings:
+## Rolling back
 
-```yaml
-API_ENV: prod
-GCP_PROJECT: your-project
-GCP_REGION: us-central1
-WORKER_JOB_NAME: videos-worker
-R2_ENDPOINT_URL: https://<account-id>.r2.cloudflarestorage.com
-MEDIA_BASE_URL: https://media.example.com
-AUTH_ISSUER: https://ep-example.neonauth.us-east-1.aws.neon.tech
-AUTH_JWKS_URL: https://ep-example.neonauth.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json
-AUTH_AUDIENCE: https://ep-example.neonauth.us-east-1.aws.neon.tech
-```
-
-Run migrations before routing traffic to a new revision:
+Cloud Run keeps earlier API revisions. Send traffic back to one:
 
 ```sh
-gcloud run jobs deploy videos-migrate --image=$REPO/api:$TAG --region=$REGION \
-  --service-account=videos-api@$PROJECT.iam.gserviceaccount.com \
-  --command=python --args=-m,src.repositories.migrate,apply \
-  --set-env-vars=AUTH_DISABLED=true --set-secrets=DATABASE_URL=database-url:latest \
-  --execute-now --wait
+gcloud run revisions list --service=videos-api --region=$REGION
+gcloud run services update-traffic videos-api --region=$REGION --to-revisions=<revision>=100
 ```
+
+For the worker, redeploy `videos-worker` with an earlier `worker:<sha>` image. A rollback
+doesn't undo migrations.
 
 ## Recovering a stuck job
 
