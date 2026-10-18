@@ -22,6 +22,10 @@ async def get_playback(
         raise HTTPException(status_code=404, detail="The video was not found.") from None
     except domain.VideoNotReady:
         raise HTTPException(status_code=409, detail="The video is not ready.") from None
+    return playback_resource(video)
+
+
+def playback_resource(video: domain.Video) -> Playback:
     assert video.playback_key is not None  # A playable video has processed media.
     return Playback(
         video_id=str(video.id),

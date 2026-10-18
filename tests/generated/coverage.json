@@ -1,5 +1,5 @@
 {
-  "cases": 37,
+  "cases": 40,
   "skipped": [
     "admin.videos.list_videos: query page_token has no applicable invalid parameter case",
     "admin.thumbnails.complete_upload: POST 202 success status is outside MVP coverage",

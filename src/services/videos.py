@@ -30,8 +30,17 @@ async def get_playable_video(video_id: UUID) -> Video:
     video = await get_video(video_id)
     if video.publication_status is not PublicationStatus.PUBLISHED:
         raise VideoNotFound(video_id)
+    return _ready(video)
+
+
+async def get_previewable_video(video_id: UUID) -> Video:
+    """A video with processed media admins can play, published or not."""
+    return _ready(await get_video(video_id))
+
+
+def _ready(video: Video) -> Video:
     if video.status is not VideoStatus.READY or video.playback_key is None:
-        raise VideoNotReady(video_id)
+        raise VideoNotReady(video.id)
     return video
 
 

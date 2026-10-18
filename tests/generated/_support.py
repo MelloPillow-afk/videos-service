@@ -196,6 +196,11 @@ def arrange_admin_videos_delete_video(api_case: APICase) -> None:
 
 
 @pytest.fixture
+def arrange_admin_videos_get_playback(api_case: APICase) -> None:
+    """Override this fixture in tests/conftest.py to arrange the operation."""
+
+
+@pytest.fixture
 def arrange_admin_videos_get_video(api_case: APICase) -> None:
     """Override this fixture in tests/conftest.py to arrange the operation."""
 

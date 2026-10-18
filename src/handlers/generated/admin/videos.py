@@ -22,6 +22,9 @@ from src.schemas.generated.operations import (
     AdminVideosDeleteVideoIdParameter as _DeleteVideoIdParameter,
 )
 from src.schemas.generated.operations import (
+    AdminVideosGetPlaybackIdParameter as _GetPlaybackIdParameter,
+)
+from src.schemas.generated.operations import (
     AdminVideosGetVideoIdParameter as _GetVideoIdParameter,
 )
 from src.schemas.generated.operations import (
@@ -36,6 +39,7 @@ from src.schemas.generated.operations import (
 from src.schemas.generated.operations import (
     AdminVideosUploadUrlIdParameter as _UploadUrlIdParameter,
 )
+from src.schemas.generated.playback import Playback as _GetPlaybackResponse
 from src.schemas.generated.uploads import SourceUpload as _UploadUrlResponse
 from src.schemas.generated.uploads import SourceUploadCreate as _UploadUrlBody
 from src.schemas.generated.uploads import UploadComplete as _CompleteUploadBody
@@ -216,6 +220,29 @@ async def update_video(
             "thumbnail": {"sizes": None, "source": "NONE", "status": "PENDING", "url": None},
             "title": "Introduction to Faith",
             "updated_at": "2026-10-13T14:00:00Z",
+        },
+    )
+
+
+@router.get(
+    "/videos/{id}/playback",
+    response_model=_GetPlaybackResponse,
+    status_code=200,
+    response_model_exclude_unset=True,
+    dependencies=[_generator_Depends(_generator_require_authentication)],
+)
+@_generator_select_endpoint("admin.videos.get_playback")
+async def get_playback(
+    *,
+    id: _generator_Annotated[
+        _GetPlaybackIdParameter,
+        _generator_Path(alias="id", description="Video ID."),
+    ],
+) -> _GetPlaybackResponse:
+    return _generator_TypeAdapter(_GetPlaybackResponse).validate_python(
+        {
+            "playback": {"type": "hls", "url": "https://media.example.com/videos/intro/hls/master.m3u8"},
+            "video_id": "550e8400-e29b-41d4-a716-446655440000",
         },
     )
 

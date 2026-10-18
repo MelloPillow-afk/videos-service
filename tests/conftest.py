@@ -295,3 +295,15 @@ async def arrange_playback_get_playback(api_case: APICase, db: AsyncConnection) 
         published_at="2026-10-13T14:00:00Z",
         playback_key=playback_url.removeprefix(f"{MEDIA_BASE_URL}/"),
     )
+
+
+@pytest_asyncio.fixture
+async def arrange_admin_videos_get_playback(api_case: APICase, db: AsyncConnection) -> None:
+    # A draft: admins preview videos before publishing them.
+    playback_url: str = api_case.expected_body["playback"]["url"]
+    await insert_video(
+        db,
+        id=api_case.path_params["id"],
+        status="READY",
+        playback_key=playback_url.removeprefix(f"{MEDIA_BASE_URL}/"),
+    )
