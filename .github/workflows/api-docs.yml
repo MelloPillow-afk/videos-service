@@ -1,0 +1,87 @@
+name: API docs
+
+# Builds the API reference in MelloPillow-afk/apis-docs from api-specs/.
+# Pull requests only check that the docs build. Pushes to main also open, or
+# update, one PR on apis-docs from the sync/videos-service branch.
+# apis-docs is public, so pull requests read it without a token. Pushes use
+# APIS_DOCS_TOKEN: fine-grained token for apis-docs only, with Contents and
+# Pull requests read/write.
+on:
+  pull_request:
+    paths:
+      - api-specs/**
+      - .github/workflows/api-docs.yml
+  push:
+    branches: [main]
+    paths:
+      - api-specs/**
+      - .github/workflows/api-docs.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOCS_REPO: MelloPillow-afk/apis-docs
+  BRANCH: sync/videos-service
+
+jobs:
+  docs:
+    name: Build API docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: videos-service
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ env.DOCS_REPO }}
+          token: ${{ github.event_name == 'push' && secrets.APIS_DOCS_TOKEN || github.token }}
+          path: apis-docs
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: apis-docs/.python-version
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.4"
+          enable-cache: true
+      - name: Copy the spec and build the docs
+        working-directory: apis-docs
+        run: |
+          rsync -a --delete ../videos-service/api-specs/ specs/videos-service/
+          make install docs
+
+      - name: Open or update the docs PR
+        if: github.event_name == 'push'
+        working-directory: apis-docs
+        env:
+          GH_TOKEN: ${{ secrets.APIS_DOCS_TOKEN }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          open_pr=$(gh pr list --repo "$DOCS_REPO" --head "$BRANCH" --state open \
+            --json number --jq '.[0].number')
+          if [ -z "$(git status --porcelain -- specs site)" ]; then
+            echo "Docs already match main."
+            if [ -n "$open_pr" ]; then
+              gh pr close "$open_pr" --repo "$DOCS_REPO" --delete-branch \
+                --comment "Closing: main already matches $SOURCE."
+            fi
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git add -A specs site
+          git commit -m "Update videos-service API docs" -m "From $SOURCE"
+          git push --force origin "$BRANCH"
+          body="Regenerated from $SOURCE, the latest videos-service spec on main."
+          if [ -n "$open_pr" ]; then
+            gh pr edit "$open_pr" --repo "$DOCS_REPO" --body "$body"
+          else
+            gh pr create --repo "$DOCS_REPO" --base main --head "$BRANCH" \
+              --title "Update videos-service API docs" --body "$body"
+          fi
