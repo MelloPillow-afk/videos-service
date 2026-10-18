@@ -12,7 +12,13 @@ from tests.utilities.fakes import FakeLauncher
 
 DEV = Settings(auth_disabled=True)
 PROD = Settings(
-    auth_disabled=True, api_env="prod", gcp_project="p", gcp_region="r", worker_job_name="w"
+    api_env="prod",
+    gcp_project="p",
+    gcp_region="r",
+    worker_job_name="w",
+    auth_issuer="https://auth.test",
+    auth_jwks_url="https://auth.test/jwks.json",
+    auth_audience="https://auth.test",
 )
 
 

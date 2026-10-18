@@ -14,11 +14,28 @@ PROJECT=videos-service
 REGION=us-central1
 IMAGES=$REGION-docker.pkg.dev/$PROJECT/videos
 TAG=$(git rev-parse HEAD)
+API_URL=$(gcloud run services describe videos-api --project $PROJECT --region $REGION \
+  --format='value(status.url)')
 ```
 
 ## Configuration
 
 Plain settings live in [deploy/env.yaml](../deploy/env.yaml) and are reviewed like code.
+Settings that name our accounts live in GitHub repository variables (Settings → Secrets
+and variables → Actions → Variables), so this public repository doesn't advertise them:
+
+| Variable | Holds |
+|---|---|
+| `GCP_PROJECT_NUMBER` | the Google Cloud project number, for Workload Identity Federation |
+| `CORS_ALLOWED_ORIGINS` | the frontend origin(s), comma-separated |
+| `AUTH_ISSUER`, `AUTH_AUDIENCE` | the Neon Auth origin |
+| `AUTH_JWKS_URL` | the Neon Auth JWKS URL |
+| `R2_ENDPOINT_URL` | `https://<account-id>.r2.cloudflarestorage.com` |
+| `MEDIA_BASE_URL` | the `videos-processed` bucket's public `r2.dev` origin |
+
+[deploy/render-env.sh](../deploy/render-env.sh) combines them with `deploy/env.yaml` into
+the env file each deploy uses, and fails if one is missing.
+
 Secrets live in Secret Manager:
 
 | Secret | Holds | Read by |
@@ -57,8 +74,8 @@ pbpaste | gcloud secrets versions add <secret> --data-file=- --project $PROJECT
    - `videos-raw`: [r2-raw-cors.json](r2-raw-cors.json), with your client origins.
    - `videos-processed`: [r2-processed-cors.json](r2-processed-cors.json).
 
-The API's own CORS origins are `CORS_ALLOWED_ORIGINS` in
-[deploy/env.yaml](../deploy/env.yaml): the same frontend origin as `videos-raw`.
+The API's own CORS origins are the `CORS_ALLOWED_ORIGINS` variable: the same frontend
+origin as `videos-raw`.
 
 ## Neon Auth sign-up
 
@@ -80,7 +97,7 @@ An account created in advance still signs in and reaches the admin API:
 
 ```sh
 TOKEN=$(uv run --locked python scripts/get_token.py --email you@example.com --origin "$ORIGIN")
-curl -i -H "Authorization: Bearer $TOKEN" https://videos-api-749098550492.us-central1.run.app/v1/admin/videos
+curl -i -H "Authorization: Bearer $TOKEN" "$API_URL/v1/admin/videos"
 ```
 
 ## Service accounts
@@ -113,6 +130,13 @@ Federation, limited to this repository's `main` branch.
 
 ## Manual deploy
 
+Write the env file from the repository variables:
+
+```sh
+gh variable list --json name,value --jq 'map({(.name): .value}) | add' \
+  | deploy/render-env.sh > /tmp/videos-env.yaml
+```
+
 Build and push:
 
 ```sh
@@ -128,7 +152,7 @@ gcloud run jobs deploy videos-migrate --image=$IMAGES/api:$TAG --region=$REGION 
   --service-account=videos-migrate@$PROJECT.iam.gserviceaccount.com \
   --command=python --args=-m,src.repositories.migrate,apply \
   --tasks=1 --max-retries=0 --task-timeout=10m \
-  --env-vars-file=deploy/env.yaml \
+  --env-vars-file=/tmp/videos-env.yaml \
   --set-secrets=DATABASE_URL=videos-migrate-database-url:latest \
   --labels=commit-sha=$TAG --execute-now --wait
 ```
@@ -142,12 +166,12 @@ SECRETS=DATABASE_URL=videos-database-url:latest,R2_ACCESS_KEY_ID=videos-r2-acces
 gcloud run jobs deploy videos-worker --image=$IMAGES/worker:$TAG --region=$REGION \
   --service-account=videos-worker@$PROJECT.iam.gserviceaccount.com \
   --tasks=1 --max-retries=0 --task-timeout=30m --cpu=2 --memory=4Gi \
-  --env-vars-file=deploy/env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
+  --env-vars-file=/tmp/videos-env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
 
 gcloud run deploy videos-api --image=$IMAGES/api:$TAG --region=$REGION \
   --service-account=videos-api@$PROJECT.iam.gserviceaccount.com \
   --max-instances=10 \
-  --env-vars-file=deploy/env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
+  --env-vars-file=/tmp/videos-env.yaml --set-secrets=$SECRETS --labels=commit-sha=$TAG
 ```
 
 The API passes each worker execution its job ID as the container argument, which needs:
@@ -166,7 +190,7 @@ It writes to production, so run it by hand rather than on every deploy:
 
 ```sh
 TOKEN=$(uv run --locked python scripts/get_token.py --email you@example.com)
-TOKEN=$TOKEN uv run --locked python scripts/smoke.py https://videos-api-749098550492.us-central1.run.app
+TOKEN=$TOKEN uv run --locked python scripts/smoke.py "$API_URL"
 ```
 
 ## Rolling back

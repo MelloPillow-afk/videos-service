@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PROJECT=videos-service
-PROJECT_NUMBER=749098550492
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
 REGION=us-central1
 REPO=MelloPillow-afk/videos-service
 # Numeric IDs survive renames; a name can be re-registered by someone else.

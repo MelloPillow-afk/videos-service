@@ -32,3 +32,14 @@ def test_non_postgresql_database_url_is_rejected(url: str) -> None:
 def test_prod_requires_the_worker_job() -> None:
     with pytest.raises(ValidationError, match="WORKER_JOB_NAME"):
         Settings(api_env="prod", gcp_project="p", gcp_region="r", auth_disabled=True)
+
+
+def test_prod_refuses_disabled_auth() -> None:
+    with pytest.raises(ValidationError, match="AUTH_DISABLED"):
+        Settings(
+            api_env="prod",
+            gcp_project="p",
+            gcp_region="r",
+            worker_job_name="w",
+            auth_disabled=True,
+        )
